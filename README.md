@@ -1,0 +1,1 @@
+# KCD2-mod-manager
