@@ -48,10 +48,16 @@
                 <MenuItem Header="Enable Delete Confirmation" Click="EnableDeleteConfirmation_Click" Foreground="Black"/>
                 <MenuItem Header="Toggle Dark Mode" Click="ToggleDarkMode_Click" Foreground="Black"/>
                 <MenuItem Header="Toggle Devmode" Click="ToggleDevMode_Click" Foreground="Black"/>
-                <MenuItem Header="Toggle Backup Creation" Click="ToggleBackupCreation_Click" Foreground="Black"/>
                 <MenuItem Header="Toggle Update Notifications" Click="ToggleUpdateNotifications_Click" Foreground="Black"/>
-                <MenuItem Header="Log in to Nexus Mods" Click="LoginToNexus_Click" Foreground="Black"/>
             </MenuItem>
+            <MenuItem Header="Backup Settings" Foreground="{DynamicResource ListBoxForegroundBrush}">
+                <MenuItem Header="Toggle Backup Creation" Click="ToggleBackupCreation_Click" Foreground="Black"/>
+                <MenuItem Header="Backup on Startup" Click="ToggleBackupOnStartup_Click" Foreground="Black"/>
+                <!--<MenuItem Header="Backup on Change" Click="ToggleBackupOnChange_Click" Foreground="Black"/>-->
+                <MenuItem Header="Set Max Backups" Click="SetMaxBackups_Click" Foreground="Black"/>
+            </MenuItem>
+
+            <MenuItem Header="Log in to Nexus Mods" Click="LoginToNexus_Click" Foreground="{DynamicResource ListBoxForegroundBrush}"/>
         </Menu>
 
 

@@ -181,19 +181,6 @@ namespace KCD2_mod_manager {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("tlZXTG/himx76Oh3inbYN57EZMBoJF7LR3bpmVrJCaxrKG6R--DZDKCkCbBMATF+n4--wP6hOw5PN9oxo" +
-            "1u1Ktjfmg==")]
-        public string NexusUserToken {
-            get {
-                return ((string)(this["NexusUserToken"]));
-            }
-            set {
-                this["NexusUserToken"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool DontAskForNexusLogin {
             get {
@@ -213,6 +200,54 @@ namespace KCD2_mod_manager {
             }
             set {
                 this["NexusUsername"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string NexusUserToken {
+            get {
+                return ((string)(this["NexusUserToken"]));
+            }
+            set {
+                this["NexusUserToken"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool BackupOnChange {
+            get {
+                return ((bool)(this["BackupOnChange"]));
+            }
+            set {
+                this["BackupOnChange"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("20")]
+        public int BackupMaxCount {
+            get {
+                return ((int)(this["BackupMaxCount"]));
+            }
+            set {
+                this["BackupMaxCount"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool BackupOnStartup {
+            get {
+                return ((bool)(this["BackupOnStartup"]));
+            }
+            set {
+                this["BackupOnStartup"] = value;
             }
         }
     }

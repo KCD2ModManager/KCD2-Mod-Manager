@@ -64,7 +64,10 @@ namespace KCD2_mod_manager
 
 
             CheckAndLoadGamePath();
-            CreateModsBackup();
+            if (Settings.Default.BackupOnStartup)
+            {
+                CreateModsBackup();
+            }
 
 
 
@@ -907,6 +910,48 @@ namespace KCD2_mod_manager
             Settings.Default.Save();
         }
 
+        private void ToggleBackupCreation_Click(object sender, RoutedEventArgs e)
+        {
+            Settings.Default.CreateBackup = !Settings.Default.CreateBackup;
+            Settings.Default.Save();
+            MessageBox.Show($"Backup Creation is now {(Settings.Default.CreateBackup ? "Enabled" : "Disabled")}.",
+                            "Backup Settings", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void ToggleBackupOnStartup_Click(object sender, RoutedEventArgs e)
+        {
+            Settings.Default.BackupOnStartup = !Settings.Default.BackupOnStartup;
+            Settings.Default.Save();
+            MessageBox.Show($"Backup on Startup is now {(Settings.Default.BackupOnStartup ? "Enabled" : "Disabled")}.",
+                            "Backup Settings", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void ToggleBackupOnChange_Click(object sender, RoutedEventArgs e)
+        {
+            Settings.Default.BackupOnChange = !Settings.Default.BackupOnChange;
+            Settings.Default.Save();
+            MessageBox.Show($"Backup on Mod Folder Change is now {(Settings.Default.BackupOnChange ? "Enabled" : "Disabled")}.",
+                            "Backup Settings", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void SetMaxBackups_Click(object sender, RoutedEventArgs e)
+        {
+            string input = Microsoft.VisualBasic.Interaction.InputBox("Enter the maximum number of backups to keep:",
+                                                                       "Set Max Backups",
+                                                                       Settings.Default.BackupMaxCount.ToString());
+
+            if (int.TryParse(input, out int maxBackups) && maxBackups > 0)
+            {
+                Settings.Default.BackupMaxCount = maxBackups;
+                Settings.Default.Save();
+                MessageBox.Show($"Max Backups set to {maxBackups}.", "Backup Settings", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show("Invalid number. Please enter a positive integer.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private void CreateModsBackup()
         {
             if (!Settings.Default.CreateBackup)
@@ -914,47 +959,41 @@ namespace KCD2_mod_manager
 
             try
             {
-                // Erstelle den Backup-Ordner im gleichen Verzeichnis wie der Mod-Ordner, z.B. "Mods_Backup"
-                string backupFolder = Path.Combine(Path.GetDirectoryName(ModFolder), "Mods_Backup");
+                string parentDir = Path.GetDirectoryName(ModFolder);
+                string backupRoot = Path.Combine(parentDir, "Mods_Backup");
 
-                // Falls der Backup-Ordner existiert, lösche ihn
-                if (Directory.Exists(backupFolder))
+                // Sicherstellen, dass der Backup-Ordner existiert
+                if (!Directory.Exists(backupRoot))
                 {
-                    Directory.Delete(backupFolder, true);
+                    Directory.CreateDirectory(backupRoot);
                 }
+
+                // Neuen Backup-Ordner mit Timestamp erstellen
+                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string backupFolder = Path.Combine(backupRoot, $"Mods_Backup_{timestamp}");
                 Directory.CreateDirectory(backupFolder);
 
-                // Kopiere alle Inhalte (Dateien und Unterordner) des Mod-Ordners in den Backup-Ordner
-                foreach (string dirPath in Directory.GetDirectories(ModFolder, "*", SearchOption.AllDirectories))
+                // Mods-Ordner in Backup kopieren
+                CopyDirectory(ModFolder, backupFolder);
+
+                // Alte Backups bereinigen, falls mehr als MaxCount existieren
+                int maxBackups = Settings.Default.BackupMaxCount;
+                var backupFolders = new DirectoryInfo(backupRoot).GetDirectories()
+                                    .OrderByDescending(d => d.CreationTime)
+                                    .ToList();
+
+                if (backupFolders.Count > maxBackups)
                 {
-                    // Erstelle das entsprechende Unterverzeichnis im Backup-Ordner
-                    string targetDir = dirPath.Replace(ModFolder, backupFolder);
-                    Directory.CreateDirectory(targetDir);
-                }
-                foreach (string filePath in Directory.GetFiles(ModFolder, "*.*", SearchOption.AllDirectories))
-                {
-                    string targetFile = filePath.Replace(ModFolder, backupFolder);
-                    File.Copy(filePath, targetFile, true);
+                    foreach (var oldBackup in backupFolders.Skip(maxBackups))
+                    {
+                        oldBackup.Delete(true);
+                    }
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to create mods backup: {ex.Message}", "Backup Error", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
-        }
-
-        private void ToggleBackupCreation_Click(object sender, RoutedEventArgs e)
-        {
-            // Toggle the CreateBackup setting
-            Settings.Default.CreateBackup = !Settings.Default.CreateBackup;
-            Settings.Default.Save();
-
-            // Zeige dem Benutzer, ob Backup creation jetzt aktiviert oder deaktiviert ist
-            MessageBox.Show("Backup creation is now " +
-                (Settings.Default.CreateBackup ? "enabled." : "disabled."),
-                "Backup Setting",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
         }
 
 

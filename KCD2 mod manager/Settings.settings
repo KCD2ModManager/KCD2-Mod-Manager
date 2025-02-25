@@ -41,14 +41,23 @@
     <Setting Name="EnableUpdateNotifications" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
-    <Setting Name="NexusUserToken" Type="System.String" Scope="User">
-      <Value Profile="(Default)">tlZXTG/himx76Oh3inbYN57EZMBoJF7LR3bpmVrJCaxrKG6R--DZDKCkCbBMATF+n4--wP6hOw5PN9oxo1u1Ktjfmg==</Value>
-    </Setting>
     <Setting Name="DontAskForNexusLogin" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="NexusUsername" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="NexusUserToken" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="BackupOnChange" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="BackupMaxCount" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">20</Value>
+    </Setting>
+    <Setting Name="BackupOnStartup" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
     </Setting>
   </Settings>
 </SettingsFile>
