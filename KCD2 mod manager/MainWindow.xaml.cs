@@ -624,7 +624,34 @@ namespace KCD2_mod_manager
 
                     // Generate download link for the chosen file using the Nexus Mods API
                     string downloadLinkEndpoint = $"https://api.nexusmods.com/v1/games/{gameDomain}/mods/{modNumber}/files/{fileToUse.file_id}/download_link.json";
-                    string downloadJson = await client.GetStringAsync(downloadLinkEndpoint);
+
+                    // Versuche, den Download-Link abzurufen
+                    HttpResponseMessage responseMessage = await client.GetAsync(downloadLinkEndpoint);
+
+                    if (responseMessage.StatusCode == HttpStatusCode.Forbidden)
+                    {
+                        // 403 => User ist kein Premium-Mitglied und muss manuell downloaden
+                        string url = $"https://www.nexusmods.com/{gameDomain}/mods/{modNumber}?tab=files";
+                        System.Diagnostics.Process.Start(new ProcessStartInfo
+                        {
+                            FileName = url,
+                            UseShellExecute = true
+                        });
+
+                        MessageBox.Show(
+                            "You are not a Premium user. Please download the latest version of the mod manually from the NexusMods website.\n" +
+                            "Once you have the file, you can install it as usual.",
+                            "Manual Download Required",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information
+                        );
+
+                        return; 
+                    }
+
+                    // Für Premium-Nutzer: alles wie gehabt
+                    responseMessage.EnsureSuccessStatusCode();
+                    string downloadJson = await responseMessage.Content.ReadAsStringAsync();
                     string downloadLink = null;
                     using (JsonDocument doc = JsonDocument.Parse(downloadJson))
                     {
