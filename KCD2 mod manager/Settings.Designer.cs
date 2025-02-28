@@ -181,7 +181,7 @@ namespace KCD2_mod_manager {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool DontAskForNexusLogin {
             get {
                 return ((bool)(this["DontAskForNexusLogin"]));
@@ -248,6 +248,78 @@ namespace KCD2_mod_manager {
             }
             set {
                 this["BackupOnStartup"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool NexusIsPremium {
+            get {
+                return ((bool)(this["NexusIsPremium"]));
+            }
+            set {
+                this["NexusIsPremium"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string NexusUserEmail {
+            get {
+                return ((string)(this["NexusUserEmail"]));
+            }
+            set {
+                this["NexusUserEmail"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public long NexusUserID {
+            get {
+                return ((long)(this["NexusUserID"]));
+            }
+            set {
+                this["NexusUserID"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string NexusUUID {
+            get {
+                return ((string)(this["NexusUUID"]));
+            }
+            set {
+                this["NexusUUID"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string NexusConnectionToken {
+            get {
+                return ((string)(this["NexusConnectionToken"]));
+            }
+            set {
+                this["NexusConnectionToken"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ModOrderEnabled {
+            get {
+                return ((bool)(this["ModOrderEnabled"]));
+            }
+            set {
+                this["ModOrderEnabled"] = value;
             }
         }
     }

@@ -23,12 +23,13 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 using Microsoft.VisualBasic;
 using System.Reflection;
 using System.Net;
+using System.Net.WebSockets;
 
 
 
 namespace KCD2_mod_manager
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, INotifyPropertyChanged
     {
         private const string DefaultGamePath = @"C:\Program Files (x86)\Steam\steamapps\common\KingdomComeDeliverance2\Bin\Win64MasterMasterSteamPGO\KingdomCome.exe";
         private string GamePath;
@@ -51,7 +52,12 @@ namespace KCD2_mod_manager
         private const string ModNotesFileName = "mod_notes.json";
         private Dictionary<string, string> modNotes = new Dictionary<string, string>();
 
-        private const string currentManagerVersion = "1.9";
+        private const string currentManagerVersion = "2.0";
+
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+
 
         public MainWindow()
         {
@@ -84,11 +90,23 @@ namespace KCD2_mod_manager
             this.Loaded += MainWindow_Loaded;
             this.Closing += MainWindow_Closing;
 
-            CheckNexusLoginStatusAsync();
+            //CheckNexusLoginStatusAsync();
 
             CheckForUpdateAsync();
             CheckForModUpdatesAsync();
 
+            this.DataContext = this;
+
+        }
+        public bool IsUserLoggedIn
+        {
+            get => !string.IsNullOrEmpty(Settings.Default.NexusUserToken);
+        }
+
+        // Call this method whenever the login status changes
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
         private async Task CheckNexusLoginStatusAsync()
         {
@@ -129,84 +147,155 @@ namespace KCD2_mod_manager
 
         private async Task StartNexusSSOAsync()
         {
-            // Generate a new UUID (GUID) for the SSO request
+            //store seesions:
+            //string uuid = Settings.Default.NexusUUID;
+            //string token = Settings.Default.NexusConnectionToken;
+            //if (string.IsNullOrEmpty(uuid))
+            //{
+            //    uuid = Guid.NewGuid().ToString();
+            //    token = null; // For the first connection, token is not needed.
+            //    Settings.Default.NexusUUID = uuid;
+            //    Settings.Default.NexusConnectionToken = token;
+            //    Settings.Default.Save();
+            //}
+            // Generate a new UUID for this SSO session.
             string uuid = Guid.NewGuid().ToString();
-            // Settings.Default.NexusSSO_UUID = uuid; Settings.Default.Save();
+            // The initial token is null for a first connection.
+            string token = null;
+            // Define the application slug provided by Nexus Mods.
+            string applicationSlug = "kcd2mm";
 
-            // Define your application slug (must be assigned by Nexus Mods staff) and redirect URI.
-            string applicationSlug = "kcd2modmanager"; // Replace with your app slug.
-            string redirectUri = "http://127.0.0.1:12345/ssocallback/"; // Must be registered in your Nexus SSO settings.
-
-            // Construct the SSO URL (this example includes a redirect URI parameter)
-            string ssoUrl = $"https://www.nexusmods.com/sso?id={uuid}&application={applicationSlug}&redirect_uri={Uri.EscapeDataString(redirectUri)}";
-
-            // Open the SSO URL in the user's default browser
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            // Establish a WebSocket connection to the Nexus SSO server.
+            using (var clientWebSocket = new ClientWebSocket())
             {
-                FileName = ssoUrl,
-                UseShellExecute = true
-            });
+                await clientWebSocket.ConnectAsync(new Uri("wss://sso.nexusmods.com"), CancellationToken.None);
 
-            // Start a local HTTP listener to catch the redirect with the API key
-            await StartLocalHttpListenerAsync(redirectUri);
-        }
-
-        private async Task StartLocalHttpListenerAsync(string redirectUri)
-        {
-            // Create an HttpListener with the prefix from redirectUri.
-            var listener = new HttpListener();
-            listener.Prefixes.Add(redirectUri);
-            try
-            {
-                listener.Start();
-
-                // Wait for an incoming request
-                var context = await listener.GetContextAsync();
-                var request = context.Request;
-
-                // Parse the query string for the API key and username
-                string apiKey = request.QueryString["api_key"];
-                string username = request.QueryString["username"];
-
-                // Save these values in settings (or use them as needed)
-                if (!string.IsNullOrEmpty(apiKey))
+                // Prepare the SSO request payload.
+                var requestData = new
                 {
-                    Settings.Default.NexusUserToken = apiKey;
-                    Settings.Default.NexusUsername = username ?? "";
-                    Settings.Default.Save();
+                    id = uuid,
+                    token = token,
+                    protocol = 2
+                };
+                string jsonRequest = JsonSerializer.Serialize(requestData);
+                var buffer = Encoding.UTF8.GetBytes(jsonRequest);
+
+                // Send the request to notify the SSO server that we're ready.
+                await clientWebSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
+
+                // Optionally, you may want to receive an initial response (e.g., a connection token).
+                var receiveBuffer = new byte[1024];
+                var result = await clientWebSocket.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), CancellationToken.None);
+                string responseJson = Encoding.UTF8.GetString(receiveBuffer, 0, result.Count);
+                // (You could parse and store the connection token from the response if needed.)
+
+                // Open the browser to the Nexus SSO authorisation page.
+                string url = $"https://www.nexusmods.com/sso?id={uuid}&application={applicationSlug}";
+                System.Diagnostics.Process.Start(new ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+
+                // Now wait for the API key to be delivered via the WebSocket.
+                result = await clientWebSocket.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), CancellationToken.None);
+                responseJson = Encoding.UTF8.GetString(receiveBuffer, 0, result.Count);
+
+                using (JsonDocument doc = JsonDocument.Parse(responseJson))
+                {
+                    if (doc.RootElement.TryGetProperty("success", out JsonElement successElement) && successElement.GetBoolean())
+                    {
+                        if (doc.RootElement.TryGetProperty("data", out JsonElement dataElement) &&
+                            dataElement.TryGetProperty("api_key", out JsonElement apiKeyElement))
+                        {
+                            string apiKey = apiKeyElement.GetString();
+                            // Save the API key to settings.
+                            Settings.Default.NexusUserToken = apiKey;
+                            Settings.Default.Save();
+
+                            // Validate the user details by calling the Nexus validate endpoint.
+                            await ValidateNexusUser(apiKey);
+                        }
+                        else
+                        {
+                            MessageBox.Show("API key was not received from Nexus SSO.", "SSO Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("Nexus SSO reported an error during login.", "SSO Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
 
-                // Send a simple response back to the browser
-                var response = context.Response;
-                string responseHtml = "<html><body>You are now logged in. You may close this window.</body></html>";
-                byte[] buffer = Encoding.UTF8.GetBytes(responseHtml);
-                response.ContentLength64 = buffer.Length;
-                await response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
-                response.OutputStream.Close();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error during Nexus SSO login: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            finally
-            {
-                listener.Stop();
-            }
-        }
-        private void LoginToNexus_Click(object sender, RoutedEventArgs e)
-        {
-            var loginWindow = new NexusSSOLoginWindow();
-            loginWindow.Owner = this;
-            loginWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-            if (loginWindow.ShowDialog() == true)
-            {
-                Settings.Default.NexusUserToken = loginWindow.Token;
-                Settings.Default.NexusUsername = loginWindow.Username;
-                Settings.Default.Save();
-                StatusLabel.Content = $"Logged in as {Settings.Default.NexusUsername}";
+                // Close the WebSocket connection.
+                await clientWebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Completed", CancellationToken.None);
             }
         }
 
+        private async Task ValidateNexusUser(string apiKey)
+        {
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Add("apikey", apiKey);
+                string validateUrl = "https://api.nexusmods.com/v1/users/validate.json";
+                var response = await client.GetAsync(validateUrl);
+                response.EnsureSuccessStatusCode();
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+
+                // Parse the response and store user details.
+                using (JsonDocument doc = JsonDocument.Parse(jsonResponse))
+                {
+                    if (doc.RootElement.TryGetProperty("user_id", out JsonElement userIdElement))
+                    {
+                        // Assuming NexusUserID is a long property in your settings.
+                        Settings.Default.NexusUserID = userIdElement.GetInt64();
+                    }
+                    if (doc.RootElement.TryGetProperty("name", out JsonElement nameElement))
+                    {
+                        Settings.Default.NexusUsername = nameElement.GetString();
+                    }
+                    if (doc.RootElement.TryGetProperty("email", out JsonElement emailElement))
+                    {
+                        Settings.Default.NexusUserEmail = emailElement.GetString();
+                    }
+                    if (doc.RootElement.TryGetProperty("is_premium", out JsonElement isPremiumElement))
+                    {
+                        Settings.Default.NexusIsPremium = isPremiumElement.GetBoolean();
+                    }
+                    // Save the settings
+                    Settings.Default.Save();
+                }
+            }
+        }
+
+        private void LogoutMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            // Clear all Nexus-related settings.
+            Settings.Default.NexusUserToken = string.Empty;
+            Settings.Default.NexusUsername = string.Empty;
+            Settings.Default.NexusUserEmail = string.Empty;
+            Settings.Default.NexusUserID = 0;
+            Settings.Default.NexusIsPremium = false;
+            Settings.Default.Save();
+
+            // Optionally update the UI status label.
+            StatusLabel.Content = "Not logged in to Nexus Mods";
+
+            // Raise property changed for IsUserLoggedIn if using data binding.
+            OnPropertyChanged(nameof(IsUserLoggedIn));
+        }
+
+        private async void LoginMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            await StartNexusSSOAsync();
+
+            // Optionally, update your status label or refresh bindings
+            if (IsUserLoggedInToNexus())
+            {
+                StatusLabel.Content = $"Logged in as {Settings.Default.NexusUsername}";
+                OnPropertyChanged(nameof(IsUserLoggedIn));
+            }
+        }
 
         private async void CheckForUpdateAsync()
         {
@@ -262,7 +351,6 @@ namespace KCD2_mod_manager
                 return;
             }
 
-            // Deserialize into Dictionary<string, ModVersionInfo>
             var modData = JsonSerializer.Deserialize<Dictionary<string, ModVersionInfo>>(json);
             if (modData == null)
             {
@@ -274,22 +362,23 @@ namespace KCD2_mod_manager
 
             using (var client = new HttpClient())
             {
-                // For each mod stored in the JSON
                 foreach (var modEntry in modData)
                 {
                     string modId = modEntry.Key;
-                    int modNumber = modEntry.Value.ModNumber;  // the mod number stored during installation
+                    ModVersionInfo versionInfo = modEntry.Value;
 
-                    // Debug output
+                    // Skip update check if disabled for this mod
+                    if (!versionInfo.UpdateChecksEnabled)
+                        continue;
+
+                    int modNumber = versionInfo.ModNumber;
                     Debug.WriteLine($"Processing mod: {modId}, ModNumber: {modNumber}");
 
-                    // Get the corresponding mod object from the Mods collection
                     var modItem = Mods.FirstOrDefault(m => m.Id.Equals(modId, StringComparison.OrdinalIgnoreCase));
                     if (modItem != null)
                     {
-                        modItem.ModNumber = modNumber;  // update if necessary
-
-                        string installedVersion = modItem.Version; // installed version
+                        modItem.ModNumber = modNumber;
+                        string installedVersion = modItem.Version;
                         string url = $"https://www.nexusmods.com/kingdomcomedeliverance2/mods/{modNumber}";
 
                         try
@@ -319,10 +408,47 @@ namespace KCD2_mod_manager
         }
 
 
+        private void ToggleUpdateCheck_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.DataContext is Mod mod)
+            {
+                string jsonPath = Path.Combine(ModFolder, "mod_versions.json");
+                if (File.Exists(jsonPath))
+                {
+                    string json = File.ReadAllText(jsonPath);
+                    var serializerOptions = new JsonSerializerOptions { WriteIndented = true };
+                    var modData = JsonSerializer.Deserialize<Dictionary<string, ModVersionInfo>>(json, serializerOptions);
+
+                    if (modData != null && modData.TryGetValue(mod.Id, out ModVersionInfo info))
+                    {
+                        // Toggle the update check setting
+                        info.UpdateChecksEnabled = !info.UpdateChecksEnabled;
+
+                        // If update checks are now disabled, ensure that mod.HasUpdate is false.
+                        if (!info.UpdateChecksEnabled)
+                        {
+                            mod.HasUpdate = false;
+                            ModList.Items.Refresh();
+                        }
+
+                        File.WriteAllText(jsonPath, JsonSerializer.Serialize(modData, serializerOptions));
+
+                        MessageBox.Show($"Update checks {(info.UpdateChecksEnabled ? "enabled" : "disabled")} for {mod.Name}.",
+                                        "Update Check Toggled", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Mod data not found.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+        }
 
 
 
-        private void SaveModVersion(string modId, string version, int modNumber, string installedFileName)
+
+
+        private void SaveModVersion(string modId, string version, int modNumber, string installedFileName, bool updateChecksEnabled = true)
         {
             string jsonPath = Path.Combine(ModFolder, "mod_versions.json");
             Dictionary<string, ModVersionInfo> modData;
@@ -335,7 +461,6 @@ namespace KCD2_mod_manager
             if (File.Exists(jsonPath))
             {
                 string json = File.ReadAllText(jsonPath);
-                // Deserialisieren in das Dictionary mit dem eigenen Typ
                 modData = JsonSerializer.Deserialize<Dictionary<string, ModVersionInfo>>(json, serializerOptions);
             }
             else
@@ -347,11 +472,13 @@ namespace KCD2_mod_manager
             {
                 Version = version,
                 ModNumber = modNumber,
-                FileName = installedFileName
+                FileName = installedFileName,
+                UpdateChecksEnabled = updateChecksEnabled
             };
 
             File.WriteAllText(jsonPath, JsonSerializer.Serialize(modData, serializerOptions));
         }
+
 
 
         public class ModVersionInfo
@@ -359,6 +486,7 @@ namespace KCD2_mod_manager
             public string Version { get; set; }
             public int ModNumber { get; set; }
             public string FileName { get; set; }
+            public bool UpdateChecksEnabled { get; set; } = true;
         }
 
 
@@ -1234,8 +1362,11 @@ namespace KCD2_mod_manager
 
             Mods.Clear();
 
+
+
             // Lese mod_order.txt zeilenweise und interpretiere sie als (modId, isEnabled)
-            var modOrderPath = Path.Combine(ModFolder, "mod_order.txt");
+            string modOrderFileName = Settings.Default.ModOrderEnabled ? "mod_order.txt" : "mod_order_backup.txt";
+            var modOrderPath = Path.Combine(ModFolder, modOrderFileName);
             var modOrderList = new List<(string modId, bool isEnabled)>();
             if (File.Exists(modOrderPath))
             {
@@ -1379,7 +1510,6 @@ namespace KCD2_mod_manager
             string json = JsonSerializer.Serialize(modNotes, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(notesPath, json);
         }
-
 
         private void UpdateModsEnabledCount()
         {
@@ -1713,10 +1843,43 @@ namespace KCD2_mod_manager
 
         private void SaveModOrder()
         {
-            var modOrderPath = Path.Combine(ModFolder, "mod_order.txt");
+            // Choose file based on the ModOrderEnabled setting.
+            string modOrderFileName = Settings.Default.ModOrderEnabled ? "mod_order.txt" : "mod_order_backup.txt";
+            string modOrderPath = Path.Combine(ModFolder, modOrderFileName);
+
             var modOrder = Mods.Select(mod => mod.IsEnabled ? mod.Id : $"# {mod.Id}").ToList();
             File.WriteAllLines(modOrderPath, modOrder);
-            StatusLabel.Content = "Mod order saved.";
+            StatusLabel.Content = $"Mod order saved to {modOrderFileName}.";
+        }
+
+        private void ToggleModOrderCreation_Click(object sender, RoutedEventArgs e)
+        {
+            // Toggle Setting
+            Settings.Default.ModOrderEnabled = !Settings.Default.ModOrderEnabled;
+            Settings.Default.Save();
+
+            string enabledFile = Path.Combine(ModFolder, "mod_order.txt");
+            string backupFile = Path.Combine(ModFolder, "mod_order_backup.txt");
+
+            if (Settings.Default.ModOrderEnabled)
+            {
+                // Wenn aktiviert, stelle die Reihenfolge von der Backup-Datei wieder her (falls vorhanden)
+                if (File.Exists(backupFile))
+                {
+                    File.Copy(backupFile, enabledFile, true);
+                }
+                MessageBox.Show("Mod order creation has been enabled.", "Settings", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                // Wenn deaktiviert, speichere die aktuelle Reihenfolge in das Backup
+                if (File.Exists(enabledFile))
+                {
+                    File.Copy(enabledFile, backupFile, true);
+                    File.Delete(enabledFile); // Lösche mod_order.txt, da es nicht mehr verwendet wird
+                }
+                MessageBox.Show("Mod order creation has been disabled. mod_order.txt has been deleted.", "Settings", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
 
 
@@ -2345,8 +2508,93 @@ namespace KCD2_mod_manager
             Settings.Default.Save();
             MessageBox.Show($"Dev Mode is now {(Settings.Default.IsDevMode ? "enabled" : "disabled")}.", "Dev Mode", MessageBoxButton.OK, MessageBoxImage.Information);
         }
+        private void ChangeModNumber_Click(object sender, RoutedEventArgs e)
+        {
+            // 1. Bestimmen, welches Mod-Objekt geklickt wurde.
+            Mod mod = null;
+            if (sender is MenuItem menuItem && menuItem.DataContext is Mod dataMod)
+            {
+                mod = dataMod;
+            }
+            else if (sender is MenuItem mi && mi.DataContext is Mod modMenu)
+            {
+                mod = modMenu;
+            }
 
+            if (mod == null)
+            {
+                MessageBox.Show("No mod selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
 
+            // 2. Dialog anzeigen, um eine neue Mod-Nummer abzufragen.
+            //    Du kannst hier deinen bereits existierenden NameInputDialog wiederverwenden.
+            //    Der zweite Parameter im Konstruktor (oder die Zuweisung "dialog.Prompt") ist dein Prompt-Text.
+            NameInputDialog dialog = new NameInputDialog(mod.ModNumber > 0 ? mod.ModNumber.ToString() : "")
+            {
+                Prompt = "Enter new mod number:",
+                Owner = this,
+                Title = "Change Mod Number",
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                // 3. Neue Eingabe validieren
+                if (int.TryParse(dialog.EnteredText, out int newModNumber))
+                {
+                    // 4. Mod-Objekt aktualisieren
+                    mod.ModNumber = newModNumber;
+
+                    // 5. In mod_versions.json speichern
+                    //    Hier brauchst du das zuletzt installierte FileName. 
+                    //    Entweder hast du es noch in mod.FileName, 
+                    //    oder du lädst es aus mod_versions.json, um es wieder zu verwenden.
+                    //    Beispiel: wir holen es aus der JSON-Datei, falls nötig:
+                    string installedFileName = GetInstalledFileNameFromJson(mod.Id);
+
+                    // Falls in der JSON noch kein Eintrag vorhanden, fallback auf z.B. mod.Name oder ""
+                    if (string.IsNullOrEmpty(installedFileName))
+                        installedFileName = "unknown_file";
+
+                    SaveModVersion(mod.Id, mod.Version, newModNumber, installedFileName);
+
+                    // Optional: UI aktualisieren oder weitere Aktionen
+                    // ...
+                    MessageBox.Show($"Mod number updated to {newModNumber}.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                    RefreshAlternationIndexes();
+                }
+                else
+                {
+                    MessageBox.Show("Invalid number entered. Change aborted.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private string GetInstalledFileNameFromJson(string modId)
+        {
+            string jsonPath = Path.Combine(ModFolder, "mod_versions.json");
+            if (!File.Exists(jsonPath)) return null;
+
+            try
+            {
+                string json = File.ReadAllText(jsonPath);
+                var serializerOptions = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                var modData = JsonSerializer.Deserialize<Dictionary<string, ModVersionInfo>>(json, serializerOptions);
+                if (modData != null && modData.TryGetValue(modId, out ModVersionInfo info))
+                {
+                    return info.FileName;
+                }
+            }
+            catch
+            {
+                // Fehler ignorieren oder loggen
+            }
+            return null;
+        }
 
 
     }
