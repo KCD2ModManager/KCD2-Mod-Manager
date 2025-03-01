@@ -1302,6 +1302,18 @@ namespace KCD2_mod_manager
             // Lade den GamePath aus den Einstellungen
             GamePath = Settings.Default.GamePath;
 
+            if (!string.IsNullOrWhiteSpace(GamePath))
+            {
+                // Neue Validierung der Dateierweiterung
+                if (!Path.GetExtension(GamePath).Equals(".exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    MessageBox.Show("Invalid file type in settings. Only .exe files are allowed.", "Security Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    GamePath = null; // Erzwinge Neuaustwahl
+                    Settings.Default.GamePath = ""; // Zurücksetzen
+                    Settings.Default.Save();
+                }
+            }
+
             if (string.IsNullOrWhiteSpace(GamePath))
             {
                 // Prüfe den Standardpfad
@@ -1556,6 +1568,12 @@ namespace KCD2_mod_manager
             if (!File.Exists(GamePath))
             {
                 MessageBox.Show("The game executable path is invalid. Please update the path in settings before starting the game.", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (!Path.GetExtension(GamePath).Equals(".exe", StringComparison.OrdinalIgnoreCase))
+            {
+                MessageBox.Show("Only .exe files can be executed.", "Security Blocked", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
