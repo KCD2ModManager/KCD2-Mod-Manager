@@ -52,7 +52,7 @@ namespace KCD2_mod_manager
         private const string ModNotesFileName = "mod_notes.json";
         private Dictionary<string, string> modNotes = new Dictionary<string, string>();
 
-        private const string currentManagerVersion = "2.0";
+        private const string currentManagerVersion = "2.1";
 
 
         public event PropertyChangedEventHandler PropertyChanged;
