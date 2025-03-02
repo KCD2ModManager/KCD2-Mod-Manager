@@ -58,7 +58,6 @@ namespace KCD2_mod_manager
         public event PropertyChangedEventHandler PropertyChanged;
 
 
-
         public MainWindow()
         {
 
@@ -75,7 +74,7 @@ namespace KCD2_mod_manager
                 CreateModsBackup();
             }
 
-
+            
 
             //InitializeModFolderWatcher();
             LoadMods();
@@ -98,6 +97,28 @@ namespace KCD2_mod_manager
             this.DataContext = this;
 
         }
+
+        private void OpenSettingsWindow_Click(object sender, RoutedEventArgs e)
+        {
+            var settingsWindow = new SettingsWindow();
+            settingsWindow.Owner = this;
+
+            // After the settings window is closed, refresh the UI
+
+
+            settingsWindow.ThemeChanged += (s, args) =>
+            {
+                isDarkMode = Settings.Default.IsDarkMode;
+                this.UpdateTheme();
+            };
+
+            settingsWindow.ShowDialog();
+            //isDarkMode = Settings.Default.IsDarkMode;
+            CheckAndLoadGamePath(); // In case the game path changed.
+            LoadMods();
+            //UpdateTheme();
+        }
+
         public bool IsUserLoggedIn
         {
             get => !string.IsNullOrEmpty(Settings.Default.NexusUserToken);
@@ -1026,19 +1047,6 @@ namespace KCD2_mod_manager
             }
         }
 
-
-
-
-        private void ToggleUpdateNotifications_Click(object sender, RoutedEventArgs e)
-        {
-            // Umschalten der Update-Benachrichtigungen
-            Settings.Default.EnableUpdateNotifications = !Settings.Default.EnableUpdateNotifications;
-            Settings.Default.Save();
-
-            string status = Settings.Default.EnableUpdateNotifications ? "enabled" : "disabled";
-            MessageBox.Show("Update notifications are now " + status + ".", "Update Notifications", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
         private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             // Speichern nur im Normalzustand
@@ -1063,48 +1071,6 @@ namespace KCD2_mod_manager
 
             // Änderungen in den Settings speichern
             Settings.Default.Save();
-        }
-
-        private void ToggleBackupCreation_Click(object sender, RoutedEventArgs e)
-        {
-            Settings.Default.CreateBackup = !Settings.Default.CreateBackup;
-            Settings.Default.Save();
-            MessageBox.Show($"Backup Creation is now {(Settings.Default.CreateBackup ? "Enabled" : "Disabled")}.",
-                            "Backup Settings", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        private void ToggleBackupOnStartup_Click(object sender, RoutedEventArgs e)
-        {
-            Settings.Default.BackupOnStartup = !Settings.Default.BackupOnStartup;
-            Settings.Default.Save();
-            MessageBox.Show($"Backup on Startup is now {(Settings.Default.BackupOnStartup ? "Enabled" : "Disabled")}.",
-                            "Backup Settings", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        private void ToggleBackupOnChange_Click(object sender, RoutedEventArgs e)
-        {
-            Settings.Default.BackupOnChange = !Settings.Default.BackupOnChange;
-            Settings.Default.Save();
-            MessageBox.Show($"Backup on Mod Folder Change is now {(Settings.Default.BackupOnChange ? "Enabled" : "Disabled")}.",
-                            "Backup Settings", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        private void SetMaxBackups_Click(object sender, RoutedEventArgs e)
-        {
-            string input = Microsoft.VisualBasic.Interaction.InputBox("Enter the maximum number of backups to keep:",
-                                                                       "Set Max Backups",
-                                                                       Settings.Default.BackupMaxCount.ToString());
-
-            if (int.TryParse(input, out int maxBackups) && maxBackups > 0)
-            {
-                Settings.Default.BackupMaxCount = maxBackups;
-                Settings.Default.Save();
-                MessageBox.Show($"Max Backups set to {maxBackups}.", "Backup Settings", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                MessageBox.Show("Invalid number. Please enter a positive integer.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
         }
 
         private void CreateModsBackup()
@@ -1870,57 +1836,6 @@ namespace KCD2_mod_manager
             StatusLabel.Content = $"Mod order saved to {modOrderFileName}.";
         }
 
-        private void ToggleModOrderCreation_Click(object sender, RoutedEventArgs e)
-        {
-            // Toggle Setting
-            Settings.Default.ModOrderEnabled = !Settings.Default.ModOrderEnabled;
-            Settings.Default.Save();
-
-            string enabledFile = Path.Combine(ModFolder, "mod_order.txt");
-            string backupFile = Path.Combine(ModFolder, "mod_order_backup.txt");
-
-            if (Settings.Default.ModOrderEnabled)
-            {
-                // Wenn aktiviert, stelle die Reihenfolge von der Backup-Datei wieder her (falls vorhanden)
-                if (File.Exists(backupFile))
-                {
-                    File.Copy(backupFile, enabledFile, true);
-                }
-                MessageBox.Show("Mod order creation has been enabled.", "Settings", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                // Wenn deaktiviert, speichere die aktuelle Reihenfolge in das Backup
-                if (File.Exists(enabledFile))
-                {
-                    File.Copy(enabledFile, backupFile, true);
-                    File.Delete(enabledFile); // Lösche mod_order.txt, da es nicht mehr verwendet wird
-                }
-                MessageBox.Show("Mod order creation has been disabled. mod_order.txt has been deleted.", "Settings", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-        }
-
-
-
-        private void SettingsMenu_Click(object sender, RoutedEventArgs e)
-        {
-            var openFileDialog = new OpenFileDialog
-            {
-                Filter = "Game Executable (*.exe)|*.exe",
-                Title = "Select Kingdom Come Deliverance 2 Executable"
-            };
-
-            if (openFileDialog.ShowDialog() == true)
-            {
-                GamePath = openFileDialog.FileName;
-                SaveGamePath();
-                //GamePathTextBox.Text = GamePath;
-                StatusLabel.Content = "Game path updated.";
-            }
-        }
-
-
-
         private void ExtractArchive(string archivePath, string destination)
         {
             using (var archive = ArchiveFactory.Open(archivePath))
@@ -2172,25 +2087,6 @@ namespace KCD2_mod_manager
                 ForceUIRefresh();
             }
         }
-
-
-
-
-
-        private void ToggleDarkMode_Click(object sender, RoutedEventArgs e)
-        {
-            // Dark Mode-Zustand umschalten
-            isDarkMode = !isDarkMode;
-            // Speichere den aktuellen Zustand in den Settings
-            Settings.Default.IsDarkMode = isDarkMode;
-            Settings.Default.Save();
-
-            // Aktualisiere das Theme
-            UpdateTheme();
-        }
-
-
-
 
         private void Window_DragOver(object sender, DragEventArgs e)
         {
@@ -2467,7 +2363,7 @@ namespace KCD2_mod_manager
             if (sender is Button button && button.DataContext is Mod mod)
             {
                 // Prüfe, ob die Sicherheitsabfrage übersprungen werden soll
-                if (!Settings.Default.DontAskOnDelete)
+                if (Settings.Default.AskOnDelete)
                 {
                     var confirmationWindow = new DeleteConfirmationWindow();
                     confirmationWindow.Owner = this; // Setze den Hauptfensterbesitzer
@@ -2479,7 +2375,7 @@ namespace KCD2_mod_manager
                     // Speichere die Option "Don't ask again"
                     if (confirmationWindow.DontAskAgain)
                     {
-                        Settings.Default.DontAskOnDelete = true;
+                        Settings.Default.AskOnDelete = false;
                         Settings.Default.Save();
                     }
                 }
@@ -2509,22 +2405,6 @@ namespace KCD2_mod_manager
             {
                 MessageBox.Show("Failed to identify the mod to delete.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-        }
-
-        private void EnableDeleteConfirmation_Click(object sender, RoutedEventArgs e)
-        {
-            // Lösche die Einstellung für "Don't ask again"
-            Settings.Default.DontAskOnDelete = false;
-            Settings.Default.Save();
-            MessageBox.Show("Delete confirmation has been re-enabled.", "Settings", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-
-        private void ToggleDevMode_Click(object sender, RoutedEventArgs e)
-        {
-            Settings.Default.IsDevMode = !Settings.Default.IsDevMode;
-            Settings.Default.Save();
-            MessageBox.Show($"Dev Mode is now {(Settings.Default.IsDevMode ? "enabled" : "disabled")}.", "Dev Mode", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         private void ChangeModNumber_Click(object sender, RoutedEventArgs e)
         {
@@ -2613,8 +2493,6 @@ namespace KCD2_mod_manager
             }
             return null;
         }
-
-
     }
 
     public class Mod

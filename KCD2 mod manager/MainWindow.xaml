@@ -49,21 +49,8 @@
     <Grid Margin="10" Background="{DynamicResource WindowBackgroundBrush}">
         <!-- Menu -->
         <Menu VerticalAlignment="Top" Margin="0,0,0,10" Background="{DynamicResource WindowBackgroundBrush}" >
-            <MenuItem Header="Settings" Foreground="{DynamicResource ListBoxForegroundBrush}">
-                <MenuItem Header="Set Game Path" Click="SettingsMenu_Click" Foreground="Black"/>
-                <MenuItem Header="Enable Delete Confirmation" Click="EnableDeleteConfirmation_Click" Foreground="Black"/>
-                <MenuItem Header="Toggle Dark Mode" Click="ToggleDarkMode_Click" Foreground="Black"/>
-                <MenuItem Header="Toggle Devmode" Click="ToggleDevMode_Click" Foreground="Black"/>
-                <MenuItem Header="Toggle Update Notifications" Click="ToggleUpdateNotifications_Click" Foreground="Black"/>
+            <MenuItem Header="Settings" Click="OpenSettingsWindow_Click"  Foreground="{DynamicResource ListBoxForegroundBrush}"/>
 
-                <MenuItem Header="Toggle Mod Order Creation" Click="ToggleModOrderCreation_Click" Foreground="Black"/>
-            </MenuItem>
-            <MenuItem Header="Backup Settings" Foreground="{DynamicResource ListBoxForegroundBrush}">
-                <MenuItem Header="Toggle Backup Creation" Click="ToggleBackupCreation_Click" Foreground="Black"/>
-                <MenuItem Header="Backup on Startup" Click="ToggleBackupOnStartup_Click" Foreground="Black"/>
-                <!--<MenuItem Header="Backup on Change" Click="ToggleBackupOnChange_Click" Foreground="Black"/>-->
-                <MenuItem Header="Set Max Backups" Click="SetMaxBackups_Click" Foreground="Black"/>
-            </MenuItem>
 
             <MenuItem Header="Log in to Nexus Mods" 
                       Foreground="{DynamicResource ListBoxForegroundBrush}"

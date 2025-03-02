@@ -25,13 +25,13 @@ namespace KCD2_mod_manager {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool DontAskOnDelete {
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool AskOnDelete {
             get {
-                return ((bool)(this["DontAskOnDelete"]));
+                return ((bool)(this["AskOnDelete"]));
             }
             set {
-                this["DontAskOnDelete"] = value;
+                this["AskOnDelete"] = value;
             }
         }
         
