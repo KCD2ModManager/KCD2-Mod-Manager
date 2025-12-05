@@ -1,1148 +1,86 @@
-﻿using Microsoft.Win32;
-using SharpCompress.Archives;
-using SharpCompress.Common;
-using System;
-using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Xml.Linq;
-using System.Security.Cryptography;
-using System.Text;
 using System.Windows.Data;
-using System.ComponentModel;
-using System.Net.Http;
-using System.Diagnostics;
-using System.Text.Json;
-using System.Xml;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using Microsoft.VisualBasic;
-using System.Reflection;
-using System.Net;
-using System.Net.WebSockets;
-
-
+using Microsoft.Extensions.DependencyInjection;
+using KCD2_mod_manager.ViewModels;
+using KCD2_mod_manager.Services;
+using KCD2_mod_manager.Models;
 
 namespace KCD2_mod_manager
 {
-    public partial class MainWindow : Window, INotifyPropertyChanged
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : Window
     {
-        private const string DefaultGamePath = @"C:\Program Files (x86)\Steam\steamapps\common\KingdomComeDeliverance2\Bin\Win64MasterMasterSteamPGO\KingdomCome.exe";
-        private string GamePath;
-        private string ModFolder;
+        private MainWindowViewModel? _viewModel;
         private Point _dragStartPoint;
 
-        // Neue Felder:
-        private bool isDarkMode = false;
-        private bool sortByLoadOrder = true; // true: sortiert nach load order (Drag&Drop aktiv), false: sortiert nach Titel
-        private bool? savedSortByLoadOrder = null;
-        private string additionalLaunchArgs = Settings.Default.GameLaunchArgs;
-
-        private ObservableCollection<Mod> Mods = new ObservableCollection<Mod>();
-
-        private ICollectionView ModsView;
-
-        private FileSystemWatcher modFolderWatcher;
-
-
-        private const string ModNotesFileName = "mod_notes.json";
-        private Dictionary<string, string> modNotes = new Dictionary<string, string>();
-
-        private const string currentManagerVersion = "2.1";
-
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-
-        public MainWindow()
+        public MainWindow(MainWindowViewModel viewModel)
         {
-
-
             InitializeComponent();
+            _viewModel = viewModel;
+            DataContext = _viewModel;
 
-            isDarkMode = Settings.Default.IsDarkMode;
-            UpdateTheme();
+            // ModsView für Filter setzen - nachdem ItemsSource gesetzt wurde
+            ModList.ItemsSource = _viewModel.Mods;
+            var modsView = CollectionViewSource.GetDefaultView(ModList.ItemsSource);
+            _viewModel.SetModsView(modsView);
 
-
-            CheckAndLoadGamePath();
-            if (Settings.Default.BackupOnStartup)
-            {
-                CreateModsBackup();
-            }
-
-            
-
-            //InitializeModFolderWatcher();
-            LoadMods();
-            ModsView = CollectionViewSource.GetDefaultView(Mods);
-            ModList.ItemsSource = Mods;
-
-            // Enable Drag-and-Drop
+            // Event-Handler für Drag & Drop und UI-spezifische Events
             this.AllowDrop = true;
             this.DragOver += Window_DragOver;
             this.Drop += Window_Drop;
-
             this.Loaded += MainWindow_Loaded;
             this.Closing += MainWindow_Closing;
 
-            //CheckNexusLoginStatusAsync();
-
-            CheckForUpdateAsync();
-            CheckForModUpdatesAsync();
-
-            this.DataContext = this;
-
+            // Theme initialisieren
+            UpdateTheme();
         }
-
-        private void OpenSettingsWindow_Click(object sender, RoutedEventArgs e)
-        {
-            var settingsWindow = new SettingsWindow();
-            settingsWindow.Owner = this;
-
-            // After the settings window is closed, refresh the UI
-
-
-            settingsWindow.ThemeChanged += (s, args) =>
-            {
-                isDarkMode = Settings.Default.IsDarkMode;
-                this.UpdateTheme();
-            };
-
-            settingsWindow.ShowDialog();
-            //isDarkMode = Settings.Default.IsDarkMode;
-            CheckAndLoadGamePath(); // In case the game path changed.
-            LoadMods();
-            //UpdateTheme();
-        }
-
-        public bool IsUserLoggedIn
-        {
-            get => !string.IsNullOrEmpty(Settings.Default.NexusUserToken);
-        }
-
-        // Call this method whenever the login status changes
-        protected void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-        private async Task CheckNexusLoginStatusAsync()
-        {
-            if (!IsUserLoggedInToNexus() && !Settings.Default.DontAskForNexusLogin)
-            {
-                var result = MessageBox.Show(
-                    "You are not logged in to Nexus Mods. Do you want to log in now?\n\n(Click 'Cancel' to not be prompted again.)",
-                    "Nexus Login Required",
-                    MessageBoxButton.YesNoCancel,
-                    MessageBoxImage.Question);
-
-                if (result == MessageBoxResult.Yes)
-                {
-                    await StartNexusSSOAsync();
-                }
-                else if (result == MessageBoxResult.Cancel)
-                {
-                    Settings.Default.DontAskForNexusLogin = true;
-                    Settings.Default.Save();
-                }
-            }
-
-            // Update status label
-            if (IsUserLoggedInToNexus())
-            {
-                StatusLabel.Content = $"Logged in as {Settings.Default.NexusUsername}";
-            }
-            else
-            {
-                StatusLabel.Content = "Not logged in to Nexus Mods";
-            }
-        }
-
-        private bool IsUserLoggedInToNexus()
-        {
-            return !string.IsNullOrEmpty(Settings.Default.NexusUserToken);
-        }
-
-        private async Task StartNexusSSOAsync()
-        {
-            //store seesions:
-            //string uuid = Settings.Default.NexusUUID;
-            //string token = Settings.Default.NexusConnectionToken;
-            //if (string.IsNullOrEmpty(uuid))
-            //{
-            //    uuid = Guid.NewGuid().ToString();
-            //    token = null; // For the first connection, token is not needed.
-            //    Settings.Default.NexusUUID = uuid;
-            //    Settings.Default.NexusConnectionToken = token;
-            //    Settings.Default.Save();
-            //}
-            // Generate a new UUID for this SSO session.
-            string uuid = Guid.NewGuid().ToString();
-            // The initial token is null for a first connection.
-            string token = null;
-            // Define the application slug provided by Nexus Mods.
-            string applicationSlug = "kcd2mm";
-
-            // Establish a WebSocket connection to the Nexus SSO server.
-            using (var clientWebSocket = new ClientWebSocket())
-            {
-                await clientWebSocket.ConnectAsync(new Uri("wss://sso.nexusmods.com"), CancellationToken.None);
-
-                // Prepare the SSO request payload.
-                var requestData = new
-                {
-                    id = uuid,
-                    token = token,
-                    protocol = 2
-                };
-                string jsonRequest = JsonSerializer.Serialize(requestData);
-                var buffer = Encoding.UTF8.GetBytes(jsonRequest);
-
-                // Send the request to notify the SSO server that we're ready.
-                await clientWebSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
-
-                // Optionally, you may want to receive an initial response (e.g., a connection token).
-                var receiveBuffer = new byte[1024];
-                var result = await clientWebSocket.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), CancellationToken.None);
-                string responseJson = Encoding.UTF8.GetString(receiveBuffer, 0, result.Count);
-                // (You could parse and store the connection token from the response if needed.)
-
-                // Open the browser to the Nexus SSO authorisation page.
-                string url = $"https://www.nexusmods.com/sso?id={uuid}&application={applicationSlug}";
-                System.Diagnostics.Process.Start(new ProcessStartInfo
-                {
-                    FileName = url,
-                    UseShellExecute = true
-                });
-
-                // Now wait for the API key to be delivered via the WebSocket.
-                result = await clientWebSocket.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), CancellationToken.None);
-                responseJson = Encoding.UTF8.GetString(receiveBuffer, 0, result.Count);
-
-                using (JsonDocument doc = JsonDocument.Parse(responseJson))
-                {
-                    if (doc.RootElement.TryGetProperty("success", out JsonElement successElement) && successElement.GetBoolean())
-                    {
-                        if (doc.RootElement.TryGetProperty("data", out JsonElement dataElement) &&
-                            dataElement.TryGetProperty("api_key", out JsonElement apiKeyElement))
-                        {
-                            string apiKey = apiKeyElement.GetString();
-                            // Save the API key to settings.
-                            Settings.Default.NexusUserToken = apiKey;
-                            Settings.Default.Save();
-
-                            // Validate the user details by calling the Nexus validate endpoint.
-                            await ValidateNexusUser(apiKey);
-                        }
-                        else
-                        {
-                            MessageBox.Show("API key was not received from Nexus SSO.", "SSO Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        }
-                    }
-                    else
-                    {
-                        MessageBox.Show("Nexus SSO reported an error during login.", "SSO Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                }
-
-                // Close the WebSocket connection.
-                await clientWebSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Completed", CancellationToken.None);
-            }
-        }
-
-        private async Task ValidateNexusUser(string apiKey)
-        {
-            using (var client = new HttpClient())
-            {
-                client.DefaultRequestHeaders.Add("apikey", apiKey);
-                string validateUrl = "https://api.nexusmods.com/v1/users/validate.json";
-                var response = await client.GetAsync(validateUrl);
-                response.EnsureSuccessStatusCode();
-                string jsonResponse = await response.Content.ReadAsStringAsync();
-
-                // Parse the response and store user details.
-                using (JsonDocument doc = JsonDocument.Parse(jsonResponse))
-                {
-                    if (doc.RootElement.TryGetProperty("user_id", out JsonElement userIdElement))
-                    {
-                        // Assuming NexusUserID is a long property in your settings.
-                        Settings.Default.NexusUserID = userIdElement.GetInt64();
-                    }
-                    if (doc.RootElement.TryGetProperty("name", out JsonElement nameElement))
-                    {
-                        Settings.Default.NexusUsername = nameElement.GetString();
-                    }
-                    if (doc.RootElement.TryGetProperty("email", out JsonElement emailElement))
-                    {
-                        Settings.Default.NexusUserEmail = emailElement.GetString();
-                    }
-                    if (doc.RootElement.TryGetProperty("is_premium", out JsonElement isPremiumElement))
-                    {
-                        Settings.Default.NexusIsPremium = isPremiumElement.GetBoolean();
-                    }
-                    // Save the settings
-                    Settings.Default.Save();
-                }
-            }
-        }
-
-        private void LogoutMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            // Clear all Nexus-related settings.
-            Settings.Default.NexusUserToken = string.Empty;
-            Settings.Default.NexusUsername = string.Empty;
-            Settings.Default.NexusUserEmail = string.Empty;
-            Settings.Default.NexusUserID = 0;
-            Settings.Default.NexusIsPremium = false;
-            Settings.Default.Save();
-
-            // Optionally update the UI status label.
-            StatusLabel.Content = "Not logged in to Nexus Mods";
-
-            // Raise property changed for IsUserLoggedIn if using data binding.
-            OnPropertyChanged(nameof(IsUserLoggedIn));
-        }
-
-        private async void LoginMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            await StartNexusSSOAsync();
-
-            // Optionally, update your status label or refresh bindings
-            if (IsUserLoggedInToNexus())
-            {
-                StatusLabel.Content = $"Logged in as {Settings.Default.NexusUsername}";
-                OnPropertyChanged(nameof(IsUserLoggedIn));
-            }
-        }
-
-        private async void CheckForUpdateAsync()
-        {
-            if (!Settings.Default.EnableUpdateNotifications)
-                return;
-
-            try
-            {
-                using (var client = new HttpClient())
-                {
-                    string url = "https://www.nexusmods.com/kingdomcomedeliverance2/mods/187";
-                    string html = await client.GetStringAsync(url);
-                    // Extract version using regex from meta tag
-                    var match = Regex.Match(html, "<meta property=\"twitter:data1\" content=\"([^\"]+)\"");
-                    if (match.Success)
-                    {
-                        string latestVersion = match.Groups[1].Value.Trim();
-                        if (Version.TryParse(currentManagerVersion, out Version currentVersion) &&
-                            Version.TryParse(latestVersion, out Version onlineVersion))
-                        {
-                            if (onlineVersion > currentVersion)
-                            {
-                                var result = MessageBox.Show($"A new version ({latestVersion}) is available. Do you want to update?",
-                                    "Update Available", MessageBoxButton.YesNo, MessageBoxImage.Information);
-                                if (result == MessageBoxResult.Yes)
-                                {
-                                    System.Diagnostics.Process.Start(new ProcessStartInfo
-                                    {
-                                        FileName = "https://www.nexusmods.com/kingdomcomedeliverance2/mods/187",
-                                        UseShellExecute = true
-                                    });
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                // Optionally log errors. Do not block startup.
-            }
-        }
-
-        private async void CheckForModUpdatesAsync()
-        {
-            string jsonPath = Path.Combine(ModFolder, "mod_versions.json");
-            if (!File.Exists(jsonPath)) return;
-
-            string json = File.ReadAllText(jsonPath);
-            if (string.IsNullOrWhiteSpace(json))
-            {
-                Debug.WriteLine("JSON file is empty.");
-                return;
-            }
-
-            var modData = JsonSerializer.Deserialize<Dictionary<string, ModVersionInfo>>(json);
-            if (modData == null)
-            {
-                Debug.WriteLine("Error: modData is null.");
-                return;
-            }
-
-            Debug.WriteLine($"Deserialized modData count: {modData.Count}");
-
-            using (var client = new HttpClient())
-            {
-                foreach (var modEntry in modData)
-                {
-                    string modId = modEntry.Key;
-                    ModVersionInfo versionInfo = modEntry.Value;
-
-                    // Skip update check if disabled for this mod
-                    if (!versionInfo.UpdateChecksEnabled)
-                        continue;
-
-                    int modNumber = versionInfo.ModNumber;
-                    Debug.WriteLine($"Processing mod: {modId}, ModNumber: {modNumber}");
-
-                    var modItem = Mods.FirstOrDefault(m => m.Id.Equals(modId, StringComparison.OrdinalIgnoreCase));
-                    if (modItem != null)
-                    {
-                        modItem.ModNumber = modNumber;
-                        string installedVersion = modItem.Version;
-                        string url = $"https://www.nexusmods.com/kingdomcomedeliverance2/mods/{modNumber}";
-
-                        try
-                        {
-                            string html = await client.GetStringAsync(url);
-                            var match = Regex.Match(html, "<meta property=\"twitter:data1\" content=\"([^\"]+)\"");
-                            if (match.Success)
-                            {
-                                string latestVersion = match.Groups[1].Value.Trim();
-                                if (Version.TryParse(installedVersion, out Version currentVersion) &&
-                                    Version.TryParse(latestVersion, out Version onlineVersion) &&
-                                    onlineVersion > currentVersion)
-                                {
-                                    modItem.HasUpdate = true;
-                                    modItem.LatestVersion = latestVersion;
-                                    ModList.Items.Refresh();
-                                }
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Debug.WriteLine($"Error checking update for mod {modId}: {ex.Message}");
-                        }
-                    }
-                }
-            }
-        }
-
-
-        private void ToggleUpdateCheck_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem && menuItem.DataContext is Mod mod)
-            {
-                string jsonPath = Path.Combine(ModFolder, "mod_versions.json");
-                if (File.Exists(jsonPath))
-                {
-                    string json = File.ReadAllText(jsonPath);
-                    var serializerOptions = new JsonSerializerOptions { WriteIndented = true };
-                    var modData = JsonSerializer.Deserialize<Dictionary<string, ModVersionInfo>>(json, serializerOptions);
-
-                    if (modData != null && modData.TryGetValue(mod.Id, out ModVersionInfo info))
-                    {
-                        // Toggle the update check setting
-                        info.UpdateChecksEnabled = !info.UpdateChecksEnabled;
-
-                        // If update checks are now disabled, ensure that mod.HasUpdate is false.
-                        if (!info.UpdateChecksEnabled)
-                        {
-                            mod.HasUpdate = false;
-                            ModList.Items.Refresh();
-                        }
-
-                        File.WriteAllText(jsonPath, JsonSerializer.Serialize(modData, serializerOptions));
-
-                        MessageBox.Show($"Update checks {(info.UpdateChecksEnabled ? "enabled" : "disabled")} for {mod.Name}.",
-                                        "Update Check Toggled", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                    else
-                    {
-                        MessageBox.Show("Mod data not found.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                }
-            }
-        }
-
-
-
-
-
-        private void SaveModVersion(string modId, string version, int modNumber, string installedFileName, bool updateChecksEnabled = true)
-        {
-            string jsonPath = Path.Combine(ModFolder, "mod_versions.json");
-            Dictionary<string, ModVersionInfo> modData;
-
-            var serializerOptions = new JsonSerializerOptions
-            {
-                WriteIndented = true
-            };
-
-            if (File.Exists(jsonPath))
-            {
-                string json = File.ReadAllText(jsonPath);
-                modData = JsonSerializer.Deserialize<Dictionary<string, ModVersionInfo>>(json, serializerOptions);
-            }
-            else
-            {
-                modData = new Dictionary<string, ModVersionInfo>();
-            }
-
-            modData[modId] = new ModVersionInfo
-            {
-                Version = version,
-                ModNumber = modNumber,
-                FileName = installedFileName,
-                UpdateChecksEnabled = updateChecksEnabled
-            };
-
-            File.WriteAllText(jsonPath, JsonSerializer.Serialize(modData, serializerOptions));
-        }
-
-
-
-        public class ModVersionInfo
-        {
-            public string Version { get; set; }
-            public int ModNumber { get; set; }
-            public string FileName { get; set; }
-            public bool UpdateChecksEnabled { get; set; } = true;
-        }
-
-
-        private string GetStoredFileName(string modId)
-        {
-            string jsonPath = Path.Combine(ModFolder, "mod_versions.json");
-            if (!File.Exists(jsonPath)) return null;
-            string json = File.ReadAllText(jsonPath);
-            var modData = JsonSerializer.Deserialize<Dictionary<string, (string Version, int ModNumber, string FileName)>>(json);
-            if (modData != null && modData.ContainsKey(modId))
-            {
-                return modData[modId].FileName;
-            }
-            return null;
-        }
-
-        private string ExtractVersionFromFileName(string fileName)
-        {
-            // This is a simple example; adjust the regex as needed.
-            // It assumes the version is the third hyphen-separated group.
-            var parts = fileName.Split('-');
-            if (parts.Length >= 4)
-            {
-                return parts[2]; // e.g., "1" in "KCD2 Mod Manager-187-1-0-1738943255.zip"
-            }
-            return "0";
-        }
-
-
-
-
-
-        private void OpenModPage_Click(object sender, RoutedEventArgs e)
-        {
-            Mod mod = null;
-
-            if (sender is Button btn && btn.DataContext is Mod modBtn)
-            {
-                mod = modBtn;
-            }
-            else if (sender is MenuItem mi && mi.DataContext is Mod modMenu)
-            {
-                mod = modMenu;
-            }
-
-            if (mod != null && mod.ModNumber > 0)
-            {
-                string url = $"https://www.nexusmods.com/kingdomcomedeliverance2/mods/{mod.ModNumber}";
-                System.Diagnostics.Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
-            }
-            else
-            {
-                MessageBox.Show("Mod number is missing or invalid.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-        }
-        private static int CalculateSimilarity(string source, string target)
-        {
-            if (string.IsNullOrEmpty(source) || string.IsNullOrEmpty(target))
-                return 0;
-
-            source = source.ToLower();
-            target = target.ToLower();
-
-            int[,] dp = new int[source.Length + 1, target.Length + 1];
-
-            for (int i = 0; i <= source.Length; i++)
-                for (int j = 0; j <= target.Length; j++)
-                {
-                    if (i == 0) dp[i, j] = j;
-                    else if (j == 0) dp[i, j] = i;
-                    else
-                    {
-                        int cost = source[i - 1] == target[j - 1] ? 0 : 1;
-                        dp[i, j] = Math.Min(Math.Min(
-                            dp[i - 1, j] + 1,
-                            dp[i, j - 1] + 1),
-                            dp[i - 1, j - 1] + cost);
-                    }
-                }
-            return dp[source.Length, target.Length];
-        }
-
-
-        private async void UpdateMod_Click(object sender, RoutedEventArgs e)
-        {
-            // Determine which mod is being updated (Button or MenuItem)
-            Mod mod = null;
-            if (sender is Button btn && btn.DataContext is Mod modBtn)
-            {
-                mod = modBtn;
-            }
-            else if (sender is MenuItem mi && mi.DataContext is Mod modMenu)
-            {
-                mod = modMenu;
-            }
-
-            if (mod == null)
-            {
-                MessageBox.Show("No mod selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            if (mod.ModNumber <= 0)
-            {
-                MessageBox.Show("Mod number is missing or invalid.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            // Save current mod state (enabled and list position)
-            bool wasEnabled = mod.IsEnabled;
-            int oldIndex = Mods.IndexOf(mod);
-
-            string gameDomain = "kingdomcomedeliverance2";
-            int modNumber = mod.ModNumber;
-
-            using (var client = new HttpClient())
-            {
-                client.DefaultRequestHeaders.Add("apikey", Settings.Default.NexusUserToken);
-                string filesUrl = $"https://api.nexusmods.com/v1/games/{gameDomain}/mods/{modNumber}/files.json";
-                try
-                {
-                    string filesJson = await client.GetStringAsync(filesUrl);
-                    var response = JsonSerializer.Deserialize<NexusModFilesResponse>(filesJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                    if (response?.files == null || response.files.Count == 0)
-                    {
-                        MessageBox.Show("No files found for this mod.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        return;
-                    }
-
-                    string storedFileName = GetStoredFileName(mod.Id);
-
-                    //update chain
-                    NexusModFileUpdate finalUpdate = null;
-                    string currentFileName = storedFileName;
-                    if (!string.IsNullOrEmpty(currentFileName) && response.file_updates != null && response.file_updates.Count > 0)
-                    {
-                        bool foundUpdate = true;
-                        while (foundUpdate)
-                        {
-                            foundUpdate = false;
-                            foreach (var update in response.file_updates)
-                            {
-                                if (update.old_file_name.Equals(currentFileName, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    // Update gefunden – setze currentFileName auf den neuen Namen und speichere finalUpdate
-                                    currentFileName = update.new_file_name;
-                                    finalUpdate = update;
-                                    foundUpdate = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    NexusModFile fileToUse = null;
-                    if (finalUpdate != null)
-                    {
-                        // Update-Kette gefunden: Versuche, die Datei mit der finalen new_file_id aus response.files zu ermitteln
-                        fileToUse = response.files.FirstOrDefault(f => f.file_id == finalUpdate.new_file_id);
-                        if (fileToUse == null)
-                        {
-                            // Falls nicht gefunden, erstelle ein Dummy-Objekt (Version wird aus dem Dateinamen extrahiert)
-                            fileToUse = new NexusModFile
-                            {
-                                file_id = finalUpdate.new_file_id,
-                                version = ExtractVersionFromFileName(finalUpdate.new_file_name),
-                                uploaded_timestamp = finalUpdate.uploaded_timestamp
-                            };
-                        }
-                    }
-                    else
-                    {
-                        // Get all possible update files sorted by uploaded timestamp (newest first)
-                        var possibleUpdates = response.files.OrderByDescending(f => f.uploaded_timestamp).ToList();
-
-                        // Filter out only those files that have a valid mod_version.
-                        var filesWithVersion = possibleUpdates.Where(f =>
-                        {
-                            Version ver;
-                            return Version.TryParse(f.mod_version, out ver);
-                        }).ToList();
-
-
-                        // NexusModFile fileToUse = null;
-                        if (filesWithVersion.Count > 0)
-                        {
-                            // Find the highest mod_version
-                            Version highestModVersion = filesWithVersion.Max(f =>
-                            {
-                                Version v;
-                                Version.TryParse(f.mod_version, out v);
-                                return v;
-                            });
-
-                            // Get candidates that have that highest mod_version.
-                            var candidateUpdates = filesWithVersion.Where(f =>
-                            {
-                                Version v;
-                                Version.TryParse(f.mod_version, out v);
-                                return v.Equals(highestModVersion);
-                            }).ToList();
-
-                            if (candidateUpdates.Count == 1)
-                            {
-                                fileToUse = candidateUpdates.First();
-                            }
-                            else if (candidateUpdates.Count > 1)
-                            {
-                                // Try to determine the best match based on the mod name similarity.
-                                var bestMatch = candidateUpdates
-                                    .OrderByDescending(f => CalculateSimilarity(f.name, mod.Name))
-                                    .FirstOrDefault();
-
-                                // Build a selection string for the user.
-                                string options = string.Join("\n", candidateUpdates.Select((f, i) =>
-                                    $"{i + 1}: {f.name} (Version: {f.mod_version})"));
-                                string input = Microsoft.VisualBasic.Interaction.InputBox(
-                                    $"There are multiple candidate updates. Please choose one:\n\n{options}",
-                                    "Select Update",
-                                    "1");
-
-                                if (int.TryParse(input, out int choice) && choice > 0 && choice <= candidateUpdates.Count)
-                                {
-                                    fileToUse = candidateUpdates[choice - 1];
-                                }
-                                else
-                                {
-                                    MessageBox.Show("Invalid input. Updated Canceld", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
-                                    //fileToUse = bestMatch ?? candidateUpdates.First();
-                                    return;
-                                }
-                            }
-                            else
-                            {
-                                // Fallback if no candidate with valid mod_version is found.
-                                fileToUse = possibleUpdates.OrderByDescending(f => f.uploaded_timestamp).FirstOrDefault();
-                            }
-                        }
-                        else
-                        {
-                            // Fallback if none of the files have a valid mod_version.
-                            fileToUse = possibleUpdates.OrderByDescending(f => f.uploaded_timestamp).FirstOrDefault();
-                        }
-                    }
-
-
-                    if (fileToUse == null)
-                    {
-                        MessageBox.Show("Could not determine a current file for this mod.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        return;
-                    }
-
-                    // Compare installed version with online version
-                    if (Version.TryParse(mod.Version, out Version installedVersion) &&
-                        Version.TryParse(fileToUse.version, out Version onlineVersion))
-                    {
-                        if (onlineVersion <= installedVersion)
-                        {
-                            MessageBox.Show("The mod is already up to date.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
-                            return;
-                        }
-                    }
-
-                    // Generate download link for the chosen file using the Nexus Mods API
-                    string downloadLinkEndpoint = $"https://api.nexusmods.com/v1/games/{gameDomain}/mods/{modNumber}/files/{fileToUse.file_id}/download_link.json";
-
-                    // Versuche, den Download-Link abzurufen
-                    HttpResponseMessage responseMessage = await client.GetAsync(downloadLinkEndpoint);
-
-                    if (responseMessage.StatusCode == HttpStatusCode.Forbidden)
-                    {
-                        // 403 => User ist kein Premium-Mitglied und muss manuell downloaden
-                        string url = $"https://www.nexusmods.com/{gameDomain}/mods/{modNumber}?tab=files";
-                        System.Diagnostics.Process.Start(new ProcessStartInfo
-                        {
-                            FileName = url,
-                            UseShellExecute = true
-                        });
-
-                        MessageBox.Show(
-                            "You are not a Premium user. Please download the latest version of the mod manually from the NexusMods website.\n" +
-                            "Once you have the file, you can install it as usual.",
-                            "Manual Download Required",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information
-                        );
-
-                        return; 
-                    }
-
-                    // Für Premium-Nutzer: alles wie gehabt
-                    responseMessage.EnsureSuccessStatusCode();
-                    string downloadJson = await responseMessage.Content.ReadAsStringAsync();
-                    string downloadLink = null;
-                    using (JsonDocument doc = JsonDocument.Parse(downloadJson))
-                    {
-                        if (doc.RootElement.ValueKind == JsonValueKind.Array)
-                        {
-                            foreach (JsonElement element in doc.RootElement.EnumerateArray())
-                            {
-                                if (element.TryGetProperty("URI", out JsonElement uriElement) && uriElement.ValueKind == JsonValueKind.String)
-                                {
-                                    downloadLink = uriElement.GetString();
-                                    break;
-                                }
-                            }
-                        }
-                        else if (doc.RootElement.ValueKind == JsonValueKind.Object)
-                        {
-                            if (doc.RootElement.TryGetProperty("URI", out JsonElement uriElement) && uriElement.ValueKind == JsonValueKind.String)
-                            {
-                                downloadLink = uriElement.GetString();
-                            }
-                        }
-                        else if (doc.RootElement.ValueKind == JsonValueKind.String)
-                        {
-                            downloadLink = doc.RootElement.GetString();
-                        }
-                        else
-                        {
-                            MessageBox.Show("Unexpected response from update API.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                            return;
-                        }
-                    }
-
-                    if (string.IsNullOrEmpty(downloadLink))
-                    {
-                        MessageBox.Show("Error retrieving the download link.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        return;
-                    }
-
-                    // Download the update file to a temporary location
-                    string tempDownloadPath = Path.Combine(Path.GetTempPath(), Path.GetFileName(new Uri(downloadLink).LocalPath));
-                    byte[] fileBytes = await client.GetByteArrayAsync(downloadLink);
-                    File.WriteAllBytes(tempDownloadPath, fileBytes);
-
-                    // Remove the mod from the list before updating
-                    Mods.RemoveAt(oldIndex);
-
-                    // Install update by calling ProcessModUpdate:
-                    // We assume ProcessModUpdate extracts the update file, flattens the structure, and forces the original ID
-                    ProcessModUpdate(tempDownloadPath, mod.Path, mod.Id);
-
-                    // Create updated mod entry (re-read manifest from mod.Path)
-                    var manifestData = ParseManifest(Path.Combine(mod.Path, "mod.manifest"));
-                    var updatedMod = new Mod
-                    {
-                        Id = mod.Id,  // original id forced in manifest by ProcessModUpdate
-                        Name = manifestData.Item2,
-                        Version = manifestData.Item3,
-                        Path = mod.Path,
-                        ModNumber = mod.ModNumber,
-                        IsEnabled = wasEnabled
-                    };
-
-                    // Reinsert at the original index
-                    Mods.Insert(oldIndex, updatedMod);
-                    SaveModOrder();
-                    RefreshAlternationIndexes();
-                    ModList.Items.Refresh();
-
-                    // Delete the downloaded file
-                    if (File.Exists(tempDownloadPath))
-                        File.Delete(tempDownloadPath);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Error updating the mod: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-        }
-
-
-        private Mod ProcessModUpdate(string archivePath, string targetDir, string originalId)
-        {
-            // 1. Clear target directory
-            if (Directory.Exists(targetDir))
-            {
-                Directory.Delete(targetDir, true);
-            }
-            Directory.CreateDirectory(targetDir);
-
-            // 2. Extract the archive into the target directory
-            using (var archive = ArchiveFactory.Open(archivePath))
-            {
-                foreach (var entry in archive.Entries.Where(e => !e.IsDirectory))
-                {
-                    entry.WriteToDirectory(targetDir, new ExtractionOptions
-                    {
-                        ExtractFullPath = true,
-                        Overwrite = true
-                    });
-                }
-            }
-
-            // 3. Locate the mod.manifest file
-            string manifestPath = Directory.EnumerateFiles(targetDir, "mod.manifest", SearchOption.AllDirectories)
-                                           .FirstOrDefault();
-
-            // 4. If no manifest is found, generate one
-            if (manifestPath == null)
-            {
-                manifestPath = GenerateManifest(targetDir);
-            }
-            else
-            {
-                // 5. If the manifest is in a nested folder, move its contents up
-                string manifestDir = Path.GetDirectoryName(manifestPath);
-                if (!string.Equals(manifestDir.TrimEnd(Path.DirectorySeparatorChar), targetDir.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase))
-                {
-                    // Move all subdirectories and files from manifestDir up to targetDir
-                    foreach (var dir in Directory.GetDirectories(manifestDir))
-                    {
-                        string destDir = Path.Combine(targetDir, Path.GetFileName(dir));
-                        Directory.Move(dir, destDir);
-                    }
-                    foreach (var file in Directory.GetFiles(manifestDir))
-                    {
-                        string destFile = Path.Combine(targetDir, Path.GetFileName(file));
-                        File.Move(file, destFile);
-                    }
-                    // Optionally, delete the now-empty nested directory
-                    if (Directory.GetFiles(manifestDir).Length == 0 && Directory.GetDirectories(manifestDir).Length == 0)
-                    {
-                        Directory.Delete(manifestDir);
-                    }
-                    // Update manifestPath to point to the new location in targetDir
-                    manifestPath = Path.Combine(targetDir, "mod.manifest");
-                }
-            }
-
-            // 6. Parse the manifest data (which should now be at targetDir/mod.manifest)
-            var manifestInfo = ParseManifest(manifestPath);
-            if (manifestInfo == null)
-            {
-                throw new Exception("Failed to parse manifest after update.");
-            }
-
-            // 7. Return a new Mod object using the originalId (forcing the mod id to remain unchanged).
-            return new Mod
-            {
-                Id = originalId,  // Force original ID to remain unchanged
-                Name = manifestInfo.Item2,
-                Version = manifestInfo.Item3,
-                Path = targetDir,
-                ModNumber = -1 // Temporary value – should be set elsewhere if needed
-            };
-        }
-
-
-        // Hilfsfunktion zur Extraktion des Download-Links
-        private string ExtractDownloadLink(string jsonResponse)
-        {
-            using (JsonDocument doc = JsonDocument.Parse(jsonResponse))
-            {
-                if (doc.RootElement.ValueKind == JsonValueKind.Array)
-                {
-                    foreach (JsonElement element in doc.RootElement.EnumerateArray())
-                    {
-                        if (element.TryGetProperty("URI", out JsonElement uriElement) && uriElement.ValueKind == JsonValueKind.String)
-                        {
-                            return uriElement.GetString();
-                        }
-                    }
-                }
-                else if (doc.RootElement.ValueKind == JsonValueKind.Object)
-                {
-                    if (doc.RootElement.TryGetProperty("URI", out JsonElement uriElement) && uriElement.ValueKind == JsonValueKind.String)
-                    {
-                        return uriElement.GetString();
-                    }
-                }
-                else if (doc.RootElement.ValueKind == JsonValueKind.String)
-                {
-                    return doc.RootElement.GetString();
-                }
-            }
-            return null;
-        }
-
-
-        private async void EndorseMod_Click(object sender, RoutedEventArgs e)
-        {
-            // Determine which mod is being endorsed (from a Button or MenuItem)
-            Mod mod = null;
-            if (sender is Button btn && btn.DataContext is Mod modBtn)
-            {
-                mod = modBtn;
-            }
-            else if (sender is MenuItem mi && mi.DataContext is Mod modMenu)
-            {
-                mod = modMenu;
-            }
-
-            if (mod == null)
-            {
-                MessageBox.Show("No mod selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            // Ensure the mod number is valid
-            if (mod.ModNumber <= 0)
-            {
-                MessageBox.Show("Mod number is missing or invalid.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            // Define the game domain name (adjust if needed)
-            string gameDomain = "kingdomcomedeliverance2";
-            int modId = mod.ModNumber; // use mod.ModNumber as the numeric mod id
-
-            using (HttpClient client = new HttpClient())
-            {
-                // Set the API key header (ensure your API key is valid and stored in settings)
-                client.DefaultRequestHeaders.Add("apikey", Settings.Default.NexusUserToken);
-
-                // Build the endorsement URL
-                string endorseUrl = $"https://api.nexusmods.com/v1/games/{gameDomain}/mods/{modId}/endorse.json";
-
-                try
-                {
-                    // Send a POST request with no content (the API expects only the header)
-                    HttpResponseMessage response = await client.PostAsync(endorseUrl, null);
-                    if (response.IsSuccessStatusCode)
-                    {
-                        MessageBox.Show("Mod endorsed successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                    else
-                    {
-                        MessageBox.Show($"Endorse failed: {response.ReasonPhrase}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Error endorsing mod: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-        }
-
-        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
-        {
-            // Speichern nur im Normalzustand
-            if (this.WindowState == WindowState.Normal)
-            {
-                Settings.Default.WindowWidth = (int)this.Width;
-                Settings.Default.WindowHeight = (int)this.Height;
-                Settings.Default.WindowLeft = (int)this.Left;
-                Settings.Default.WindowTop = (int)this.Top;
-            }
-            else if (this.WindowState == WindowState.Maximized)
-            {
-                // Speichern bei maximiertem Zustand
-                Settings.Default.WindowWidth = (int)this.RestoreBounds.Width;
-                Settings.Default.WindowHeight = (int)this.RestoreBounds.Height;
-                Settings.Default.WindowLeft = (int)this.RestoreBounds.Left;
-                Settings.Default.WindowTop = (int)this.RestoreBounds.Top;
-            }
-
-            // Fensterzustand immer speichern (Normal, Maximiert, Minimiert)
-            Settings.Default.WindowState = this.WindowState.ToString();
-
-            // Änderungen in den Settings speichern
-            Settings.Default.Save();
-        }
-
-        private void CreateModsBackup()
-        {
-            if (!Settings.Default.CreateBackup)
-                return;
-
-            try
-            {
-                string parentDir = Path.GetDirectoryName(ModFolder);
-                string backupRoot = Path.Combine(parentDir, "Mods_Backup");
-
-                // Sicherstellen, dass der Backup-Ordner existiert
-                if (!Directory.Exists(backupRoot))
-                {
-                    Directory.CreateDirectory(backupRoot);
-                }
-
-                // Neuen Backup-Ordner mit Timestamp erstellen
-                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                string backupFolder = Path.Combine(backupRoot, $"Mods_Backup_{timestamp}");
-                Directory.CreateDirectory(backupFolder);
-
-                // Mods-Ordner in Backup kopieren
-                CopyDirectory(ModFolder, backupFolder);
-
-                // Alte Backups bereinigen, falls mehr als MaxCount existieren
-                int maxBackups = Settings.Default.BackupMaxCount;
-                var backupFolders = new DirectoryInfo(backupRoot).GetDirectories()
-                                    .OrderByDescending(d => d.CreationTime)
-                                    .ToList();
-
-                if (backupFolders.Count > maxBackups)
-                {
-                    foreach (var oldBackup in backupFolders.Skip(maxBackups))
-                    {
-                        oldBackup.Delete(true);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to create mods backup: {ex.Message}", "Backup Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-        }
-
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            // Größe und Position setzen
-            this.Width = Settings.Default.WindowWidth;
-            this.Height = Settings.Default.WindowHeight;
-            this.Left = Settings.Default.WindowLeft;
-            this.Top = Settings.Default.WindowTop;
+            if (_viewModel == null) return;
 
-            // Fensterzustand (Minimiert, Maximiert, Normal)
-            if (Enum.TryParse(Settings.Default.WindowState, out WindowState state))
+            // Fenstergröße und Position aus Settings laden
+            this.Width = _viewModel.Settings.WindowWidth;
+            this.Height = _viewModel.Settings.WindowHeight;
+            this.Left = _viewModel.Settings.WindowLeft;
+            this.Top = _viewModel.Settings.WindowTop;
+
+            if (System.Enum.TryParse(_viewModel.Settings.WindowState, out WindowState state))
             {
                 this.WindowState = state;
             }
 
-            // Wenn das Fenster maximiert ist, dann sicherstellen, dass es die maximalisierte Größe hat
-            if (this.WindowState == WindowState.Maximized)
-            {
-                this.WindowState = WindowState.Maximized;
-            }
-
-            // Verhindere, dass das Fenster außerhalb des sichtbaren Bildschirms startet
             EnsureWindowIsVisible();
         }
 
+        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (_viewModel == null) return;
 
+            // Fenstergröße und Position speichern
+            if (this.WindowState == WindowState.Normal)
+            {
+                _viewModel.Settings.WindowWidth = (int)this.Width;
+                _viewModel.Settings.WindowHeight = (int)this.Height;
+                _viewModel.Settings.WindowLeft = (int)this.Left;
+                _viewModel.Settings.WindowTop = (int)this.Top;
+            }
+            else if (this.WindowState == WindowState.Maximized)
+            {
+                _viewModel.Settings.WindowWidth = (int)this.RestoreBounds.Width;
+                _viewModel.Settings.WindowHeight = (int)this.RestoreBounds.Height;
+                _viewModel.Settings.WindowLeft = (int)this.RestoreBounds.Left;
+                _viewModel.Settings.WindowTop = (int)this.RestoreBounds.Top;
+            }
+
+            _viewModel.Settings.WindowState = this.WindowState.ToString();
+            _viewModel.Settings.Save();
+        }
 
         private void EnsureWindowIsVisible()
         {
@@ -1155,990 +93,39 @@ namespace KCD2_mod_manager
             if (this.Top < 0) this.Top = 0;
         }
 
-
-        protected override void OnClosed(EventArgs e)
-        {
-           modFolderWatcher?.Dispose();
-           SaveModOrder();
-            base.OnClosed(e);
-        }
-
-        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            string filter = SearchTextBox.Text.ToLowerInvariant();
-            // If there's any search term, disable sort (if not already disabled)
-            if (!string.IsNullOrWhiteSpace(filter))
-            {
-                if (savedSortByLoadOrder == null)
-                {
-                    // Save current sort mode
-                    savedSortByLoadOrder = sortByLoadOrder;
-                }
-                // Disable sorting while searching
-                sortByLoadOrder = false;
-                SortButton.Content = "Sort: Disabled";
-            }
-            else
-            {
-                // When the search box is cleared, restore the saved sort mode if available
-                if (savedSortByLoadOrder != null)
-                {
-                    sortByLoadOrder = savedSortByLoadOrder.Value;
-                    savedSortByLoadOrder = null;
-                    // Optionally, update the sort button text based on the restored state
-                    SortButton.Content = sortByLoadOrder ? "Sort: Load Order" : "Sort: Title";
-                }
-            }
-
-            // Apply the search filter to the collection view
-            ModsView.Filter = (item) =>
-            {
-                if (item is Mod mod)
-                {
-                    return mod.Name.ToLowerInvariant().Contains(filter) ||
-                           mod.Version.ToLowerInvariant().Contains(filter);
-                }
-                return false;
-            };
-            ModsView.Refresh();
-        }
-
-        private void ClearSearch_Click(object sender, RoutedEventArgs e)
-        {
-            SearchTextBox.Text = "";
-        }
-
-
-        // --- Sort Toggle ---
-        private void SortButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (!string.IsNullOrWhiteSpace(SearchTextBox.Text))
-            {
-                MessageBox.Show("Sorting is disabled during search.", "Action Not Allowed", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            sortByLoadOrder = !sortByLoadOrder;
-            if (!sortByLoadOrder)
-            {
-                var sorted = Mods.OrderBy(m => m.Name).ToList();
-                Mods.Clear();
-                foreach (var mod in sorted)
-                    Mods.Add(mod);
-                SortButton.Content = "Sort: Title";
-            }
-            else
-            {
-                LoadMods();
-                SortButton.Content = "Sort: Load Order";
-            }
-        }
-
-
-
-        //private void InitializeModFolderWatcher()
-        //{
-        //    modFolderWatcher = new FileSystemWatcher(ModFolder)
-        //    {
-        //        NotifyFilter = NotifyFilters.DirectoryName, // Nur Änderungen an Ordnern überwachen
-        //        Filter = "*.*", // Alle Dateien und Ordner überwachen
-        //        IncludeSubdirectories = false, // Nur den Mod-Ordner selbst überwachen
-        //        EnableRaisingEvents = true // Überwachung aktivieren
-        //    };
-
-        //    modFolderWatcher.Created += OnModFolderChanged;
-        //    modFolderWatcher.Deleted += OnModFolderChanged;
-        //}
-
-        //private void OnModFolderChanged(object sender, FileSystemEventArgs e)
-        //{
-        //    // Überprüfe, ob ein neuer Mod-Ordner erstellt wurde
-        //    if (Directory.Exists(e.FullPath) && File.Exists(Path.Combine(e.FullPath, "mod.manifest")))
-        //    {
-        //        // Mod neu laden
-        //        Application.Current.Dispatcher.Invoke(() =>
-        //        {
-        //            LoadMods(); // Mods neu laden
-        //            SaveModOrder();
-        //            MessageBox.Show($"New mod detected: {e.Name}. Reloaded mods.", "Mod Manager", MessageBoxButton.OK, MessageBoxImage.Information);
-        //        });
-        //    }
-        //}
-        private void CheckAndLoadGamePath()
-        {
-            // Lade den GamePath aus den Einstellungen
-            GamePath = Settings.Default.GamePath;
-
-            if (!string.IsNullOrWhiteSpace(GamePath))
-            {
-                // Neue Validierung der Dateierweiterung
-                if (!Path.GetExtension(GamePath).Equals(".exe", StringComparison.OrdinalIgnoreCase))
-                {
-                    MessageBox.Show("Invalid file type in settings. Only .exe files are allowed.", "Security Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    GamePath = null; // Erzwinge Neuaustwahl
-                    Settings.Default.GamePath = ""; // Zurücksetzen
-                    Settings.Default.Save();
-                }
-            }
-
-            if (string.IsNullOrWhiteSpace(GamePath))
-            {
-                // Prüfe den Standardpfad
-                if (File.Exists(DefaultGamePath))
-                {
-                    GamePath = DefaultGamePath;
-                    Settings.Default.GamePath = GamePath;
-                    Settings.Default.Save();
-                }
-                else
-                {
-                    MessageBox.Show("The game was not found in the default path. Please select the game executable manually.", "Game Path Required", MessageBoxButton.OK, MessageBoxImage.Information);
-                    var openFileDialog = new OpenFileDialog
-                    {
-                        Filter = "Game Executable (*.exe)|*.exe",
-                        Title = "Select Kingdom Come Deliverance 2 Executable"
-                    };
-                    if (openFileDialog.ShowDialog() == true)
-                    {
-                        GamePath = openFileDialog.FileName;
-                        Settings.Default.GamePath = GamePath;
-                        Settings.Default.Save();
-                    }
-                    else
-                    {
-                        MessageBox.Show("The game path is required to continue. Exiting the application.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        Application.Current.Shutdown();
-                    }
-                }
-            }
-
-            if (!File.Exists(GamePath))
-            {
-                MessageBox.Show("The saved game path is invalid. Please update the path in settings.", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-
-            // Bestimme den Mods-Ordner (eine Ebene oberhalb der Spielinstallation, anpassen wie benötigt)
-            ModFolder = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(GamePath))), "Mods");
-        }
-
-
-
-
-        private void SaveGamePath()
-        {
-            Settings.Default.GamePath = GamePath;
-            Settings.Default.Save();
-            ModFolder = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(GamePath))), "Mods");
-            LoadMods();
-        }
-
-
-        private void LoadMods()
-        {
-            // Sicherstellen, dass das Mod-Verzeichnis existiert
-            if (!Directory.Exists(ModFolder))
-                Directory.CreateDirectory(ModFolder);
-
-            Mods.Clear();
-
-
-
-            // Lese mod_order.txt zeilenweise und interpretiere sie als (modId, isEnabled)
-            string modOrderFileName = Settings.Default.ModOrderEnabled ? "mod_order.txt" : "mod_order_backup.txt";
-            var modOrderPath = Path.Combine(ModFolder, modOrderFileName);
-            var modOrderList = new List<(string modId, bool isEnabled)>();
-            if (File.Exists(modOrderPath))
-            {
-                var lines = File.ReadAllLines(modOrderPath)
-                                .Where(line => !string.IsNullOrWhiteSpace(line))
-                                .ToList();
-                foreach (var line in lines)
-                {
-                    var trimmed = line.Trim();
-                    bool isEnabled = true;
-                    if (trimmed.StartsWith("#"))
-                    {
-                        isEnabled = false;
-                        // Entferne das führende "#" und zusätzliche Leerzeichen
-                        trimmed = trimmed.Substring(1).Trim();
-                    }
-                    modOrderList.Add((trimmed, isEnabled));
-                }
-            }
-
-            // Alle Mod-Ordner im ModFolder finden: entweder mit einer mod.manifest oder mit .pak-Dateien
-            var allMods = Directory.GetDirectories(ModFolder)
-                                   .Where(dir =>
-                                       File.Exists(Path.Combine(dir, "mod.manifest")) ||
-                                       Directory.EnumerateFiles(dir, "*.pak", SearchOption.AllDirectories).Any());
-
-            // Erstelle ein Dictionary (Key: modId) zur schnellen Zuordnung
-            var modDictionary = new Dictionary<string, Mod>();
-            foreach (var dir in allMods)
-            {
-                string manifestPath = Path.Combine(dir, "mod.manifest");
-                // Falls keine manifest existiert, aber .pak-Dateien vorhanden sind, generiere ein Manifest
-                if (!File.Exists(manifestPath))
-                {
-                    bool hasPakFiles = Directory.EnumerateFiles(dir, "*.pak", SearchOption.AllDirectories).Any();
-                    if (hasPakFiles)
-                    {
-                        manifestPath = GenerateManifest(dir);
-                    }
-                    else
-                    {
-                        // Überspringe diesen Ordner, wenn weder manifest noch .pak-Dateien vorhanden sind
-                        continue;
-                    }
-                }
-
-                // Parse das Manifest (welches auch ggf. automatisch die modid generiert und speichert)
-                var modInfo = ParseManifest(manifestPath);
-                if (modInfo != null)
-                {
-                    var modId = modInfo.Item1;    // Erwartete modid, z. B. "midnightandblackknightarmorb"
-                    var modName = modInfo.Item2;  // Beispiel: "Midnight and Black Knight Armor B 1243AGDfs @"
-                    var modVersion = modInfo.Item3;
-
-                    // Überprüfe, ob der aktuelle Ordnername (ohne Pfad) der erwarteten modid entspricht.
-                    // Überprüfe, ob der Ordnername der ID entspricht, und korrigiere ihn gegebenenfalls
-                    var expectedPath = Path.Combine(ModFolder, modId);
-                    if (!dir.Equals(expectedPath, StringComparison.OrdinalIgnoreCase))
-                    {
-                        try
-                        {
-                            if (Directory.Exists(expectedPath))
-                            {
-                                Directory.Delete(expectedPath, true);
-                            }
-                            Directory.Move(dir, expectedPath);
-                        }
-                        catch (IOException ioEx)
-                        {
-                            // Fehlermeldung anzeigen und den vorhandenen Ordnerpfad beibehalten
-                            MessageBox.Show($"Failed to move mod folder from {dir} to {expectedPath}:\n{ioEx.Message}\n\nPlease run the application as administrator or adjust folder permissions.",
-                                            "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                            expectedPath = dir; // Nutze den ursprünglichen Ordnerpfad
-                        }
-                    }
-
-
-                    var mod = new Mod
-                    {
-                        Id = modId,
-                        Name = modName,
-                        Version = modVersion,
-                        Path = expectedPath,
-                        IsEnabled = true // Standardmäßig aktiviert, wird später ggf. überschrieben
-                    };
-                    modDictionary[modId] = mod;
-                }
-            }
-
-            // Füge die Mods in der Reihenfolge aus der mod_order.txt hinzu (Load Order)
-            int index = 1;
-            foreach (var (modId, isEnabled) in modOrderList)
-            {
-                if (modDictionary.ContainsKey(modId))
-                {
-                    var mod = modDictionary[modId];
-                    mod.Number = index++;
-                    mod.IsEnabled = isEnabled; // Setze den Aktivierungsstatus gemäß mod_order.txt
-                    Mods.Add(mod);
-                    modDictionary.Remove(modId);
-                }
-            }
-
-            // Füge alle übrigen Mods hinzu (die nicht in mod_order.txt gelistet sind)
-            foreach (var remainingMod in modDictionary.Values)
-            {
-                remainingMod.Number = 0; // Keine Nummerierung, da nicht in der Reihenfolge enthalten
-                Mods.Add(remainingMod);
-            }
-
-            UpdateModsEnabledCount();
-            LoadModNotes();
-        }
-
-
-        private void LoadModNotes()
-        {
-            // Store the mod notes file in the ModFolder
-            string notesPath = Path.Combine(ModFolder, ModNotesFileName);
-            if (File.Exists(notesPath))
-            {
-                try
-                {
-                    string json = File.ReadAllText(notesPath);
-                    modNotes = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
-                }
-                catch
-                {
-                    modNotes = new Dictionary<string, string>();
-                }
-            }
-            else
-            {
-                modNotes = new Dictionary<string, string>();
-            }
-        }
-
-        private void SaveModNotes()
-        {
-            string notesPath = Path.Combine(ModFolder, ModNotesFileName);
-            string json = JsonSerializer.Serialize(modNotes, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(notesPath, json);
-        }
-
-        private void UpdateModsEnabledCount()
-        {
-            int enabledCount = Mods.Count(mod => mod.IsEnabled);
-            ModsEnabledCount.Text = $"Mods enabled: {enabledCount}";
-        }
-
-
-        private void Reload_Click(object sender, RoutedEventArgs e)
-        {
-            LoadMods();
-        }
-
-        private void AddMod_Click(object sender, RoutedEventArgs e)
-        {
-            var openFileDialog = new OpenFileDialog
-            {
-                Filter = "Mod Files (*.rar;*.7z;*.zip)|*.rar;*.7z;*.zip",
-                Multiselect = true
-            };
-
-            if (openFileDialog.ShowDialog() == true)
-            {
-                foreach (var file in openFileDialog.FileNames)
-                {
-                    ProcessModFile(file);
-                }
-            }
-        }
-
-        //private void AddModFolder_Click(object sender, RoutedEventArgs e)
-        //{
-        //    using (var folderDialog = new FolderBrowserDialog())
-        //    {
-        //        if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-        //        {
-        //            ProcessModFolder(folderDialog.SelectedPath);
-        //        }
-        //    }
-        //}
-
-        private void StartGame_Click(object sender, RoutedEventArgs e)
-        {
-            if (!File.Exists(GamePath))
-            {
-                MessageBox.Show("The game executable path is invalid. Please update the path in settings before starting the game.", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            if (!Path.GetExtension(GamePath).Equals(".exe", StringComparison.OrdinalIgnoreCase))
-            {
-                MessageBox.Show("Only .exe files can be executed.", "Security Blocked", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            var enabledMods = Mods.Where(mod => mod.IsEnabled).ToList();
-            if (!enabledMods.Any())
-            {
-                MessageBox.Show("No mods selected to load.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            StatusLabel.Content = "Starting game with mods...";
-            string extraArgs = string.IsNullOrWhiteSpace(additionalLaunchArgs) ? "" : additionalLaunchArgs + " ";
-
-            // Wenn im Entwickler-Modus, füge das Argument -devmode hinzu
-            if (Settings.Default.IsDevMode)
-            {
-                extraArgs += "-devmode ";
-            }
-
-            var processInfo = new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = GamePath,
-                Arguments = extraArgs
-            };
-
-            try
-            {
-                System.Diagnostics.Process.Start(processInfo);
-                StatusLabel.Content = "Game started.";
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to start the game: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                StatusLabel.Content = "Failed to start game.";
-            }
-        }
-
-
-
-
-        private void ProcessModFolder(string folderPath)
-        {
-            // Versuche, die mod.manifest-Datei im gesamten Ordner zu finden
-            var manifestPath = Directory.EnumerateFiles(folderPath, "mod.manifest", SearchOption.AllDirectories).FirstOrDefault();
-
-            // Falls keine manifest vorhanden ist, prüfe, ob .pak-Dateien vorhanden sind (z.B. in Data oder Localization)
-            if (manifestPath == null)
-            {
-                bool hasPakFiles = Directory.EnumerateFiles(folderPath, "*.pak", SearchOption.AllDirectories).Any();
-                if (hasPakFiles)
-                {
-                    // Generiere ein Manifest automatisch
-                    manifestPath = GenerateManifest(folderPath);
-                }
-                else
-                {
-                    MessageBox.Show("This mod folder is not compatible (missing mod.manifest and no .pak files found).", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-            }
-
-
-            string xmlContent = CorrectXmlVersionInFile(manifestPath);
-            File.WriteAllText(manifestPath, xmlContent);
-
-            XDocument manifestDoc = XDocument.Load(manifestPath);
-            var infoElement = manifestDoc.Descendants("info").FirstOrDefault();
-            if (infoElement != null)
-            {
-                var modidElement = infoElement.Element("modid");
-                // Hier erzwingen wir, dass die modid immer vom Manager vergeben wird:
-                var nameElement = infoElement.Element("name")?.Value?.Trim();
-                if (!string.IsNullOrEmpty(nameElement))
-                {
-                    var generatedId = Regex.Replace(nameElement.ToLowerInvariant(), @"[^a-z]", "");
-                    if (modidElement == null)
-                    {
-                        infoElement.Add(new XElement("modid", generatedId));
-                    }
-                    else
-                    {
-                        modidElement.Value = generatedId;
-                    }
-                    manifestDoc.Save(manifestPath);
-                }
-            }
-
-
-            var manifestData = ParseManifest(manifestPath);
-            if (manifestData == null || string.IsNullOrEmpty(manifestData.Item3))
-            {
-                MessageBox.Show("Invalid mod.manifest file. Installation aborted.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            var modId = manifestData.Item1;
-            var modName = manifestData.Item2;
-            var modVersion = manifestData.Item3;
-            var modTargetPath = Path.Combine(ModFolder, modId);
-
-            if (Directory.Exists(modTargetPath))
-            {
-                // Optional: Versionsvergleich durchführen
-                Directory.Delete(modTargetPath, true);
-                LoadMods();
-            }
-
-            Directory.CreateDirectory(modTargetPath);
-            CopyDirectory(folderPath, modTargetPath);
-            Mods.Add(new Mod { Id = modId, Name = modName, Version = modVersion, Path = modTargetPath, IsEnabled = false });
-            StatusLabel.Content = $"Added mod: {modName} (Version: {modVersion})";
-        }
-
-
-        private int ExtractModNumberFromFileName(string fileName)
-        {
-            var match = Regex.Match(Path.GetFileNameWithoutExtension(fileName), "\\b(\\d+)\\b");
-            return match.Success ? int.Parse(match.Value) : -1;
-        }
-
-        private void ProcessModFile(string filePath)
-        {
-            var tempDir = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(filePath));
-            Directory.CreateDirectory(tempDir);
-
-            int modNumber = ExtractModNumberFromFileName(filePath);
-            if (modNumber == -1)
-            {
-                NameInputDialog dialog = new NameInputDialog("");
-                dialog.Prompt = "Enter Mod Number:";
-                dialog.Owner = this;
-                dialog.Title = "Mod Number";
-                dialog.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-
-                if (dialog.ShowDialog() == true)
-                {
-                    if (int.TryParse(dialog.EnteredText, out int enteredNumber))
-                    {
-                        modNumber = enteredNumber;
-                    }
-                    else
-                    {
-                        MessageBox.Show("Invalid number entered. Installation aborted.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        Directory.Delete(tempDir, true);
-                        return;
-                    }
-                }
-                else
-                {
-                    MessageBox.Show("No number entered. Installation aborted.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    Directory.Delete(tempDir, true);
-                    return;
-                }
-            }
-
-            try
-            {
-                ExtractArchive(filePath, tempDir);
-
-                var manifestPath = Directory.EnumerateFiles(tempDir, "mod.manifest", SearchOption.AllDirectories).FirstOrDefault();
-                if (manifestPath == null)
-                {
-                    bool hasPakFiles = Directory.EnumerateFiles(tempDir, "*.pak", SearchOption.AllDirectories).Any();
-                    if (hasPakFiles)
-                    {
-                        manifestPath = GenerateManifest(tempDir);
-                    }
-                    else
-                    {
-                        MessageBox.Show("This mod is not compatible (missing mod.manifest and no .pak files found).", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        Directory.Delete(tempDir, true);
-                        return;
-                    }
-                }
-
-                string xmlContent = CorrectXmlVersionInFile(manifestPath);
-                File.WriteAllText(manifestPath, xmlContent);
-
-                var manifestData = ParseManifest(manifestPath);
-                if (manifestData == null || string.IsNullOrEmpty(manifestData.Item3))
-                {
-                    var result = MessageBox.Show("The mod.manifest file is invalid. Do you want to attempt to generate a new manifest?",
-                                                 "Invalid Manifest", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                    if (result == MessageBoxResult.Yes)
-                    {
-                        manifestPath = GenerateManifest(tempDir);
-                        manifestData = ParseManifest(manifestPath);
-                        if (manifestData == null || string.IsNullOrEmpty(manifestData.Item3))
-                        {
-                            MessageBox.Show("Failed to generate a valid manifest. Installation aborted.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                            Directory.Delete(tempDir, true);
-                            return;
-                        }
-                    }
-                    else
-                    {
-                        MessageBox.Show("Installation aborted.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        Directory.Delete(tempDir, true);
-                        return;
-                    }
-                }
-
-                var modId = manifestData.Item1;
-                var modName = manifestData.Item2;
-                var modVersion = manifestData.Item3;
-                var modTargetPath = Path.Combine(ModFolder, modId);
-
-                if (Directory.Exists(modTargetPath))
-                {
-                    var existingManifestPath = Path.Combine(modTargetPath, "mod.manifest");
-                    var existingInfo = ParseManifest(existingManifestPath);
-                    if (existingInfo != null && Version.TryParse(existingInfo.Item3, out var existingVersion) &&
-                        Version.TryParse(modVersion, out var newVersion) && newVersion <= existingVersion)
-                    {
-                        MessageBox.Show($"Mod {modName} is already installed with an equal or newer version. Installation aborted.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        Directory.Delete(tempDir, true);
-                        return;
-                    }
-                    Directory.Delete(modTargetPath, true);
-                    LoadMods();
-                }
-
-                var targetManifestPath = Path.Combine(modTargetPath, "mod.manifest");
-                Directory.CreateDirectory(modTargetPath);
-                File.Move(manifestPath, targetManifestPath);
-                CopyModFiles(Path.GetDirectoryName(manifestPath), modTargetPath);
-
-                SaveModVersion(modId, modVersion, modNumber, Path.GetFileName(filePath));
-
-                Mods.Add(new Mod { Id = modId, Name = modName, Version = modVersion, Path = modTargetPath, ModNumber = modNumber, IsEnabled = false });
-                StatusLabel.Content = $"Added mod: {modName} (Version: {modVersion})";
-
-                CheckForModUpdatesAsync();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to install mod: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            finally
-            {
-                if (Directory.Exists(tempDir))
-                    Directory.Delete(tempDir, true);
-            }
-        }
-        
-
-
-
-        private void CopyModFiles(string sourceDir, string targetDir)
-        {
-            foreach (var dir in Directory.GetDirectories(sourceDir, "*", SearchOption.AllDirectories))
-            {
-                var targetSubDir = Path.Combine(targetDir, Path.GetFileName(dir));
-                Directory.CreateDirectory(targetSubDir);
-                foreach (var file in Directory.GetFiles(dir))
-                {
-                    var targetFile = Path.Combine(targetSubDir, Path.GetFileName(file));
-                    File.Copy(file, targetFile, true);
-                }
-            }
-            foreach (var file in Directory.GetFiles(sourceDir))
-            {
-                var targetFile = Path.Combine(targetDir, Path.GetFileName(file));
-                File.Copy(file, targetFile, true);
-            }
-        }
-
-        // Utility method to copy all files and subdirectories from one directory to another
-        private void CopyDirectory(string sourceDir, string destDir)
-        {
-            foreach (var file in Directory.GetFiles(sourceDir))
-            {
-                string destFile = Path.Combine(destDir, Path.GetFileName(file));
-                File.Copy(file, destFile, true);
-            }
-
-            foreach (var subDir in Directory.GetDirectories(sourceDir))
-            {
-                string destSubDir = Path.Combine(destDir, Path.GetFileName(subDir));
-                Directory.CreateDirectory(destSubDir);
-                CopyDirectory(subDir, destSubDir);
-            }
-        }
-
-
-        private void SaveModOrder()
-        {
-            // Choose file based on the ModOrderEnabled setting.
-            string modOrderFileName = Settings.Default.ModOrderEnabled ? "mod_order.txt" : "mod_order_backup.txt";
-            string modOrderPath = Path.Combine(ModFolder, modOrderFileName);
-
-            var modOrder = Mods.Select(mod => mod.IsEnabled ? mod.Id : $"# {mod.Id}").ToList();
-            File.WriteAllLines(modOrderPath, modOrder);
-            StatusLabel.Content = $"Mod order saved to {modOrderFileName}.";
-        }
-
-        private void ExtractArchive(string archivePath, string destination)
-        {
-            using (var archive = ArchiveFactory.Open(archivePath))
-            {
-                foreach (var entry in archive.Entries.Where(entry => !entry.IsDirectory))
-                {
-                    entry.WriteToDirectory(destination, new ExtractionOptions
-                    {
-                        ExtractFullPath = true,
-                        Overwrite = true
-                    });
-                }
-            }
-        }
-
-        private void OpenFolder_Click(object sender, RoutedEventArgs e)
-        {
-            // Check if the button is properly associated with a mod
-            if (sender is Button button && button.DataContext is Mod mod)
-            {
-                // Verify the mod's path
-                if (!string.IsNullOrEmpty(mod.Path) && Directory.Exists(mod.Path))
-                {
-                    try
-                    {
-                        System.Diagnostics.Process.Start("explorer.exe", mod.Path);
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Error opening folder: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                }
-                else
-                {
-                    MessageBox.Show("The mod folder does not exist or is not specified.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-            }
-            else
-            {
-                MessageBox.Show("No valid mod selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-        }
-
-
-
-        private string CorrectXmlVersionInFile(string manifestPath)
-        {
-            string xmlContent = File.ReadAllText(manifestPath);
-
-            // Überprüfe und ersetze die XML-Version, falls sie 2.0 ist
-            if (xmlContent.Contains("<?xml version=\"2.0\""))
-            {
-                xmlContent = xmlContent.Replace("<?xml version=\"2.0\"", "<?xml version=\"1.0\"");
-                // Überschreibe die Datei mit dem korrigierten Inhalt
-                File.WriteAllText(manifestPath, xmlContent);
-            }
-            return xmlContent;
-        }
-
-        private Tuple<string, string, string> ParseManifest(string manifestPath)
-        {
-            try
-            {
-                string xmlContent = CorrectXmlVersionInFile(manifestPath);
-                var doc = XDocument.Parse(xmlContent);
-
-                var infoElement = doc.Descendants("info").FirstOrDefault();
-                if (infoElement == null)
-                    return null;
-
-                var name = infoElement.Element("name")?.Value?.Trim();
-                var version = infoElement.Element("version")?.Value?.Trim();
-                if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(version))
-                    return null;
-
-                // Prüfen, ob bereits ein modid vorhanden ist
-                var modidElement = infoElement.Element("modid");
-                string id;
-                if (modidElement != null && !string.IsNullOrWhiteSpace(modidElement.Value))
-                {
-                    // Vorhandener Wert wird übernommen
-                    id = modidElement.Value.Trim();
-                }
-                else
-                {
-                    // Erzeuge modid basierend auf dem Namen
-                    id = GenerateModId(name);
-                    if (modidElement == null)
-                    {
-                        infoElement.Add(new XElement("modid", id));
-                    }
-                    else
-                    {
-                        modidElement.Value = id;
-                    }
-                }
-
-                // Speichere das Manifest, falls Änderungen vorgenommen wurden
-                File.WriteAllText(manifestPath, doc.ToString());
-
-                return Tuple.Create(id, name, version);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private string GenerateModId(string name)
-        {
-            // Generiere modid aus dem Namen: nur englische Kleinbuchstaben (a-z)
-            string id = Regex.Replace(name.ToLowerInvariant(), @"[^a-z]", "");
-            // Fallback: Falls das Ergebnis leer ist, z. B. weil der Name nur Sonderzeichen enthält
-            if (string.IsNullOrEmpty(id))
-            {
-                using (var md5 = System.Security.Cryptography.MD5.Create())
-                {
-                    byte[] inputBytes = System.Text.Encoding.UTF8.GetBytes(name);
-                    byte[] hashBytes = md5.ComputeHash(inputBytes);
-                    string fallback = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
-                    fallback = Regex.Replace(fallback, @"[^a-z]", "");
-                    if (fallback.Length > 8)
-                        id = fallback.Substring(0, 8);
-                    else if (fallback.Length > 0)
-                        id = fallback;
-                    else
-                        id = "moddefault"; // Fester Fallback, falls gar nichts übrig bleibt
-                }
-            }
-            return id;
-        }
-
-
-
-
-
-
-        private string GenerateManifest(string folderPath)
-        {
-            // Verwende den Ordnernamen als Basis (z.B. "Radovan Master Teacher-160-1-0-1738905930 (2)")
-            var folderInfo = new DirectoryInfo(folderPath);
-            string originalName = folderInfo.Name;
-
-            // Versuche, aus dem Namen den Mod-Namen und die Version zu extrahieren.
-            // Regex-Erklärung:
-            // ^(.*?)-\d+-(\d+)-(\d+)-.*$
-            //   Gruppe 1: Mod-Name (non-greedy bis zum ersten Bindestrich, der auf Zahlen folgt)
-            //   Gruppe 2: Versionsmajor
-            //   Gruppe 3: Versionsminor
-            string modNameSuggestion = originalName;
-            string versionSuggestion = "N/A";
-            Regex regex = new Regex(@"^(.*?)-\d+-(\d+)-(\d+)-.*$");
-            Match match = regex.Match(originalName);
-            if (match.Success)
-            {
-                modNameSuggestion = match.Groups[1].Value.Trim();
-                versionSuggestion = $"{match.Groups[2].Value}.{match.Groups[3].Value}";
-            }
-            else
-            {
-                // Falls kein passendes Muster gefunden wurde, entferne am Ende alle Zahlen, Bindestriche und Klammern.
-                modNameSuggestion = Regex.Replace(originalName, @"[-\s\d\(\)]+$", "").Trim();
-            }
-
-            // Verwende den NameInputDialog, um dem Benutzer den vorgeschlagenen Mod-Namen anzuzeigen und ggf. anzupassen.
-            //NameInputDialog dialog = new NameInputDialog(modNameSuggestion);
-            //if (dialog.ShowDialog() == true)
-            //{
-            //    modNameSuggestion = dialog.EnteredName;
-            //}
-            
-            
-            
-            // Generiere die modid: Nur englische Kleinbuchstaben (alle anderen Zeichen werden entfernt)
-            string modId = Regex.Replace(modNameSuggestion.ToLowerInvariant(), @"[^a-z]", "");
-
-            // Erstelle den XML-Inhalt für das Manifest
-            string manifestContent = $@"<?xml version=""1.0"" encoding=""utf-8""?>
-<kcd_mod>
-  <info>
-    <name>{modNameSuggestion}</name>
-    <description>auto generated manifest from kcd2 modmanager</description>
-    <author>N/A</author>
-    <version>{versionSuggestion}</version>
-    <modid>{modId}</modid>
-  </info>
-</kcd_mod>";
-
-            // Speichere das Manifest im Root des Mod-Ordners
-            string manifestPath = Path.Combine(folderPath, "mod.manifest");
-            File.WriteAllText(manifestPath, manifestContent);
-
-            return manifestPath;
-        }
-
-
-        private void ForceUIRefresh()
-        {
-            // Erzwinge ein vollständiges Redraw des Fensters
-            var current = this.Content;
-            this.Content = null;
-            this.Content = current;
-        }
-
-        private void UpdateTheme()
-        {
-            if (isDarkMode)
-            {
-                // Dark Mode
-                this.Resources["WindowBackgroundBrush"] = new SolidColorBrush(Color.FromRgb(30, 30, 30));
-                this.Resources["ListBoxBackgroundBrush"] = new SolidColorBrush(Color.FromRgb(45, 45, 45));
-                this.Resources["ModListItemEvenBrush"] = new SolidColorBrush(Color.FromRgb(40, 40, 40));
-                this.Resources["ModListItemOddBrush"] = new SolidColorBrush(Color.FromRgb(60, 60, 60));
-                this.Resources["ListBoxForegroundBrush"] = new SolidColorBrush(Colors.White);
-                this.Resources["SelectedItemBrush"] = new SolidColorBrush(Color.FromRgb(80, 80, 120));
-
-                // Extra brushes for search bar and clear button
-                this.Resources["SearchBackgroundBrush"] = new SolidColorBrush(Color.FromRgb(45, 45, 45));
-                this.Resources["SearchForegroundBrush"] = new SolidColorBrush(Colors.White);
-                this.Resources["SearchBorderBrush"] = new SolidColorBrush(Color.FromRgb(80, 80, 80));
-                this.Resources["ClearButtonBrush"] = new SolidColorBrush(Colors.White);
-
-                this.Background = (Brush)this.Resources["WindowBackgroundBrush"];
-                StatusLabel.Foreground = Brushes.White;
-                ModsEnabledCount.Foreground = Brushes.White;
-
-                ForceUIRefresh();
-            }
-            else
-            {
-                // Light Mode
-                this.Resources["WindowBackgroundBrush"] = new SolidColorBrush(Colors.White);
-                this.Resources["ListBoxBackgroundBrush"] = new SolidColorBrush(Colors.White);
-                this.Resources["ModListItemEvenBrush"] = new SolidColorBrush(Colors.White);
-                this.Resources["ModListItemOddBrush"] = new SolidColorBrush(Colors.LightGray);
-                this.Resources["ListBoxForegroundBrush"] = new SolidColorBrush(Colors.Black);
-                this.Resources["SelectedItemBrush"] = new SolidColorBrush(Colors.LightBlue);
-
-                // Extra brushes for search bar and clear button
-                this.Resources["SearchBackgroundBrush"] = new SolidColorBrush(Colors.White);
-                this.Resources["SearchForegroundBrush"] = new SolidColorBrush(Colors.Black);
-                this.Resources["SearchBorderBrush"] = new SolidColorBrush(Colors.Gray);
-                this.Resources["ClearButtonBrush"] = new SolidColorBrush(Colors.Black);
-
-                this.Background = (Brush)this.Resources["WindowBackgroundBrush"];
-                StatusLabel.Foreground = Brushes.Black;
-                ModsEnabledCount.Foreground = Brushes.Green;
-
-                ForceUIRefresh();
-            }
-        }
-
         private void Window_DragOver(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop))
                 e.Effects = DragDropEffects.Copy;
             else
                 e.Effects = DragDropEffects.None;
         }
 
-        private void Window_Drop(object sender, DragEventArgs e)
+        private async void Window_Drop(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop) && _viewModel != null)
             {
-                var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                var files = (string[])e.Data.GetData(System.Windows.DataFormats.FileDrop);
                 foreach (var file in files)
                 {
-                    if (Directory.Exists(file))
-                        ProcessModFolder(file);
-                    else
-                        ProcessModFile(file);
-                }
-                SaveModOrder();
-            }
-        }
-
-        private void TextBlock_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            _dragStartPoint = e.GetPosition(null);
-            if (sender is FrameworkElement element && element.DataContext is Mod mod)
-                ModList.SelectedItem = mod;
-        }
-
-        private void ModList_PreviewMouseMove(object sender, MouseEventArgs e)
-        {
-            if (e.LeftButton == MouseButtonState.Pressed)
-            {
-                Point currentPoint = e.GetPosition(null);
-                if (Math.Abs(currentPoint.X - _dragStartPoint.X) > SystemParameters.MinimumHorizontalDragDistance ||
-                    Math.Abs(currentPoint.Y - _dragStartPoint.Y) > SystemParameters.MinimumVerticalDragDistance)
-                {
-                    if (sender is ListBox listBox && listBox.SelectedItem is Mod mod)
+                    if (System.IO.Directory.Exists(file))
                     {
-                        // Drag & Drop nur erlauben, wenn nach Load Order sortiert wird
-                        if (!sortByLoadOrder) return;
-                        DragDrop.DoDragDrop(listBox, mod, DragDropEffects.Move);
+                        // Ordner-Verarbeitung
+                        await _viewModel.ProcessModFolderAsync(file);
+                    }
+                    else
+                    {
+                        // Datei-Verarbeitung
+                        await _viewModel.ProcessModFileAsync(file);
                     }
                 }
+                await _viewModel.SaveModOrderAsync();
             }
         }
 
         private void ModList_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            _dragStartPoint = e.GetPosition(null);
             if (sender is ListBox listBox)
             {
                 DependencyObject clickedElement = e.OriginalSource as DependencyObject;
@@ -2146,7 +133,7 @@ namespace KCD2_mod_manager
                 {
                     if (clickedElement is Button || clickedElement is CheckBox)
                         return;
-                    clickedElement = VisualTreeHelper.GetParent(clickedElement);
+                    clickedElement = System.Windows.Media.VisualTreeHelper.GetParent(clickedElement);
                 }
                 Point clickPosition = e.GetPosition(listBox);
                 var clickedItem = listBox.InputHitTest(clickPosition) as FrameworkElement;
@@ -2155,22 +142,48 @@ namespace KCD2_mod_manager
             }
         }
 
-        private void ModList_Drop(object sender, DragEventArgs e)
+        private void ModList_PreviewMouseMove(object sender, MouseEventArgs e)
         {
-            if (e.Data.GetData(typeof(Mod)) is Mod draggedMod && sender is ListBox listBox)
+            if (e.LeftButton == MouseButtonState.Pressed && sender is ListBox listBox && listBox.SelectedItem is Mod mod)
             {
-                // Nur Drag & Drop umsetzen, wenn sortByLoadOrder aktiv ist
-                if (!sortByLoadOrder) return;
+                Point currentPoint = e.GetPosition(null);
+                if (Math.Abs(currentPoint.X - _dragStartPoint.X) > SystemParameters.MinimumHorizontalDragDistance ||
+                    Math.Abs(currentPoint.Y - _dragStartPoint.Y) > SystemParameters.MinimumVerticalDragDistance)
+                {
+                    if (_viewModel != null && _viewModel.SortByLoadOrder)
+                    {
+                        DragDrop.DoDragDrop(listBox, mod, DragDropEffects.Move);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Drag & Drop Handler für Mod-Liste
+        /// WICHTIG: 
+        /// - Aktualisiert Number-Eigenschaften nach dem Verschieben
+        /// - Speichert sofort in Profil und Spiel-Mods-Verzeichnis
+        /// - UI wird automatisch aktualisiert
+        /// </summary>
+        private async void ModList_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetData(typeof(Mod)) is Mod draggedMod && sender is ListBox listBox && _viewModel != null)
+            {
+                if (!_viewModel.SortByLoadOrder) return;
 
                 Point dropPosition = e.GetPosition(listBox);
                 var targetMod = listBox.InputHitTest(dropPosition) as FrameworkElement;
                 if (targetMod?.DataContext is Mod targetModData)
                 {
-                    int targetIndex = Mods.IndexOf(targetModData);
-                    int draggedIndex = Mods.IndexOf(draggedMod);
-                    Mods.Move(draggedIndex, targetIndex);
-                    SaveModOrder();
-                    RefreshAlternationIndexes();
+                    int targetIndex = _viewModel.Mods.IndexOf(targetModData);
+                    int draggedIndex = _viewModel.Mods.IndexOf(draggedMod);
+                    
+                    // WICHTIG: Mod in Collection verschieben
+                    _viewModel.Mods.Move(draggedIndex, targetIndex);
+                    
+                    // WICHTIG: SaveModOrderAsync aktualisiert Number-Eigenschaften und speichert
+                    // sowohl im Profil als auch im Spiel-Mods-Verzeichnis
+                    await _viewModel.SaveModOrderAsync();
                 }
                 listBox.SelectedItem = null;
                 e.Handled = true;
@@ -2179,362 +192,329 @@ namespace KCD2_mod_manager
 
         private void ModCheckBox_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is CheckBox checkBox && checkBox.DataContext is Mod mod)
+            if (sender is CheckBox checkBox && checkBox.DataContext is Mod mod && _viewModel != null)
             {
                 mod.IsEnabled = checkBox.IsChecked ?? false;
-                SaveModOrder();
-                UpdateModsEnabledCount();
+                _viewModel.ModCheckBoxCommand.Execute(mod);
+            }
+        }
+
+        private void UpdateMod_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is Mod mod && _viewModel != null)
+            {
+                _viewModel.UpdateModCommand.Execute(mod);
             }
         }
 
         private void MoveUp_Click(object sender, RoutedEventArgs e)
         {
-            // Prüfen, ob nach Load Order sortiert wird
-            if (!sortByLoadOrder)
+            if (sender is Button btn && btn.DataContext is Mod mod && _viewModel != null)
             {
-                MessageBox.Show("You can only change the mod order while sorting by load order.", "Action Not Allowed", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (sender is Button button && button.DataContext is Mod mod)
-            {
-                int index = Mods.IndexOf(mod);
-                if (index > 0)
-                {
-                    Debug.WriteLine(index);
-                    Mods.Move(index, index - 1);
-                    SaveModOrder();
-                    RefreshAlternationIndexes();
-                }
+                _viewModel.MoveUpCommand.Execute(mod);
             }
         }
 
         private void MoveDown_Click(object sender, RoutedEventArgs e)
         {
-            // Prüfen, ob nach Load Order sortiert wird
-            if (!sortByLoadOrder)
+            if (sender is Button btn && btn.DataContext is Mod mod && _viewModel != null)
             {
-                MessageBox.Show("You can only change the mod order while sorting by load order.", "Action Not Allowed", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                _viewModel.MoveDownCommand.Execute(mod);
             }
+        }
 
-            if (sender is Button button && button.DataContext is Mod mod)
+        private void DeleteMod_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is Mod mod && _viewModel != null)
             {
-                int index = Mods.IndexOf(mod);
-                if (index < Mods.Count - 1)
+                _viewModel.DeleteModCommand.Execute(mod);
+            }
+        }
+
+        private void OpenFolder_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is Mod mod && _viewModel != null)
+            {
+                _viewModel.OpenFolderCommand.Execute(mod);
+            }
+        }
+
+        /// <summary>
+        /// Hilfsmethode: Holt das Mod-Objekt aus dem Context-Menü
+        /// WICHTIG: Das Mod wird im Tag des ContextMenu gespeichert (siehe ModOptions_Click)
+        /// </summary>
+        private Mod? GetModFromContextMenu(MenuItem menuItem)
+        {
+            if (menuItem.Parent is ContextMenu contextMenu)
+            {
+                // Mod wurde im Tag gespeichert
+                if (contextMenu.Tag is Mod mod)
                 {
-                    Mods.Move(index, index + 1);
-                    SaveModOrder();
-                    RefreshAlternationIndexes();
+                    return mod;
+                }
+                
+                // Fallback: Versuche aus PlacementTarget zu bekommen
+                if (contextMenu.PlacementTarget is FrameworkElement fe && fe.DataContext is Mod buttonMod)
+                {
+                    return buttonMod;
                 }
             }
+            return null;
         }
 
-        private void RefreshAlternationIndexes()
+        private void OpenModPage_Click(object sender, RoutedEventArgs e)
         {
-            ModList.Items.Refresh();
-        }
-
-
-
-        // MOD Note: Kontextmenü-Handler zum Hinzufügen eines Kommentars für einen Mod
-        private void ModContextMenu_Opening(object sender, ContextMenuEventArgs e)
-        {
-            if (sender is FrameworkElement element && element.DataContext is Mod mod)
+            if (sender is MenuItem mi)
             {
-                // Retrieve current note from JSON (if available)
-                string currentNote = modNotes.ContainsKey(mod.Id) ? modNotes[mod.Id] : "";
-
-                // Use the NameInputDialog for mod note editing.
-                NameInputDialog dialog = new NameInputDialog(currentNote);
-                dialog.Prompt = "Mod note:"; // Set the prompt text
-                dialog.Owner = this;
-                dialog.Title = "Mod note";
-                dialog.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-
-                if (dialog.ShowDialog() == true)
+                var mod = GetModFromContextMenu(mi);
+                if (mod != null && _viewModel != null)
                 {
-                    string newNote = dialog.EnteredText;
-                    mod.Note = newNote;
-                    modNotes[mod.Id] = newNote;
-                    SaveModNotes();
+                    _viewModel.OpenModPageCommand.Execute(mod);
                 }
-            }
-        }
-
-        private void ModOptions_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button btn && btn.ContextMenu != null)
-            {
-                // Ensure the DataContext is passed to the ContextMenu
-                btn.ContextMenu.DataContext = btn.DataContext;
-                btn.ContextMenu.IsOpen = true;
             }
         }
 
         private void ChangeModName_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is MenuItem item && item.DataContext is Mod mod)
+            if (sender is MenuItem mi)
             {
-                // Open the input dialog with the current mod name as default
-                NameInputDialog dialog = new NameInputDialog(mod.Name);
-                dialog.Prompt = "Enter mod name:"; // Sets the prompt label inside the dialog
-                dialog.Owner = this;
-                dialog.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-
-                if (dialog.ShowDialog() == true)
+                var mod = GetModFromContextMenu(mi);
+                if (mod != null && _viewModel != null)
                 {
-                    string newName = dialog.EnteredText;
-                    mod.Name = newName;
-
-                    // Recalculate modid based on new name (only letters, lowercase)
-                    string newModId = Regex.Replace(newName.ToLowerInvariant(), @"[^a-z]", "");
-
-                    // Update the manifest file
-                    string manifestPath = Path.Combine(mod.Path, "mod.manifest");
-                    if (File.Exists(manifestPath))
-                    {
-                        XDocument doc = XDocument.Load(manifestPath);
-                        var infoElement = doc.Descendants("info").FirstOrDefault();
-                        if (infoElement != null)
-                        {
-                            // Update or add the <name> element
-                            var nameElement = infoElement.Element("name");
-                            if (nameElement != null)
-                            {
-                                nameElement.Value = newName;
-                            }
-                            else
-                            {
-                                infoElement.Add(new XElement("name", newName));
-                            }
-
-                            // Update or add the <modid> element
-                            var modidElement = infoElement.Element("modid");
-                            if (modidElement != null)
-                            {
-                                modidElement.Value = newModId;
-                            }
-                            else
-                            {
-                                infoElement.Add(new XElement("modid", newModId));
-                            }
-
-                            doc.Save(manifestPath);
-                        }
-                    }
-                    // Optionally update the mod's Id if it should reflect the new modid
-
-                    RefreshAlternationIndexes();
-                    mod.Id = newModId;
+                    _viewModel.ChangeModNameCommand.Execute(mod);
                 }
             }
         }
-
 
         private void ChangeModNote_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is MenuItem item && item.DataContext is Mod mod)
+            if (sender is MenuItem mi)
             {
-                // Aktuelle Notiz aus JSON abrufen, falls vorhanden
-                string currentNote = modNotes.ContainsKey(mod.Id) ? modNotes[mod.Id] : "";
-
-                // Eingabe-Dialog für die Mod-Notiz öffnen
-                NameInputDialog dialog = new NameInputDialog(currentNote);
-                dialog.Prompt = "Enter note for mod:"; // Setzt den Prompt-Text
-                dialog.Owner = this;
-                dialog.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-
-                if (dialog.ShowDialog() == true)
+                var mod = GetModFromContextMenu(mi);
+                if (mod != null && _viewModel != null)
                 {
-                    string newNote = dialog.EnteredText;
-                    mod.Note = newNote;
-                    modNotes[mod.Id] = newNote;
-                    SaveModNotes();
+                    _viewModel.ChangeModNoteCommand.Execute(mod);
                 }
             }
         }
 
-
-
-
-        private void DeleteMod_Click(object sender, RoutedEventArgs e)
+        private void EndorseMod_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button && button.DataContext is Mod mod)
+            if (sender is MenuItem mi)
             {
-                // Prüfe, ob die Sicherheitsabfrage übersprungen werden soll
-                if (Settings.Default.AskOnDelete)
+                var mod = GetModFromContextMenu(mi);
+                if (mod != null && _viewModel != null)
                 {
-                    var confirmationWindow = new DeleteConfirmationWindow();
-                    confirmationWindow.Owner = this; // Setze den Hauptfensterbesitzer
-                    confirmationWindow.ShowDialog();
-
-                    if (!confirmationWindow.UserConfirmed)
-                        return;
-
-                    // Speichere die Option "Don't ask again"
-                    if (confirmationWindow.DontAskAgain)
-                    {
-                        Settings.Default.AskOnDelete = false;
-                        Settings.Default.Save();
-                    }
+                    _viewModel.EndorseModCommand.Execute(mod);
                 }
-
-                try
-                {
-                    // Mod-Ordner löschen
-                    if (Directory.Exists(mod.Path))
-                    {
-                        Directory.Delete(mod.Path, true);
-                    }
-
-                    // Mod aus der Liste entfernen
-                    Mods.Remove(mod);
-
-                    // Mod-Reihenfolge speichern
-                    SaveModOrder();
-
-                    StatusLabel.Content = $"Deleted mod: {mod.Name}";
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Failed to delete mod: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-            else
-            {
-                MessageBox.Show("Failed to identify the mod to delete.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
         private void ChangeModNumber_Click(object sender, RoutedEventArgs e)
         {
-            // 1. Bestimmen, welches Mod-Objekt geklickt wurde.
-            Mod mod = null;
-            if (sender is MenuItem menuItem && menuItem.DataContext is Mod dataMod)
+            if (sender is MenuItem mi)
             {
-                mod = dataMod;
-            }
-            else if (sender is MenuItem mi && mi.DataContext is Mod modMenu)
-            {
-                mod = modMenu;
-            }
-
-            if (mod == null)
-            {
-                MessageBox.Show("No mod selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            // 2. Dialog anzeigen, um eine neue Mod-Nummer abzufragen.
-            //    Du kannst hier deinen bereits existierenden NameInputDialog wiederverwenden.
-            //    Der zweite Parameter im Konstruktor (oder die Zuweisung "dialog.Prompt") ist dein Prompt-Text.
-            NameInputDialog dialog = new NameInputDialog(mod.ModNumber > 0 ? mod.ModNumber.ToString() : "")
-            {
-                Prompt = "Enter new mod number:",
-                Owner = this,
-                Title = "Change Mod Number",
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            };
-
-            if (dialog.ShowDialog() == true)
-            {
-                // 3. Neue Eingabe validieren
-                if (int.TryParse(dialog.EnteredText, out int newModNumber))
+                var mod = GetModFromContextMenu(mi);
+                if (mod != null && _viewModel != null)
                 {
-                    // 4. Mod-Objekt aktualisieren
-                    mod.ModNumber = newModNumber;
-
-                    // 5. In mod_versions.json speichern
-                    //    Hier brauchst du das zuletzt installierte FileName. 
-                    //    Entweder hast du es noch in mod.FileName, 
-                    //    oder du lädst es aus mod_versions.json, um es wieder zu verwenden.
-                    //    Beispiel: wir holen es aus der JSON-Datei, falls nötig:
-                    string installedFileName = GetInstalledFileNameFromJson(mod.Id);
-
-                    // Falls in der JSON noch kein Eintrag vorhanden, fallback auf z.B. mod.Name oder ""
-                    if (string.IsNullOrEmpty(installedFileName))
-                        installedFileName = "unknown_file";
-
-                    SaveModVersion(mod.Id, mod.Version, newModNumber, installedFileName);
-
-                    // Optional: UI aktualisieren oder weitere Aktionen
-                    // ...
-                    MessageBox.Show($"Mod number updated to {newModNumber}.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
-                    RefreshAlternationIndexes();
-                }
-                else
-                {
-                    MessageBox.Show("Invalid number entered. Change aborted.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    _viewModel.ChangeModNumberCommand.Execute(mod);
                 }
             }
         }
 
-        private string GetInstalledFileNameFromJson(string modId)
+        /// <summary>
+        /// Handler für "Update-Prüfung umschalten" im Context-Menu
+        /// WICHTIG: IsChecked-Binding (TwoWay) aktualisiert UpdateChecksEnabled automatisch.
+        /// Dieser Handler speichert nur die Änderung in mod_versions.json.
+        /// </summary>
+        private void ToggleUpdateCheck_Click(object sender, RoutedEventArgs e)
         {
-            string jsonPath = Path.Combine(ModFolder, "mod_versions.json");
-            if (!File.Exists(jsonPath)) return null;
-
-            try
+            if (sender is MenuItem mi)
             {
-                string json = File.ReadAllText(jsonPath);
-                var serializerOptions = new JsonSerializerOptions
+                // WICHTIG: DataContext sollte das Mod-Objekt sein (gesetzt in ModOptions_Click)
+                var mod = mi.DataContext as Mod;
+                if (mod == null && mi.Parent is ContextMenu contextMenu)
                 {
-                    PropertyNameCaseInsensitive = true
-                };
-                var modData = JsonSerializer.Deserialize<Dictionary<string, ModVersionInfo>>(json, serializerOptions);
-                if (modData != null && modData.TryGetValue(modId, out ModVersionInfo info))
+                    // Fallback: Versuche aus ContextMenu DataContext zu bekommen
+                    mod = contextMenu.DataContext as Mod;
+                }
+                
+                if (mod != null && _viewModel != null)
                 {
-                    return info.FileName;
+                    // WICHTIG: IsChecked-Binding hat UpdateChecksEnabled bereits aktualisiert
+                    // Wir müssen nur die Persistenz auslösen
+                    _viewModel.ToggleUpdateCheckCommand.Execute(mod);
                 }
             }
-            catch
-            {
-                // Fehler ignorieren oder loggen
-            }
-            return null;
         }
-    }
 
-    public class Mod
-    {
-        public string Id { get; set; }
-        public string Name { get; set; }
-        public string Version { get; set; }
-        public string Path { get; set; }
-        public bool IsEnabled { get; set; }
-        public string Note { get; set; }
-        public int Number { get; set; }
-        public bool HasUpdate { get; set; }
-        public string LatestVersion { get; set; }
-        public int ModNumber { get; set; }
+        /// <summary>
+        /// Handler für "Check for Update" im Context-Menu
+        /// WICHTIG: Führt Update-Prüfung durch, öffnet KEINE Web-Seite
+        /// </summary>
+        private void CheckForUpdate_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem mi)
+            {
+                var mod = GetModFromContextMenu(mi);
+                if (mod != null && _viewModel != null)
+                {
+                    // WICHTIG: RelayCommand.Execute ruft die async Methode auf, aber wartet nicht
+                    // Die async Methode läuft im Hintergrund
+                    _viewModel.CheckForUpdateCommand.Execute(mod);
+                }
+            }
+        }
 
+        private void SetModVersion_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem mi)
+            {
+                var mod = GetModFromContextMenu(mi);
+                if (mod != null && _viewModel != null)
+                {
+                    _viewModel.SetModVersionCommand.Execute(mod);
+                }
+            }
+        }
 
-        public Visibility UpdateVisibility => HasUpdate ? Visibility.Visible : Visibility.Collapsed;
-    }
+        /// <summary>
+        /// Öffnet das Context-Menü für Mod-Optionen
+        /// WICHTIG: Setzt PlacementTarget defensiv, DataContext wird über XAML-Binding gesetzt
+        /// </summary>
+        private void ModOptions_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.ContextMenu != null)
+            {
+                var mod = btn.DataContext as Mod;
+                if (mod == null) return;
 
-    public class NexusModFile
-    {
-        public int file_id { get; set; }
-        public string version { get; set; }
-        public long uploaded_timestamp { get; set; }
-        public string name { get; set; }          // Must be present
-        public string mod_version { get; set; }     // Must be present
-    }
+                // Set placement target & ensure DataContext binding works
+                var cm = btn.ContextMenu;
+                cm.PlacementTarget = btn;
+                // Don't override cm.DataContext here — XAML binding handles it via PlacementTarget.DataContext
+                cm.IsOpen = true;
+            }
+        }
 
+        private void ModContextMenu_Opening(object sender, ContextMenuEventArgs e)
+        {
+            if (sender is FrameworkElement element && element.DataContext is Mod mod && _viewModel != null)
+            {
+                // Context-Menu für Notizen öffnen
+                _viewModel.ChangeModNoteCommand.Execute(mod);
+            }
+        }
 
-    public class NexusModFileUpdate
-    {
-        public int old_file_id { get; set; }
-        public int new_file_id { get; set; }
-        public string old_file_name { get; set; }
-        public string new_file_name { get; set; }
-        public long uploaded_timestamp { get; set; }
-    }
+        private void OpenSettingsWindow_Click(object sender, RoutedEventArgs e)
+        {
+            // SettingsWindow über DI erstellen - vereinfachte Version
+            // Da wir keinen direkten Zugriff auf ServiceProvider haben, erstellen wir das ViewModel manuell
+            // In einer vollständigen MVVM-Implementierung würde man einen ServiceLocator oder WindowFactory verwenden
+            var app = (App)Application.Current;
+            var serviceProvider = app.GetServiceProvider();
+            if (serviceProvider != null)
+            {
+                var settingsWindow = serviceProvider.GetRequiredService<SettingsWindow>();
+                settingsWindow.Owner = this;
 
-    public class NexusModFilesResponse
-    {
-        public List<NexusModFile> files { get; set; }
-        // Hier als Liste von NexusModFileUpdate anpassen:
-        public List<NexusModFileUpdate> file_updates { get; set; }
+                settingsWindow.ThemeChanged += (s, args) =>
+                {
+                    UpdateTheme();
+                };
+
+                settingsWindow.ShowDialog();
+                UpdateTheme();
+            }
+        }
+
+        private void LoginMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (_viewModel != null)
+            {
+                _viewModel.LoginCommand.Execute(null);
+            }
+        }
+
+        private void LogoutMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (_viewModel != null)
+            {
+                _viewModel.LogoutCommand.Execute(null);
+            }
+        }
+
+        private void AddMod_Click(object sender, RoutedEventArgs e)
+        {
+            if (_viewModel != null)
+            {
+                _viewModel.AddModCommand.Execute(null);
+            }
+        }
+
+        private void Reload_Click(object sender, RoutedEventArgs e)
+        {
+            if (_viewModel != null)
+            {
+                _viewModel.ReloadCommand.Execute(null);
+            }
+        }
+
+        private void StartGame_Click(object sender, RoutedEventArgs e)
+        {
+            if (_viewModel != null)
+            {
+                _viewModel.StartGameCommand.Execute(null);
+            }
+        }
+
+        private void SortButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_viewModel != null)
+            {
+                _viewModel.SortCommand.Execute(null);
+            }
+        }
+
+        private void ClearSearch_Click(object sender, RoutedEventArgs e)
+        {
+            if (_viewModel != null)
+            {
+                _viewModel.ClearSearchCommand.Execute(null);
+            }
+        }
+
+        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (sender is TextBox textBox && _viewModel != null)
+            {
+                _viewModel.SearchText = textBox.Text;
+            }
+        }
+
+        /// <summary>
+        /// Aktualisiert das Theme für MainWindow
+        /// WICHTIG: Verwendet ThemeService zum Laden der Theme-Dictionaries
+        /// </summary>
+        private void UpdateTheme()
+        {
+            var app = Application.Current as App;
+            var serviceProvider = app?.GetServiceProvider();
+            if (serviceProvider != null)
+            {
+                var themeService = serviceProvider.GetService<IThemeService>();
+                if (themeService != null)
+                {
+                    themeService.ApplyTheme(this.Resources, themeService.IsDarkMode);
+                    this.Background = (Brush)this.Resources["WindowBackgroundBrush"];
+                    if (StatusLabel != null)
+                    {
+                        StatusLabel.Foreground = (Brush)this.Resources["TextForegroundBrush"];
+                    }
+                }
+            }
+        }
     }
 }
+
+

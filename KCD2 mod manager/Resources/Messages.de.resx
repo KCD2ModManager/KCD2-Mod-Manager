@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ErrorInvalidFileType" xml:space="preserve">
+    <value>Ungültiger Dateityp in den Einstellungen. Nur .exe-Dateien sind erlaubt.</value>
+  </data>
+  <data name="ErrorGamePathRequired" xml:space="preserve">
+    <value>Das Spiel wurde nicht im Standardpfad gefunden. Bitte wählen Sie die Spiel-Executable manuell aus.</value>
+  </data>
+  <data name="ErrorGamePathRequiredExit" xml:space="preserve">
+    <value>Der Spielpfad ist erforderlich, um fortzufahren. Die Anwendung wird beendet.</value>
+  </data>
+  <data name="ErrorInvalidPath" xml:space="preserve">
+    <value>Der gespeicherte Spielpfad ist ungültig. Bitte aktualisieren Sie den Pfad in den Einstellungen.</value>
+  </data>
+  <data name="ErrorInvalidExecutable" xml:space="preserve">
+    <value>Der Pfad zur Spiel-Executable ist ungültig. Bitte aktualisieren Sie den Pfad in den Einstellungen, bevor Sie das Spiel starten.</value>
+  </data>
+  <data name="ErrorSecurityBlocked" xml:space="preserve">
+    <value>Nur .exe-Dateien können ausgeführt werden.</value>
+  </data>
+  <data name="WarningNoModsSelected" xml:space="preserve">
+    <value>Keine Mods zum Laden ausgewählt.</value>
+  </data>
+  <data name="ErrorSortingDisabled" xml:space="preserve">
+    <value>Sortierung ist während der Suche deaktiviert.</value>
+  </data>
+  <data name="ErrorActionNotAllowed" xml:space="preserve">
+    <value>Sie können die Mod-Reihenfolge nur ändern, wenn nach Lade-Reihenfolge sortiert wird.</value>
+  </data>
+  <data name="ErrorNoModSelected" xml:space="preserve">
+    <value>Kein Mod ausgewählt.</value>
+  </data>
+  <data name="ErrorModNumberMissing" xml:space="preserve">
+    <value>Mod-Nummer fehlt oder ist ungültig.</value>
+  </data>
+  <data name="ErrorModFolderNotExists" xml:space="preserve">
+    <value>Der Mod-Ordner existiert nicht oder ist nicht angegeben.</value>
+  </data>
+  <data name="ErrorFailedToDeleteMod" xml:space="preserve">
+    <value>Mod konnte nicht gelöscht werden: {0}</value>
+  </data>
+  <data name="ErrorFailedToIdentifyMod" xml:space="preserve">
+    <value>Der zu löschende Mod konnte nicht identifiziert werden.</value>
+  </data>
+  <data name="ErrorFailedToStartGame" xml:space="preserve">
+    <value>Spiel konnte nicht gestartet werden: {0}</value>
+  </data>
+  <data name="InfoModAdded" xml:space="preserve">
+    <value>Mod hinzugefügt: {0} (Version: {1})</value>
+  </data>
+  <data name="InfoModDeleted" xml:space="preserve">
+    <value>Mod gelöscht: {0}</value>
+  </data>
+  <data name="InfoModOrderSaved" xml:space="preserve">
+    <value>Mod-Reihenfolge gespeichert in {0}.</value>
+  </data>
+  <data name="InfoNotLoggedIn" xml:space="preserve">
+    <value>Nicht bei Nexus Mods angemeldet</value>
+  </data>
+  <data name="InfoLoggedInAs" xml:space="preserve">
+    <value>Angemeldet als {0}</value>
+  </data>
+  <data name="PromptEnterModNumber" xml:space="preserve">
+    <value>Mod-Nummer eingeben:</value>
+  </data>
+  <data name="PromptEnterModName" xml:space="preserve">
+    <value>Mod-Name eingeben:</value>
+  </data>
+  <data name="PromptEnterNote" xml:space="preserve">
+    <value>Notiz für Mod eingeben:</value>
+  </data>
+  <data name="PromptModNote" xml:space="preserve">
+    <value>Mod-Notiz:</value>
+  </data>
+  <data name="PromptChangeModNumber" xml:space="preserve">
+    <value>Neue Mod-Nummer eingeben:</value>
+  </data>
+  <data name="TitleModNumber" xml:space="preserve">
+    <value>Mod-Nummer</value>
+  </data>
+  <data name="TitleChangeModName" xml:space="preserve">
+    <value>Mod-Name ändern</value>
+  </data>
+  <data name="TitleChangeModNote" xml:space="preserve">
+    <value>Mod-Notiz ändern</value>
+  </data>
+  <data name="TitleChangeModNumber" xml:space="preserve">
+    <value>Mod-Nummer ändern</value>
+  </data>
+  <data name="TitleModNote" xml:space="preserve">
+    <value>Mod-Notiz</value>
+  </data>
+  <data name="ErrorFailedToLoadMods" xml:space="preserve">
+    <value>Fehler beim Laden der Mods</value>
+  </data>
+  <data name="StatusInstallingMod" xml:space="preserve">
+    <value>Mod wird installiert...</value>
+  </data>
+  <data name="StatusModAdded" xml:space="preserve">
+    <value>Mod hinzugefügt: {0} (Version: {1})</value>
+  </data>
+  <data name="StatusModInstallFailed" xml:space="preserve">
+    <value>Mod konnte nicht installiert werden</value>
+  </data>
+  <data name="StatusModDeleted" xml:space="preserve">
+    <value>Mod gelöscht: {0}</value>
+  </data>
+  <data name="StatusInstallingModFromFolder" xml:space="preserve">
+    <value>Mod wird aus Ordner installiert...</value>
+  </data>
+  <data name="DialogTitleError" xml:space="preserve">
+    <value>Fehler</value>
+  </data>
+  <data name="DialogTitleWarning" xml:space="preserve">
+    <value>Warnung</value>
+  </data>
+  <data name="DialogTitleInformation" xml:space="preserve">
+    <value>Information</value>
+  </data>
+  <data name="DialogTitleSecurityError" xml:space="preserve">
+    <value>Sicherheitsfehler</value>
+  </data>
+  <data name="DialogTitleGamePathRequired" xml:space="preserve">
+    <value>Spielpfad erforderlich</value>
+  </data>
+  <data name="DialogTitleInvalidPath" xml:space="preserve">
+    <value>Ungültiger Pfad</value>
+  </data>
+  <data name="DialogTitleSecurityBlocked" xml:space="preserve">
+    <value>Sicherheit blockiert</value>
+  </data>
+  <data name="DialogTitleLanguageChanged" xml:space="preserve">
+    <value>Sprache geändert</value>
+  </data>
+  <data name="DialogMessageLanguageChanged" xml:space="preserve">
+    <value>Die Sprache wurde geändert. Die Anwendung muss neu gestartet werden, damit die Änderungen wirksam werden. Jetzt neu starten?</value>
+  </data>
+  <data name="InfoMaxBackupsSet" xml:space="preserve">
+    <value>Maximale Backups auf {0} gesetzt.</value>
+  </data>
+  <data name="ErrorInvalidNumber" xml:space="preserve">
+    <value>Ungültige Zahl. Bitte geben Sie eine positive Ganzzahl ein.</value>
+  </data>
+  <data name="ErrorSortingDisabled" xml:space="preserve">
+    <value>Sortierung ist während der Suche deaktiviert.</value>
+  </data>
+  <data name="ErrorActionNotAllowed" xml:space="preserve">
+    <value>Aktion nicht erlaubt</value>
+  </data>
+  <data name="InfoModEndorsed" xml:space="preserve">
+    <value>Mod erfolgreich empfohlen!</value>
+  </data>
+  <data name="ErrorEndorseFailed" xml:space="preserve">
+    <value>Empfehlung fehlgeschlagen</value>
+  </data>
+  <data name="ErrorOpeningFolder" xml:space="preserve">
+    <value>Fehler beim Öffnen des Ordners: {0}</value>
+  </data>
+  <data name="DialogTitleSuccess" xml:space="preserve">
+    <value>Erfolg</value>
+  </data>
+  <data name="DialogTitleActionNotAllowed" xml:space="preserve">
+    <value>Aktion nicht erlaubt</value>
+  </data>
+  <data name="PromptNewVersionAvailable" xml:space="preserve">
+    <value>Eine neue Version ({0}) ist verfügbar. Möchten Sie aktualisieren?</value>
+  </data>
+  <data name="DialogTitleUpdateAvailable" xml:space="preserve">
+    <value>Update verfügbar</value>
+  </data>
+  <data name="ErrorModFolderNotExists" xml:space="preserve">
+    <value>Der Mod-Ordner existiert nicht oder ist nicht angegeben.</value>
+  </data>
+</root>
+

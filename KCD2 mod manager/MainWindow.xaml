@@ -1,4 +1,4 @@
-﻿<Window x:Class="KCD2_mod_manager.MainWindow"
+<Window x:Class="KCD2_mod_manager.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="KCD2 Mod Manager" Height="500" Width="800"
@@ -9,20 +9,16 @@
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <!-- Inverse Converter -->
         <local:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+        <!-- Is Not Null Converter -->
+        <local:IsNotNullConverter x:Key="IsNotNullConverter"/>
 
-        <!-- Dynamische Brushes für Dark/Light Mode -->
-        <SolidColorBrush x:Key="WindowBackgroundBrush" Color="White"/>
-        <SolidColorBrush x:Key="ListBoxBackgroundBrush" Color="White"/>
-        <SolidColorBrush x:Key="ModListItemEvenBrush" Color="White"/>
-        <SolidColorBrush x:Key="ModListItemOddBrush" Color="LightGray"/>
-        <SolidColorBrush x:Key="ListBoxForegroundBrush" Color="Black"/>
-        <SolidColorBrush x:Key="SelectedItemBrush" Color="LightBlue"/>
-        <!-- Beispielstil für ListBoxItems, verwendet dynamische Ressourcen -->
+        <!-- Modern Mod List Item Style mit verbessertem Kontrast -->
         <Style x:Key="ModListStyle" TargetType="ListBoxItem">
-            <Setter Property="Margin" Value="2"/>
-            <Setter Property="Padding" Value="5"/>
-            <Setter Property="Foreground" Value="{DynamicResource ListBoxForegroundBrush}"/>
+            <Setter Property="Margin" Value="2,1"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextForegroundBrush}"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="BorderThickness" Value="0"/>
             <Style.Triggers>
                 <!-- Alternierende Farben -->
                 <Trigger Property="ItemsControl.AlternationIndex" Value="0">
@@ -31,180 +27,547 @@
                 <Trigger Property="ItemsControl.AlternationIndex" Value="1">
                     <Setter Property="Background" Value="{DynamicResource ModListItemOddBrush}"/>
                 </Trigger>
-                <!-- Deaktivierte Mods werden rot dargestellt -->
+                <!-- Hover State -->
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource ModListItemHoverBrush}"/>
+                </Trigger>
+                <!-- Deaktivierte Mods mit reduzierter Opacity -->
                 <DataTrigger Binding="{Binding IsEnabled}" Value="False">
-                    <Setter Property="Foreground" Value="Red"/>
+                    <Setter Property="Foreground" Value="{DynamicResource TextDisabledBrush}"/>
+                    <Setter Property="Opacity" Value="0.6"/>
                 </DataTrigger>
                 <!-- Bei Auswahl wird eine andere Hintergrundfarbe verwendet -->
                 <Trigger Property="IsSelected" Value="True">
                     <Setter Property="Background" Value="{DynamicResource SelectedItemBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource TextForegroundBrush}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
 
-
+        <!-- Modern Icon Button Style für Mod List Actions -->
+        <Style x:Key="ModActionButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="28"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Margin" Value="4,0"/>
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Border"
+                               Background="{TemplateBinding Background}"
+                               BorderBrush="{TemplateBinding BorderBrush}"
+                               BorderThickness="{TemplateBinding BorderThickness}"
+                               CornerRadius="4"
+                               Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource ModListItemHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource SelectedItemBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
     </Window.Resources>
 
-    <Grid Margin="10" Background="{DynamicResource WindowBackgroundBrush}">
-        <!-- Menu -->
-        <Menu VerticalAlignment="Top" Margin="0,0,0,10" Background="{DynamicResource WindowBackgroundBrush}" >
-            <MenuItem Header="Settings" Click="OpenSettingsWindow_Click"  Foreground="{DynamicResource ListBoxForegroundBrush}"/>
-
-
-            <MenuItem Header="Log in to Nexus Mods" 
-                      Foreground="{DynamicResource ListBoxForegroundBrush}"
-                      Visibility="{Binding IsUserLoggedIn, Converter={StaticResource InverseBooleanToVisibilityConverter}}"
-                      Click="LoginMenuItem_Click"/>
-            <!-- This menu item appears when the user IS logged in -->
-            <MenuItem Header="Log out of Nexus Mods" 
-                      Foreground="{DynamicResource ListBoxForegroundBrush}"
-                      Visibility="{Binding IsUserLoggedIn, Converter={StaticResource BooleanToVisibilityConverter}}"
-                      Click="LogoutMenuItem_Click"/>
+    <Grid Margin="12" Background="{DynamicResource WindowBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Menu Bar -->
+        <Menu Grid.Row="0" 
+              VerticalAlignment="Top" 
+              Margin="0,0,0,8" 
+              Background="{DynamicResource WindowBackgroundBrush}">
+            <MenuItem Header="{Binding MenuSettingsText}" 
+                     Click="OpenSettingsWindow_Click"  
+                     Foreground="{DynamicResource TextForegroundBrush}"/>
+            <MenuItem Header="{Binding MenuLoginText}" 
+                     Foreground="{DynamicResource TextForegroundBrush}"
+                     Visibility="{Binding IsUserLoggedIn, Converter={StaticResource InverseBooleanToVisibilityConverter}}"
+                     Click="LoginMenuItem_Click"/>
+            <MenuItem Header="{Binding MenuLogoutText}" 
+                     Foreground="{DynamicResource TextForegroundBrush}"
+                     Visibility="{Binding IsUserLoggedIn, Converter={StaticResource BooleanToVisibilityConverter}}"
+                     Click="LogoutMenuItem_Click"/>
         </Menu>
 
+        <!-- Nexus User Info (Username and Premium Status) - Modernisiert -->
+        <StackPanel Grid.Row="0"
+                    Orientation="Horizontal" 
+                    VerticalAlignment="Top" 
+                    HorizontalAlignment="Right" 
+                    Margin="0,2,0,8"
+                    Visibility="{Binding IsUserLoggedIn, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Border Background="{DynamicResource PanelBackgroundBrush}"
+                   CornerRadius="4"
+                   Padding="8,4"
+                   BorderBrush="{DynamicResource SeparatorBrush}"
+                   BorderThickness="1">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{Binding NexusUsername}" 
+                              VerticalAlignment="Center" 
+                              Margin="0,0,8,0" 
+                              FontWeight="SemiBold" 
+                              FontSize="12"
+                              Foreground="{DynamicResource TextForegroundBrush}"/>
+                    <!-- Premium Badge - Luxuriöses Design mit Gold-Gradient -->
+                    <Border Background="{DynamicResource PremiumBadgeBackgroundBrush}"
+                           CornerRadius="4"
+                           Padding="6,3"
+                           BorderBrush="{DynamicResource PremiumBadgeBorderBrush}"
+                           BorderThickness="1"
+                           Visibility="{Binding NexusIsPremium, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Border.Effect>
+                            <DropShadowEffect Color="#FFD700" 
+                                            Opacity="0.3" 
+                                            BlurRadius="4" 
+                                            ShadowDepth="0"/>
+                        </Border.Effect>
+                        <TextBlock Text="Premium" 
+                                  VerticalAlignment="Center" 
+                                  HorizontalAlignment="Center"
+                                  Foreground="{DynamicResource PremiumBadgeForegroundBrush}" 
+                                  FontWeight="Bold" 
+                                  FontSize="10"
+                                  TextAlignment="Center"/>
+                    </Border>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+        
+        <!-- Separator -->
+        <Separator Grid.Row="1" 
+                  Background="{DynamicResource SeparatorBrush}" 
+                  Margin="0,0,0,12"/>
 
+        <!-- Control Panels Row -->
+        <Grid Grid.Row="2" Margin="0,0,0,12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            
+            <!-- Top Controls Row -->
+            <Grid Grid.Row="0" Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- Feature 4: Profile Management -->
+                <StackPanel Grid.Column="0"
+                           Orientation="Horizontal" 
+                           VerticalAlignment="Center" 
+                           HorizontalAlignment="Left">
+                    <TextBlock Text="{Binding ProfilesText}" 
+                              VerticalAlignment="Center" 
+                              Margin="0,0,8,0" 
+                              FontSize="13"
+                              FontWeight="SemiBold"
+                              Foreground="{DynamicResource TextForegroundBrush}"/>
+                    <ComboBox ItemsSource="{Binding Profiles}" 
+                             SelectedItem="{Binding SelectedProfile}" 
+                             DisplayMemberPath="ProfileName" 
+                             Width="150" 
+                             Height="28"
+                             Margin="0,0,8,0" 
+                             VerticalAlignment="Center"
+                             IsEditable="False"
+                             IsHitTestVisible="True"
+                             Focusable="True"/>
+                    <Button Content="{Binding CreateProfileText}" 
+                           Command="{Binding CreateProfileCommand}" 
+                           Style="{StaticResource SecondaryButtonStyle}"/>
+                    <Button Content="{Binding DuplicateProfileText}" 
+                           Command="{Binding DuplicateProfileCommand}" 
+                           CommandParameter="{Binding SelectedProfile.ProfileName}" 
+                           Style="{StaticResource SecondaryButtonStyle}" 
+                           IsEnabled="{Binding SelectedProfile, Converter={StaticResource IsNotNullConverter}}"/>
+                    <Button Content="{Binding DeleteProfileText}" 
+                           Command="{Binding DeleteProfileCommand}" 
+                           CommandParameter="{Binding SelectedProfile.ProfileName}" 
+                           Style="{StaticResource SecondaryButtonStyle}" 
+                           IsEnabled="{Binding SelectedProfile, Converter={StaticResource IsNotNullConverter}}"/>
+                    <Button Content="{Binding SaveProfileText}" 
+                           Command="{Binding SaveCurrentProfileCommand}" 
+                           Style="{StaticResource SecondaryButtonStyle}"/>
+                </StackPanel>
+                
+                <!-- Feature 11: Game Selection and Switch -->
+                <StackPanel Grid.Column="1"
+                           Orientation="Horizontal" 
+                           VerticalAlignment="Center" 
+                           HorizontalAlignment="Right">
+                    <TextBlock Text="{Binding GameText}" 
+                              VerticalAlignment="Center" 
+                              Margin="0,0,8,0" 
+                              FontSize="13"
+                              FontWeight="SemiBold"
+                              Foreground="{DynamicResource TextForegroundBrush}"/>
+                    <TextBlock Text="{Binding SelectedGameDisplay}" 
+                              VerticalAlignment="Center" 
+                              Margin="0,0,8,0" 
+                              FontWeight="Bold" 
+                              FontSize="13"
+                              Foreground="{DynamicResource AccentBrush}"/>
+                    <Button Content="{Binding SwitchGameText}" 
+                           Command="{Binding SwitchGameCommand}" 
+                           Style="{StaticResource SecondaryButtonStyle}"/>
+                </StackPanel>
+            </Grid>
+            
+            <!-- Secondary Controls Row -->
+            <Grid Grid.Row="1" Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- Feature 5: Enable/Disable All -->
+                <StackPanel Grid.Column="0"
+                           Orientation="Horizontal" 
+                           VerticalAlignment="Center" 
+                           HorizontalAlignment="Left">
+                    <Button Content="{Binding EnableAllModsText}" 
+                           Command="{Binding EnableAllModsCommand}" 
+                           Style="{StaticResource SecondaryButtonStyle}"/>
+                    <Button Content="{Binding DisableAllModsText}" 
+                           Command="{Binding DisableAllModsCommand}" 
+                           Style="{StaticResource SecondaryButtonStyle}"/>
+                </StackPanel>
 
+                <!-- Feature 6: Manifest Update -->
+                <StackPanel Grid.Column="1"
+                           Orientation="Horizontal" 
+                           VerticalAlignment="Center" 
+                           HorizontalAlignment="Right">
+                    <Button Content="{Binding UpdateManifestText}" 
+                           Command="{Binding UpdateManifestCommand}" 
+                           CommandParameter="{Binding SelectedMod}" 
+                           Style="{StaticResource SecondaryButtonStyle}" 
+                           IsEnabled="{Binding SelectedMod, Converter={StaticResource IsNotNullConverter}}"/>
+                    <Button Content="{Binding UpdateAllManifestsText}" 
+                           Command="{Binding UpdateAllManifestsCommand}" 
+                           Style="{StaticResource SecondaryButtonStyle}"/>
+                </StackPanel>
+            </Grid>
 
-        <!-- Main Layout -->
-        <Grid Margin="0,30,0,0">
+            <!-- Main Layout -->
+            <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="2*" />
                 <ColumnDefinition Width="1*" />
             </Grid.ColumnDefinitions>
 
-            <!-- Mod List -->
-            <ListBox x:Name="ModList" MinHeight="300" MinWidth="300" Margin="0,0,10,0" SelectionMode="Single" AllowDrop="True"
-                     Grid.Column="0"
-                     ItemContainerStyle="{StaticResource ModListStyle}"
-                     AlternationCount="2"
-                     Background="{DynamicResource ListBoxBackgroundBrush}"
-                     PreviewMouseLeftButtonDown="ModList_PreviewMouseLeftButtonDown"
-                     PreviewMouseMove="ModList_PreviewMouseMove" Drop="ModList_Drop">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition MinWidth="240" />
-                                <ColumnDefinition Width="40" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <!-- Checkbox -->
-                            <CheckBox Click="ModCheckBox_Click" IsChecked="{Binding IsEnabled}" Grid.Column="0" Margin="5,0,0,0" VerticalAlignment="Center" />
-                            <!-- Name with Context Menu for Notes -->
-                            <TextBlock Text="{Binding Name}" Grid.Column="1" Margin="5,0" VerticalAlignment="Center"
-                                       Background="Transparent" ContextMenuOpening="ModContextMenu_Opening" />
-                               
-                            
+            <!-- Mod List with Loading Overlay -->
+            <Grid Grid.Column="0" Margin="0,0,12,0">
+                <Border Background="{DynamicResource ListBoxBackgroundBrush}"
+                       BorderBrush="{DynamicResource SeparatorBrush}"
+                       BorderThickness="1"
+                       CornerRadius="4"
+                       Padding="2">
+                    <Grid>
+                        <ListBox x:Name="ModList" 
+                                MinHeight="300" 
+                                MinWidth="300" 
+                                SelectionMode="Single" 
+                                AllowDrop="True"
+                                ItemContainerStyle="{StaticResource ModListStyle}"
+                                AlternationCount="2"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                IsEnabled="{Binding IsLoadingMods, Converter={StaticResource InverseBooleanToVisibilityConverter}}"
+                                PreviewMouseLeftButtonDown="ModList_PreviewMouseLeftButtonDown"
+                                PreviewMouseMove="ModList_PreviewMouseMove" 
+                                Drop="ModList_Drop">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition MinWidth="200" />
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <!-- Checkbox -->
+                                        <CheckBox Click="ModCheckBox_Click" IsChecked="{Binding IsEnabled}" Grid.Column="0" Margin="5,0,0,0" VerticalAlignment="Center" />
+                                        
+                                        <!-- Feature 9: Compatibility Warning Icon -->
+                                        <TextBlock Text="⚠" 
+                                                  Grid.Column="1" 
+                                                  Margin="5,0,0,0" 
+                                                  VerticalAlignment="Center" 
+                                                  FontSize="16" 
+                                                  Foreground="{DynamicResource WarningBrush}" 
+                                                  Visibility="{Binding CompatibilityWarningVisibility}"
+                                                  ToolTip="{Binding GameVersion, StringFormat='Mod was built for version {0}, but installed game may have a different version'}"/>
 
-                            <!-- Version -->
-                            <TextBlock Text="{Binding Version}" Grid.Column="2" Margin="5,0" VerticalAlignment="Center"
-                                       Foreground="Gray" FontStyle="Italic" />
-                           
-                            <!-- Action Buttons -->
-                            <StackPanel Orientation="Horizontal" Grid.Column="3" VerticalAlignment="Center" Margin="5,0,0,0">
-                                <Button ToolTip="Update Available" Click="UpdateMod_Click" Width="30" Height="30" Margin="5,0,0,0"
-                Background="Transparent" BorderBrush="Transparent"
-                Grid.Column="4" Visibility="{Binding UpdateVisibility}">
-                                    <TextBlock Text="&#xE777;" FontFamily="Segoe Fluent Icons" FontSize="16" Foreground="Blue" />
-                                </Button>
+                                        <!-- Name with Context Menu for Notes -->
+                                        <TextBlock Text="{Binding Name}" Grid.Column="1" Margin="25,0,5,0" VerticalAlignment="Center"
+                                                   Background="Transparent" ContextMenuOpening="ModContextMenu_Opening" />
+                                           
+                                        <!-- Version -->
+                                        <TextBlock Text="{Binding Version}" 
+                                                  Grid.Column="2" 
+                                                  VerticalAlignment="Center" 
+                                                  Margin="5,0"
+                                                  Foreground="{DynamicResource TextSecondaryBrush}" 
+                                                  FontStyle="Italic" 
+                                                  FontSize="12"/>
+                                       
+                                        <!-- Action Buttons - Modernisiert mit Theme-Brushes -->
+                                        <StackPanel Orientation="Horizontal" Grid.Column="3" VerticalAlignment="Center" Margin="5,0,0,0">
+                                            <Button ToolTip="Update Available" 
+                                                    Click="UpdateMod_Click" 
+                                                    Style="{StaticResource ModActionButtonStyle}"
+                                                    Visibility="{Binding UpdateVisibility}">
+                                                <TextBlock Text="&#xE777;" 
+                                                          FontFamily="Segoe Fluent Icons" 
+                                                          FontSize="16" 
+                                                          Foreground="{DynamicResource AccentBrush}"/>
+                                            </Button>
 
-                                <Button ToolTip="Move Up" Click="MoveUp_Click" Width="30" Height="30" Margin="5,0,0,0"
-                                        Background="Transparent" BorderBrush="Transparent">
-                                    <TextBlock Text="&#xE70E;" FontFamily="Segoe Fluent Icons" FontSize="16" Foreground="Green" />
-                                </Button>
-                                <Button ToolTip="Move Down" Click="MoveDown_Click" Width="30" Height="30" Margin="5,0,0,0"
-                                        Background="Transparent" BorderBrush="Transparent">
-                                    <TextBlock Text="&#xE70D;" FontFamily="Segoe Fluent Icons" FontSize="16" Foreground="Blue" />
-                                </Button>
-                                <Button ToolTip="Delete Mod" Click="DeleteMod_Click" Width="30" Height="30" Margin="10,0,0,0"
-                                        Background="Transparent" BorderBrush="Transparent">
-                                    <TextBlock Text="&#xE74D;" FontFamily="Segoe Fluent Icons" FontSize="16" Foreground="Red" />
-                                </Button>
-                                <Button ToolTip="Open Folder" Click="OpenFolder_Click" Width="30" Height="30" Margin="10,0,0,0"
-                                        Background="Transparent" BorderBrush="Transparent">
-                                    <TextBlock Text="&#xE8B7;" FontFamily="Segoe Fluent Icons" FontSize="16" Foreground="Purple" />
-                                </Button>
+                                            <Button ToolTip="Move Up" 
+                                                    Click="MoveUp_Click" 
+                                                    Style="{StaticResource ModActionButtonStyle}">
+                                                <TextBlock Text="&#xE70E;" 
+                                                          FontFamily="Segoe Fluent Icons" 
+                                                          FontSize="16" 
+                                                          Foreground="{DynamicResource SuccessBrush}"/>
+                                            </Button>
+                                            <Button ToolTip="Move Down" 
+                                                    Click="MoveDown_Click" 
+                                                    Style="{StaticResource ModActionButtonStyle}">
+                                                <TextBlock Text="&#xE70D;" 
+                                                          FontFamily="Segoe Fluent Icons" 
+                                                          FontSize="16" 
+                                                          Foreground="{DynamicResource AccentBrush}"/>
+                                            </Button>
+                                            <Button ToolTip="Delete Mod" 
+                                                    Click="DeleteMod_Click" 
+                                                    Style="{StaticResource ModActionButtonStyle}">
+                                                <TextBlock Text="&#xE74D;" 
+                                                          FontFamily="Segoe Fluent Icons" 
+                                                          FontSize="16" 
+                                                          Foreground="{DynamicResource ErrorBrush}"/>
+                                            </Button>
+                                            <Button ToolTip="Open Folder" 
+                                                    Click="OpenFolder_Click" 
+                                                    Style="{StaticResource ModActionButtonStyle}">
+                                                <TextBlock Text="&#xE8B7;" 
+                                                          FontFamily="Segoe Fluent Icons" 
+                                                          FontSize="16" 
+                                                          Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                            </Button>
 
-
-                                <Button ToolTip="More options" Width="30" Height="30" Margin="10,0,0,0"
-        Background="Transparent" BorderBrush="Transparent"
-        Click="ModOptions_Click">
-                                    <TextBlock Text="&#xE712;" FontFamily="Segoe Fluent Icons" FontSize="16" Foreground="Blue" />
-                                    <Button.ContextMenu>
-                                        <ContextMenu DataContext="{Binding}">
-                                            <MenuItem Header="Visit website" Click="OpenModPage_Click" />
-                                            <MenuItem Header="Change mod name" Click="ChangeModName_Click" />
-                                            <MenuItem Header="Change note" Click="ChangeModNote_Click" />
-                                            <MenuItem Header="Endorse mod" Click="EndorseMod_Click" />
-                                            <MenuItem Header="Change mod number" Click="ChangeModNumber_Click" />
-                                            <MenuItem Header="Toggle update check" Click="ToggleUpdateCheck_Click" />
-                                        </ContextMenu>
-                                    </Button.ContextMenu>
-                                </Button>
-
+                                            <Button ToolTip="More options" 
+                                                    Style="{StaticResource ModActionButtonStyle}"
+                                                    Click="ModOptions_Click">
+                                                <TextBlock Text="&#xE712;" 
+                                                          FontFamily="Segoe Fluent Icons" 
+                                                          FontSize="16" 
+                                                          Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                <Button.ContextMenu>
+                                                    <!-- WICHTIG: Robustes ContextMenu mit korrektem DataContext-Binding -->
+                                                    <!-- DataContext bindet an PlacementTarget.DataContext (Mod-Objekt) -->
+                                                    <!-- Header-Texte werden über Application.Current.MainWindow.DataContext geholt -->
+                                                    <ContextMenu x:Name="ModContextMenu"
+                                                                DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
+                                                                Placement="Bottom"
+                                                                Background="{DynamicResource PanelBackgroundBrush}"
+                                                                BorderBrush="{DynamicResource ComboBoxBorderBrush}"
+                                                                Foreground="{DynamicResource ComboBoxForegroundBrush}"
+                                                                HasDropShadow="True">
+                                                        <!-- Static (localized) headers aus MainViewModel via Application.Current.MainWindow.DataContext -->
+                                                        <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuVisitWebsiteText}"
+                                                                  Click="OpenModPage_Click"
+                                                                  Style="{StaticResource ContextMenuItemStyle}"/>
+                                                        <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuChangeModNameText}"
+                                                                  Click="ChangeModName_Click"
+                                                                  Style="{StaticResource ContextMenuItemStyle}"/>
+                                                        <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuChangeNoteText}"
+                                                                  Click="ChangeModNote_Click"
+                                                                  Style="{StaticResource ContextMenuItemStyle}"/>
+                                                        <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuEndorseModText}"
+                                                                  Click="EndorseMod_Click"
+                                                                  Style="{StaticResource ContextMenuItemStyle}"/>
+                                                        <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuChangeModNumberText}"
+                                                                  Click="ChangeModNumber_Click"
+                                                                  Style="{StaticResource ContextMenuItemStyle}"/>
+                                                        <!-- Separator -->
+                                                        <Separator />
+                                                        <!-- Toggle: bindet an das Mod-Objekt (ContextMenu.DataContext ist placement target DataContext = Mod) -->
+                                                        <MenuItem x:Name="ToggleUpdateCheckMenuItem"
+                                                                  Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuToggleUpdateCheckText}"
+                                                                  IsCheckable="True"
+                                                                  IsChecked="{Binding UpdateChecksEnabled, Mode=TwoWay}"
+                                                                  Click="ToggleUpdateCheck_Click"
+                                                                  Style="{StaticResource ToggleMenuItemStyle}"/>
+                                                        <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuCheckForUpdateText}"
+                                                                  Click="CheckForUpdate_Click"
+                                                                  Style="{StaticResource ContextMenuItemStyle}"/>
+                                                        <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuOverrideVersionText}"
+                                                                  Click="SetModVersion_Click"
+                                                                  Style="{StaticResource ContextMenuItemStyle}"/>
+                                                    </ContextMenu>
+                                                </Button.ContextMenu>
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        
+                        <!-- Loading Animation Overlay -->
+                        <Grid Background="{DynamicResource PanelBackgroundBrush}" 
+                             Opacity="0.95"
+                             Visibility="{Binding IsLoadingMods, Converter={StaticResource BooleanToVisibilityConverter}}"
+                             HorizontalAlignment="Stretch" 
+                             VerticalAlignment="Stretch">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <ProgressBar IsIndeterminate="True" 
+                                           Width="200" 
+                                           Height="6" 
+                                           Margin="0,0,0,12"
+                                           Foreground="{DynamicResource AccentBrush}"/>
+                                <TextBlock Text="{Binding LoadingModsText}" 
+                                          FontSize="14" 
+                                          FontWeight="SemiBold"
+                                          Foreground="{DynamicResource TextForegroundBrush}"
+                                          HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Grid>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
+                    </Grid>
+                </Border>
+            </Grid>
 
             <!-- Buttons Section -->
-            <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Top">
-                <TextBlock Name="ModsEnabledCount"
-                           Text="Mods enabled: 0"
-                           HorizontalAlignment="Left"
-                           VerticalAlignment="Top"
-                           Margin="10"
-                           FontSize="14"
-                           FontWeight="Bold"
-                           Foreground="Green" />
+            <Border Grid.Column="1" 
+                   Background="{DynamicResource PanelBackgroundBrush}"
+                   BorderBrush="{DynamicResource SeparatorBrush}"
+                   BorderThickness="1"
+                   CornerRadius="4"
+                   Padding="10">
+                <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Top">
+
+                <!-- Modern Mods Counter Badge -->
+                <Border Background="{DynamicResource SuccessBrush}"
+                       CornerRadius="12"
+                       Padding="10,6"
+                       Margin="0,0,0,12"
+                       HorizontalAlignment="Left">
+                    <TextBlock Text="{Binding ModsEnabledCount}"
+                              FontSize="13"
+                              FontWeight="SemiBold"
+                              Foreground="White"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"/>
+                </Border>
                 <!-- Button zum Hinzufügen von Mods -->
 
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,10" Grid.Column="0">
-                    <Border Background="{DynamicResource SearchBackgroundBrush}"
-            CornerRadius="5"
-            BorderBrush="{DynamicResource SearchBorderBrush}"
-            BorderThickness="1"
-            Padding="2">
-                        <TextBox x:Name="SearchTextBox"
-                 VerticalAlignment="Center"
-                 HorizontalAlignment="Stretch"
-                 
-                 TextChanged="SearchTextBox_TextChanged"
-                 ToolTip="Search mods..."
-                 Background="Transparent"
-                 BorderThickness="0"
-                 Foreground="{DynamicResource SearchForegroundBrush}"
-                 CaretBrush="{DynamicResource SearchForegroundBrush}"
-                 Width="180"/>
+                 <!-- Modern Search Bar -->
+                 <!-- === SEARCH BAR (responsive, no overflow, no clipping) === -->
+                <Grid x:Name="SearchBarContainer" Margin="0,0,0,12" VerticalAlignment="Top" HorizontalAlignment="Stretch">
+                    <Border Background="{DynamicResource TextBoxBackgroundBrush}"
+                            BorderBrush="{DynamicResource TextBoxBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="0"
+                            VerticalAlignment="Center">
+                        <Grid Margin="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Textbox ohne feste Höhe -->
+                            <TextBox x:Name="SearchTextBox"
+                                     Grid.Column="0"
+                                     VerticalAlignment="Center"
+                                     HorizontalAlignment="Stretch"
+                                     VerticalContentAlignment="Center"
+                                     HorizontalContentAlignment="Left"
+                                     TextWrapping="NoWrap"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                     ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                     TextChanged="SearchTextBox_TextChanged"
+                                     ToolTip="Search mods..."
+                                     FontSize="15"
+                                     FontWeight="Normal"
+                                     FontFamily="Segoe UI"
+                                     Foreground="{DynamicResource TextBoxForegroundBrush}"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Padding="8,4,8,4"
+                                     CaretBrush="{DynamicResource TextBoxForegroundBrush}"
+                                     SelectionBrush="{DynamicResource AccentBrush}"
+                                     SelectionOpacity="0.3"/>
+
+                            <Button Grid.Column="1"
+                                    Width="28"
+                                    Height="28"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Right"
+                                    Margin="0,0,4,0"
+                                    Click="ClearSearch_Click"
+                                    ToolTip="Clear Search"
+                                    Style="{StaticResource ModActionButtonStyle}">
+                                <TextBlock Text="&#xE711;"
+                                           FontFamily="Segoe Fluent Icons"
+                                           FontSize="14"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           VerticalAlignment="Center"
+                                           HorizontalAlignment="Center"/>
+                            </Button>
+                        </Grid>
                     </Border>
-                    <Button Width="30" Height="30" 
-                  VerticalAlignment="Center" Margin="5,0,0,0" 
-                  Click="ClearSearch_Click"
-                  ToolTip="Clear Search" Background="Transparent" BorderThickness="0">
-                        <TextBlock Text="&#xE894;" FontFamily="Segoe MDL2 Assets" 
-                       Foreground="{DynamicResource ClearButtonBrush}" 
-                       VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                    </Button>
-                </StackPanel>
+                </Grid>
+
+
+                
+                <Button Content="{Binding ButtonStartGameText}" Height="40" Margin="0,0,0,10" Click="StartGame_Click" Style="{StaticResource PrimaryButtonStyle}" />
                 
                 
-                <Button Content="Start Game" Height="40" Margin="0,0,0,10" Click="StartGame_Click" Style="{StaticResource PrimaryButtonStyle}" />
-                
-                
-                <Button Content="Add Mod" Margin="0,0,0,10" Height="40" Click="AddMod_Click" Style="{StaticResource PrimaryButtonStyle}" />
+                <Button Content="{Binding ButtonAddModText}" Margin="0,0,0,10" Height="40" Click="AddMod_Click" Style="{StaticResource PrimaryButtonStyle}" />
                 <!-- Button zum Sortieren -->
-                <Button Content="Sort: Load Order" Name="SortButton" Margin="0,0,0,10" Height="40" Click="SortButton_Click" Style="{StaticResource PrimaryButtonStyle}" />
+                <Button Content="{Binding SortButtonText}" Name="SortButton" Margin="0,0,0,10" Height="40" Click="SortButton_Click" Style="{StaticResource PrimaryButtonStyle}" />
 
 
                 
-                <Button Content="Reload Mods" Height="40" Click="Reload_Click" Style="{StaticResource PrimaryButtonStyle}" />
-            </StackPanel>
+                <Button Content="{Binding ButtonReloadModsText}" 
+                       Height="40" 
+                       Click="Reload_Click" 
+                       Style="{StaticResource PrimaryButtonStyle}"/>
+                </StackPanel>
+            </Border>
+            </Grid>
         </Grid>
 
-        <!-- Status Label -->
-        <Label x:Name="StatusLabel" Content="Status: Ready" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="0,0,0,10" />
+        <!-- Status Label - Modernisiert -->
+        <Label Grid.Row="3"
+               x:Name="StatusLabel" 
+               Content="{Binding StatusText}" 
+               VerticalAlignment="Bottom" 
+               HorizontalAlignment="Right" 
+               Margin="0,8,10,10"
+               FontSize="12"
+               Foreground="{DynamicResource TextSecondaryBrush}"/>
     </Grid>
 </Window>

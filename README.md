@@ -1,52 +1,106 @@
-# KCD2 Mod Manager
+# KCD2 Mod Manager - Refactored Version
 
-**KCD2 Mod Manager** is a modern mod management tool for *Kingdom Come: Deliverance 2*, designed to bring order to your modding experience. Developed by a solo creator (me! 👋) with community support.
+## Überblick
+Dies ist die vollständig refactorierte Version des KCD2 Mod Managers mit moderner MVVM-Architektur, Dependency Injection und sauberer Code-Struktur.
 
-🌟 **Features**:
-- 🚀 One-Click Mod Installation (ZIP/RAR/7z support)
-- 🧩 Load Order Management (Drag & Drop)
-- 🎨 Dark/Light Theme Support
+## Was wurde geändert?
 
----
+### Architektur
+- ✅ MVVM-Pattern vollständig implementiert
+- ✅ Dependency Injection mit Microsoft.Extensions.DependencyInjection
+- ✅ Service-Layer für alle Geschäftslogik
+- ✅ ViewModels mit Commands statt Event-Handler
+- ✅ Async/await für alle IO- und HTTP-Operationen
 
-## About This Project
-I created this manager to solve my own frustrations with KCD2 modding. As a solo developer passionate about both the game and clean code, I built this tool with:
-- **WPF**/.NET 8 for a smooth Windows experience
-- **Open Source**
+### Projektstruktur
+```
+KCD2 mod manager/
+├── Models/              # Domain-Modelle
+├── ViewModels/          # ViewModels
+├── Services/            # Service-Implementierungen
+├── Views/               # (Vorbereitet für zukünftige Trennung)
+├── Resources/           # (Vorbereitet für Lokalisierung)
+└── Tests/              # (Vorbereitet für Unit Tests)
+```
 
----
+## Build & Start
 
-## How You Can Help
-While I'm currently the main developer, I warmly welcome collaborators!
+### Voraussetzungen
+- .NET 10 SDK
+- Visual Studio 2022 oder höher (oder VS Code mit C# Extension)
 
-### Needed Skills:
-- **C#/WPF Experts**: Help optimize the code
-- **Testers**: Report bugs and edge cases
-- **Translators**: Localize into other languages
-- **Documentation Writers**: Improve guides
+### Build
+```bash
+dotnet build
+```
 
----
+### Start
+```bash
+dotnet run
+```
 
-## Installation & Usage
-1. Download latest release:  
-   [KCD2 Mod Manager](https://www.nexusmods.com/kingdomcomedeliverance2/mods/187?tab=files)
-2. Set your KCD2 game path in Settings
-3. Drag & Drop mod archives to install
+## Testing
 
----
+### Unit Tests (geplant)
+```bash
+dotnet test
+```
 
-## Support & Feedback
-Found a bug? Want a feature?  
-- 🐞 [Open a GitHub Issue](https://github.com/KCD2ModManager/KCD2-Mod-Manager/issues)
-- 💬 Create a Post on: [NEXUS MODS](https://www.nexusmods.com/kingdomcomedeliverance2/mods/187?tab=posts)
+## Architektur-Übersicht
 
----
+### Services
+- **IModManifestService**: Manifest-Parsing und -Generierung
+- **IFileService**: Datei- und Verzeichnisoperationen
+- **INexusService**: Nexus Mods API-Integration
+- **IModInstallerService**: Mod-Installation und -Verwaltung
+- **IDialogService**: Dialog-Wrapper
+- **IAppSettings**: Einstellungen-Verwaltung
+- **ILog**: Logging-Funktionalität
 
-## Credits & Special Thanks
-**Main Developer**:  
-coolzumjax (me)
+### ViewModels
+- **MainWindowViewModel**: Hauptlogik für MainWindow
 
-**Tools Used**:  
-- SharpCompress for archive handling
-- Newtonsoft.Json for data serialization
-- ModernWPF UI Library
+### Models
+- **Mod**: Mod-Repräsentation
+- **ModVersionInfo**: Versionsinformationen
+- **NexusModFile**: Nexus Mods API-Modelle
+
+## Logging
+Logs werden im `logs/`-Verzeichnis gespeichert mit täglichem Rolling.
+
+## Bekannte Einschränkungen
+- Einige UI-spezifische Event-Handler bleiben im Code-Behind (Drag & Drop, Context-Menus)
+- SettingsWindowViewModel muss noch erstellt werden
+- Unit Tests müssen noch geschrieben werden
+- Lokalisierung (.resx) muss noch implementiert werden
+
+## Manuelle Tests empfohlen
+1. Mod-Installation aus ZIP/RAR/7z
+2. Mod-Installation aus Ordner
+3. Mod-Update-Funktionalität
+4. Nexus SSO-Login
+5. Mod-Order-Verwaltung (Drag & Drop)
+6. Backup-Erstellung
+7. Theme-Wechsel (Dark/Light Mode)
+8. Suchfunktion
+9. Sort-Funktionalität
+
+## Entwickler-Hinweise
+
+### Neue Features hinzufügen
+1. Service-Interface erstellen (z.B. `INewService`)
+2. Service-Implementierung erstellen (z.B. `NewService`)
+3. In `App.xaml.cs` registrieren
+4. Im ViewModel injizieren und verwenden
+
+### ViewModel erweitern
+1. Property hinzufügen mit `SetProperty`
+2. Command erstellen mit `RelayCommand`
+3. Im XAML binden
+
+## Changelog
+Siehe [CHANGELOG.md](CHANGELOG.md) für detaillierte Änderungen.
+
+## Credits
+- Original-Entwickler: coolzumjax
+- Refactoring: Vollständig automatisiert durch AI-Assistent

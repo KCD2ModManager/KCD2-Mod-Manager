@@ -1,287 +1,230 @@
-﻿using Microsoft.Win32;
-using System.IO;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Media;
-
+using KCD2_mod_manager.ViewModels;
+using KCD2_mod_manager.Services;
 
 namespace KCD2_mod_manager
 {
+    /// <summary>
+    /// Interaction logic for SettingsWindow.xaml
+    /// </summary>
     public partial class SettingsWindow : Window
     {
-        private const string DefaultGamePath = @"C:\Program Files (x86)\Steam\steamapps\common\KingdomComeDeliverance2\Bin\Win64MasterMasterSteamPGO\KingdomCome.exe";
-        private string GamePath;
-        public event EventHandler ThemeChanged;
-        public SettingsWindow()
+        private SettingsWindowViewModel? _viewModel;
+
+        public SettingsWindow(SettingsWindowViewModel viewModel)
         {
             InitializeComponent();
-            LoadSettings();
-            HookToggleEvents();
+            _viewModel = viewModel;
+            DataContext = _viewModel;
 
+            _viewModel.ThemeChanged += (s, e) => UpdateTheme();
+            _viewModel.LanguageChanged += (s, e) => OnLanguageChanged();
             UpdateTheme();
             CheckAndLoadGamePath();
         }
 
+        private void OnLanguageChanged()
+        {
+            // Sprache wurde geändert - UI wird dynamisch aktualisiert
+            // Kein Neustart mehr nötig, da alle Texte über Bindings aktualisiert werden
+        }
+
+        private void LanguageComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            // Ignoriere Initialisierung - nur echte Änderungen behandeln
+            if (e.AddedItems.Count == 0 || e.RemovedItems.Count == 0) return;
+            
+            if (sender is System.Windows.Controls.ComboBox comboBox && comboBox.SelectedValue is string languageCode)
+            {
+                // Prüfe, ob sich die Sprache wirklich geändert hat
+                string currentLanguage = _viewModel?.Settings.Language ?? "en";
+                if (currentLanguage != languageCode)
+                {
+                    _viewModel?.ChangeLanguageCommand.Execute(languageCode);
+                }
+            }
+        }
+
+        public event EventHandler? ThemeChanged;
+
+        /// <summary>
+        /// Aktualisiert das Theme für SettingsWindow
+        /// WICHTIG: Verwendet ThemeService zum Laden der Theme-Dictionaries
+        /// </summary>
         private void UpdateTheme()
         {
-            bool isDarkMode = Settings.Default.IsDarkMode;
-            if (isDarkMode)
+            var app = Application.Current as App;
+            var serviceProvider = app?.GetServiceProvider();
+            if (serviceProvider != null)
             {
-                // Dark Mode Colors
-                this.Resources["WindowBackgroundBrush"] = new SolidColorBrush(Color.FromRgb(30, 30, 30));
-                this.Resources["ListBoxBackgroundBrush"] = new SolidColorBrush(Color.FromRgb(45, 45, 45));
-                this.Resources["ModListItemEvenBrush"] = new SolidColorBrush(Color.FromRgb(40, 40, 40));
-                this.Resources["ModListItemOddBrush"] = new SolidColorBrush(Color.FromRgb(60, 60, 60));
-                this.Resources["ListBoxForegroundBrush"] = new SolidColorBrush(Colors.White);
-                this.Resources["SelectedItemBrush"] = new SolidColorBrush(Color.FromRgb(80, 80, 120));
-
-                this.Background = (Brush)this.Resources["WindowBackgroundBrush"];
+                var themeService = serviceProvider.GetService(typeof(IThemeService)) as IThemeService;
+                if (themeService != null)
+                {
+                    themeService.ApplyTheme(this.Resources, themeService.IsDarkMode);
+                    this.Background = (Brush)this.Resources["WindowBackgroundBrush"];
+                }
             }
-            else
-            {
-                // Light Mode Colors
-                this.Resources["WindowBackgroundBrush"] = new SolidColorBrush(Colors.White);
-                this.Resources["ListBoxBackgroundBrush"] = new SolidColorBrush(Colors.White);
-                this.Resources["ModListItemEvenBrush"] = new SolidColorBrush(Colors.White);
-                this.Resources["ModListItemOddBrush"] = new SolidColorBrush(Colors.LightGray);
-                this.Resources["ListBoxForegroundBrush"] = new SolidColorBrush(Colors.Black);
-                this.Resources["SelectedItemBrush"] = new SolidColorBrush(Colors.LightBlue);
-
-                this.Background = (Brush)this.Resources["WindowBackgroundBrush"];
-            }
-            //ForceUIRefresh();
             ThemeChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        // Forces the UI to redraw the entire window.
-        private void ForceUIRefresh()
-        {
-            var current = this.Content;
-            this.Content = null;
-            this.Content = current;
-        }
         private void CheckAndLoadGamePath()
         {
-            // Lade den GamePath aus den Einstellungen
-            GamePath = Settings.Default.GamePath;
+            if (_viewModel == null) return;
 
-            if (!string.IsNullOrWhiteSpace(GamePath))
+            string gamePath = _viewModel.Settings.GamePath;
+
+            if (!string.IsNullOrWhiteSpace(gamePath))
             {
-                // Neue Validierung der Dateierweiterung
-                if (!Path.GetExtension(GamePath).Equals(".exe", StringComparison.OrdinalIgnoreCase))
+                if (!System.IO.Path.GetExtension(gamePath).Equals(".exe", StringComparison.OrdinalIgnoreCase))
                 {
                     MessageBox.Show("Invalid file type in settings. Only .exe files are allowed.", "Security Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    GamePath = null; // Erzwinge Neuaustwahl
-                    Settings.Default.GamePath = ""; // Zurücksetzen
-                    Settings.Default.Save();
+                    _viewModel.Settings.GamePath = "";
+                    _viewModel.Settings.Save();
                 }
             }
 
-            if (string.IsNullOrWhiteSpace(GamePath))
+            if (string.IsNullOrWhiteSpace(gamePath))
             {
-                // Prüfe den Standardpfad
-                if (File.Exists(DefaultGamePath))
+                const string DefaultGamePath = @"C:\Program Files (x86)\Steam\steamapps\common\KingdomComeDeliverance2\Bin\Win64MasterMasterSteamPGO\KingdomCome.exe";
+                if (System.IO.File.Exists(DefaultGamePath))
                 {
-                    GamePath = DefaultGamePath;
-                    Settings.Default.GamePath = GamePath;
-                    Settings.Default.Save();
+                    _viewModel.Settings.GamePath = DefaultGamePath;
+                    _viewModel.Settings.Save();
                 }
                 else
                 {
-                    MessageBox.Show("The game was not found in the default path. Please select the game executable manually.", "Game Path Required", MessageBoxButton.OK, MessageBoxImage.Information);
-                    var openFileDialog = new OpenFileDialog
-                    {
-                        Filter = "Game Executable (*.exe)|*.exe",
-                        Title = "Select Kingdom Come Deliverance 2 Executable"
-                    };
-                    if (openFileDialog.ShowDialog() == true)
-                    {
-                        GamePath = openFileDialog.FileName;
-                        Settings.Default.GamePath = GamePath;
-                        Settings.Default.Save();
-                    }
-                    else
-                    {
-                        MessageBox.Show("The game path is required to continue. Exiting the application.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        Application.Current.Shutdown();
-                    }
+                    MessageBox.Show(KCD2_mod_manager.Resources.Messages.ErrorGamePathRequired, KCD2_mod_manager.Resources.Messages.DialogTitleGamePathRequired, MessageBoxButton.OK, MessageBoxImage.Information);
+                    _viewModel.SetGamePathCommand.Execute(null);
                 }
             }
 
-            if (!File.Exists(GamePath))
+            if (!string.IsNullOrWhiteSpace(_viewModel.Settings.GamePath) && !System.IO.File.Exists(_viewModel.Settings.GamePath))
             {
-                MessageBox.Show("The saved game path is invalid. Please update the path in settings.", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(KCD2_mod_manager.Resources.Messages.ErrorInvalidPath, KCD2_mod_manager.Resources.Messages.DialogTitleInvalidPath, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
-
-            // Bestimme den Mods-Ordner (eine Ebene oberhalb der Spielinstallation, anpassen wie benötigt)
-            //ModFolder = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(GamePath))), "Mods");
         }
-        // Loads the current settings into the toggle buttons.
-        private void LoadSettings()
+
+        private void SetGamePath_Click(object sender, RoutedEventArgs e)
         {
-            // Load settings from Settings.Default
-            ToggleDarkMode.IsChecked = Settings.Default.IsDarkMode;
-            ToggleDevMode.IsChecked = Settings.Default.IsDevMode;
-            ToggleDeleteConfirmation.IsChecked = Settings.Default.AskOnDelete;
-            ToggleUpdateNotifications.IsChecked = Settings.Default.EnableUpdateNotifications;
-            ToggleModOrderCreation.IsChecked = Settings.Default.ModOrderEnabled;
-            ToggleBackupCreation.IsChecked = Settings.Default.CreateBackup;
-            ToggleBackupOnStartup.IsChecked = Settings.Default.BackupOnStartup;
+            _viewModel?.SetGamePathCommand.Execute(null);
         }
 
-        // Attach event handlers for Checked and Unchecked events.
-        private void HookToggleEvents()
+        private void SetMaxBackups_Click(object sender, RoutedEventArgs e)
         {
-            ToggleDarkMode.Checked += ToggleDarkMode_Checked;
-            ToggleDarkMode.Unchecked += ToggleDarkMode_Unchecked;
-
-            ToggleDevMode.Checked += ToggleDevMode_Checked;
-            ToggleDevMode.Unchecked += ToggleDevMode_Unchecked;
-
-            ToggleDeleteConfirmation.Checked += ToggleDeleteConfirmation_Checked;
-            ToggleDeleteConfirmation.Unchecked += ToggleDeleteConfirmation_Unchecked;
-
-            ToggleUpdateNotifications.Checked += ToggleUpdateNotifications_Checked;
-            ToggleUpdateNotifications.Unchecked += ToggleUpdateNotifications_Unchecked;
-
-            ToggleModOrderCreation.Checked += ToggleModOrderCreation_Checked;
-            ToggleModOrderCreation.Unchecked += ToggleModOrderCreation_Unchecked;
-
-            ToggleBackupCreation.Checked += ToggleBackupCreation_Checked;
-            ToggleBackupCreation.Unchecked += ToggleBackupCreation_Unchecked;
-
-            ToggleBackupOnStartup.Checked += ToggleBackupOnStartup_Checked;
-            ToggleBackupOnStartup.Unchecked += ToggleBackupOnStartup_Unchecked;
+            _viewModel?.SetMaxBackupsCommand.Execute(null);
         }
 
-        // Event handlers to update settings on toggle changes
         private void ToggleDarkMode_Checked(object sender, RoutedEventArgs e)
         {
-            Settings.Default.IsDarkMode = true;
-            Settings.Default.Save();
-            UpdateTheme();
+            if (sender is System.Windows.Controls.Primitives.ToggleButton toggle && _viewModel != null)
+            {
+                _viewModel.ToggleDarkModeCommand.Execute(true);
+            }
         }
+
         private void ToggleDarkMode_Unchecked(object sender, RoutedEventArgs e)
         {
-            Settings.Default.IsDarkMode = false;
-            Settings.Default.Save();
-            UpdateTheme();
+            if (sender is System.Windows.Controls.Primitives.ToggleButton toggle && _viewModel != null)
+            {
+                _viewModel.ToggleDarkModeCommand.Execute(false);
+            }
         }
 
         private void ToggleDevMode_Checked(object sender, RoutedEventArgs e)
         {
-            Settings.Default.IsDevMode = true;
-            Settings.Default.Save();
+            if (sender is System.Windows.Controls.Primitives.ToggleButton toggle && _viewModel != null)
+            {
+                _viewModel.ToggleDevModeCommand.Execute(true);
+            }
         }
+
         private void ToggleDevMode_Unchecked(object sender, RoutedEventArgs e)
         {
-            Settings.Default.IsDevMode = false;
-            Settings.Default.Save();
+            if (sender is System.Windows.Controls.Primitives.ToggleButton toggle && _viewModel != null)
+            {
+                _viewModel.ToggleDevModeCommand.Execute(false);
+            }
         }
 
         private void ToggleDeleteConfirmation_Checked(object sender, RoutedEventArgs e)
         {
-            Settings.Default.AskOnDelete = true;
-            Settings.Default.Save();
+            if (sender is System.Windows.Controls.Primitives.ToggleButton toggle && _viewModel != null)
+            {
+                _viewModel.ToggleDeleteConfirmationCommand.Execute(true);
+            }
         }
+
         private void ToggleDeleteConfirmation_Unchecked(object sender, RoutedEventArgs e)
         {
-            Settings.Default.AskOnDelete = false;
-            Settings.Default.Save();
+            if (sender is System.Windows.Controls.Primitives.ToggleButton toggle && _viewModel != null)
+            {
+                _viewModel.ToggleDeleteConfirmationCommand.Execute(false);
+            }
         }
 
         private void ToggleUpdateNotifications_Checked(object sender, RoutedEventArgs e)
         {
-            Settings.Default.EnableUpdateNotifications = true;
-            Settings.Default.Save();
+            if (sender is System.Windows.Controls.Primitives.ToggleButton toggle && _viewModel != null)
+            {
+                _viewModel.ToggleUpdateNotificationsCommand.Execute(true);
+            }
         }
+
         private void ToggleUpdateNotifications_Unchecked(object sender, RoutedEventArgs e)
         {
-            Settings.Default.EnableUpdateNotifications = false;
-            Settings.Default.Save();
+            if (sender is System.Windows.Controls.Primitives.ToggleButton toggle && _viewModel != null)
+            {
+                _viewModel.ToggleUpdateNotificationsCommand.Execute(false);
+            }
         }
 
         private void ToggleModOrderCreation_Checked(object sender, RoutedEventArgs e)
         {
-            Settings.Default.ModOrderEnabled = true;
-            Settings.Default.Save();
+            if (sender is System.Windows.Controls.Primitives.ToggleButton toggle && _viewModel != null)
+            {
+                _viewModel.ToggleModOrderCreationCommand.Execute(true);
+            }
         }
+
         private void ToggleModOrderCreation_Unchecked(object sender, RoutedEventArgs e)
         {
-            Settings.Default.ModOrderEnabled = false;
-            Settings.Default.Save();
+            if (sender is System.Windows.Controls.Primitives.ToggleButton toggle && _viewModel != null)
+            {
+                _viewModel.ToggleModOrderCreationCommand.Execute(false);
+            }
         }
 
         private void ToggleBackupCreation_Checked(object sender, RoutedEventArgs e)
         {
-            Settings.Default.CreateBackup = true;
-            Settings.Default.Save();
+            if (sender is System.Windows.Controls.Primitives.ToggleButton toggle && _viewModel != null)
+            {
+                _viewModel.ToggleBackupCreationCommand.Execute(true);
+            }
         }
+
         private void ToggleBackupCreation_Unchecked(object sender, RoutedEventArgs e)
         {
-            Settings.Default.CreateBackup = false;
-            Settings.Default.Save();
+            if (sender is System.Windows.Controls.Primitives.ToggleButton toggle && _viewModel != null)
+            {
+                _viewModel.ToggleBackupCreationCommand.Execute(false);
+            }
         }
 
         private void ToggleBackupOnStartup_Checked(object sender, RoutedEventArgs e)
         {
-            Settings.Default.BackupOnStartup = true;
-            Settings.Default.Save();
+            if (sender is System.Windows.Controls.Primitives.ToggleButton toggle && _viewModel != null)
+            {
+                _viewModel.ToggleBackupOnStartupCommand.Execute(true);
+            }
         }
+
         private void ToggleBackupOnStartup_Unchecked(object sender, RoutedEventArgs e)
         {
-            Settings.Default.BackupOnStartup = false;
-            Settings.Default.Save();
-        }
-
-        // Placeholder for Set Game Path action
-        private void SetGamePath_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Set Game Path clicked.", "Settings", MessageBoxButton.OK, MessageBoxImage.Information);
-            // Implement folder selection and update Settings.Default.GamePath here.
-        }
-
-        // Placeholder for Set Max Backups action
-        private void SetMaxBackups_Click(object sender, RoutedEventArgs e)
-        {
-            string input = Microsoft.VisualBasic.Interaction.InputBox("Enter the maximum number of backups to keep:",
-                                                                       "Set Max Backups",
-                                                                       Settings.Default.BackupMaxCount.ToString());
-
-            if (int.TryParse(input, out int maxBackups) && maxBackups > 0)
+            if (sender is System.Windows.Controls.Primitives.ToggleButton toggle && _viewModel != null)
             {
-                Settings.Default.BackupMaxCount = maxBackups;
-                Settings.Default.Save();
-                MessageBox.Show($"Max Backups set to {maxBackups}.", "Backup Settings", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                MessageBox.Show("Invalid number. Please enter a positive integer.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                _viewModel.ToggleBackupOnStartupCommand.Execute(false);
             }
         }
-
-        private void SettingsMenu_Click(object sender, RoutedEventArgs e)
-        {
-            var openFileDialog = new OpenFileDialog
-            {
-                Filter = "Game Executable (*.exe)|*.exe",
-                Title = "Select Kingdom Come Deliverance 2 Executable"
-            };
-
-            if (openFileDialog.ShowDialog() == true)
-            {
-                GamePath = openFileDialog.FileName;
-                SaveGamePath();
-                //GamePathTextBox.Text = GamePath;
-                //StatusLabel.Content = "Game path updated.";
-            }
-        }
-
-        private void SaveGamePath()
-        {
-            Settings.Default.GamePath = GamePath;
-            Settings.Default.Save();
-            //ModFolder = Path.Combine(Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(GamePath))), "Mods");
-        }
-
     }
 }
