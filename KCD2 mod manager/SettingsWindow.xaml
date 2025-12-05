@@ -8,7 +8,13 @@
         Title="SettingsWindow" Height="450" Width="800"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
     <Window.Resources>
-        <!-- Style for a Switch-like ToggleButton -->
+        <!-- Merged Theme Resources - MUST be first to provide theme brushes -->
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/Theme.Common.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            
+            <!-- Modern Toggle Switch Style - Kein Flicker beim Laden, sofortiger initial state -->
         <Style x:Key="SwitchToggleStyle" TargetType="ToggleButton">
             <Setter Property="Width" Value="50"/>
             <Setter Property="Height" Value="25"/>
@@ -18,199 +24,322 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="ToggleButton">
                         <Grid Width="{TemplateBinding Width}" Height="{TemplateBinding Height}">
-                            <!-- Hintergrund -->
+                            <!-- Hintergrund - Theme-aware -->
                             <Border x:Name="SwitchBackground"
-                            CornerRadius="12.5"
-                            Background="Gray"
-                            BorderThickness="0"/>
+                                   CornerRadius="12.5"
+                                   Background="{DynamicResource ToggleOffBackgroundBrush}"
+                                   BorderThickness="0"/>
                             <!-- Knopf/Knob -->
                             <Ellipse x:Name="Knob"
-                             Width="{TemplateBinding Height}"
-                             Height="{TemplateBinding Height}"
-                             Fill="White"
-                             HorizontalAlignment="Left">
-                                <!-- RenderTransform ohne Namenszuweisung -->
+                                   Width="21"
+                                   Height="21"
+                                   Fill="White"
+                                   HorizontalAlignment="Left"
+                                   Margin="2,2,0,2">
                                 <Ellipse.RenderTransform>
                                     <TranslateTransform X="0"/>
                                 </Ellipse.RenderTransform>
                             </Ellipse>
                         </Grid>
                         <ControlTemplate.Triggers>
-                            <!-- Trigger, der beim Wechsel von unchecked zu checked die Animation startet -->
+                            <!-- WICHTIG: Initial State ohne Animation - verhindert Flicker -->
+                            <!-- Setter für sofortigen State, EnterActions nur für Animationen -->
                             <Trigger Property="IsChecked" Value="True">
+                                <!-- Sofortiger State ohne Animation beim Laden -->
+                                <Setter TargetName="Knob" Property="Margin" Value="27,2,0,2"/>
+                                <Setter TargetName="SwitchBackground" Property="Background" Value="{DynamicResource ToggleOnBackgroundBrush}"/>
+                                <!-- Animation nur bei User-Interaktion (EnterActions) -->
                                 <Trigger.EnterActions>
                                     <BeginStoryboard>
                                         <Storyboard>
-                                            <!-- Bewege den Knopf nach rechts -->
-                                            <DoubleAnimation Storyboard.TargetName="Knob"
-                                                     Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
-                                                     To="25" Duration="0:0:0.2"/>
-                                            <!-- Ändere den Hintergrund auf Grün -->
-                                            <ColorAnimation Storyboard.TargetName="SwitchBackground"
-                                                    Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                    To="Green" Duration="0:0:0.2"/>
+                                            <ThicknessAnimation Storyboard.TargetName="Knob"
+                                                              Storyboard.TargetProperty="Margin"
+                                                              To="27,2,0,2" Duration="0:0:0.15"/>
+                                            <!-- WICHTIG: Keine ColorAnimation - Setter verwendet bereits DynamicResource -->
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </Trigger.EnterActions>
                                 <Trigger.ExitActions>
                                     <BeginStoryboard>
                                         <Storyboard>
-                                            <!-- Bewege den Knopf zurück nach links -->
-                                            <DoubleAnimation Storyboard.TargetName="Knob"
-                                                     Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
-                                                     To="0" Duration="0:0:0.2"/>
-                                            <!-- Ändere den Hintergrund zurück auf Grau -->
-                                            <ColorAnimation Storyboard.TargetName="SwitchBackground"
-                                                    Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                    To="Gray" Duration="0:0:0.2"/>
+                                            <ThicknessAnimation Storyboard.TargetName="Knob"
+                                                              Storyboard.TargetProperty="Margin"
+                                                              To="2,2,0,2" Duration="0:0:0.15"/>
+                                            <!-- WICHTIG: Keine ColorAnimation - Setter verwendet bereits DynamicResource -->
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </Trigger.ExitActions>
                             </Trigger>
-                            <!-- Optional: MouseOver-Effekt -->
+                            <Trigger Property="IsChecked" Value="False">
+                                <Setter TargetName="Knob" Property="Margin" Value="2,2,0,2"/>
+                                <Setter TargetName="SwitchBackground" Property="Background" Value="{DynamicResource ToggleOffBackgroundBrush}"/>
+                            </Trigger>
+                            <!-- MouseOver-Effekt -->
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="SwitchBackground" Property="Opacity" Value="0.8"/>
+                                <Setter TargetName="SwitchBackground" Property="Opacity" Value="0.9"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
-
-
-
-        <!-- Existing dynamic brushes for Dark/Light Mode -->
-        <SolidColorBrush x:Key="WindowBackgroundBrush" Color="White"/>
-        <SolidColorBrush x:Key="ListBoxBackgroundBrush" Color="White"/>
-        <SolidColorBrush x:Key="ModListItemEvenBrush" Color="White"/>
-        <SolidColorBrush x:Key="ModListItemOddBrush" Color="LightGray"/>
-        <SolidColorBrush x:Key="ListBoxForegroundBrush" Color="Black"/>
-        <SolidColorBrush x:Key="SelectedItemBrush" Color="LightBlue"/>
+        </ResourceDictionary>
     </Window.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="10" Orientation="Vertical" Background="{DynamicResource WindowBackgroundBrush}">
+        <Grid Margin="20" Background="{DynamicResource WindowBackgroundBrush}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
             <!-- General Settings Section -->
-            <TextBlock Text="General Settings"
-                       FontSize="16"
-                       FontWeight="Bold"
-                       Margin="0,0,0,10"
-                       Foreground="{DynamicResource ListBoxForegroundBrush}"/>
+            <TextBlock Grid.Row="0"
+                       Grid.ColumnSpan="2"
+                       Text="{Binding GeneralSettingsText}"
+                       FontSize="18"
+                       FontWeight="SemiBold"
+                       Margin="0,0,0,16"
+                       Foreground="{DynamicResource TextForegroundBrush}"/>
 
             <!-- Set Game Path (button, not a toggle) -->
-            <StackPanel Orientation="Horizontal" Margin="0,5">
-                <TextBlock Text="Set Game Path:"
-                           Width="200"
-                           VerticalAlignment="Center"
-                           Foreground="{DynamicResource ListBoxForegroundBrush}"/>
-                <Button Content="Set" Click="SetGamePath_Click" Width="50" Height="25" Style="{StaticResource PrimaryButtonStyle}"/>
-            </StackPanel>
+            <TextBlock Grid.Row="1"
+                       Grid.Column="0"
+                       Text="{Binding SetGamePathText}"
+                       Width="220"
+                       VerticalAlignment="Center"
+                       Margin="0,8,16,8"
+                       Foreground="{DynamicResource TextForegroundBrush}"/>
+            <Button Grid.Row="1"
+                    Grid.Column="1"
+                    Content="{Binding SetButtonText}" 
+                    Click="SetGamePath_Click" 
+                    Width="80" 
+                    Height="32" 
+                    HorizontalAlignment="Left"
+                    Style="{StaticResource SecondaryButtonStyle}"/>
 
             <!-- Enable Delete Confirmation -->
-            <StackPanel Orientation="Horizontal" Margin="0,5">
-                <TextBlock Text="Enable Delete Confirmation:"
-                           Width="200"
-                           VerticalAlignment="Center"
-                           Foreground="{DynamicResource ListBoxForegroundBrush}"/>
-                <!-- Use the custom switch style -->
-                <ToggleButton x:Name="ToggleDeleteConfirmation"
-                              Style="{StaticResource SwitchToggleStyle}"
-                              Width="50"
-                              Height="25"/>
-            </StackPanel>
+            <TextBlock Grid.Row="2"
+                       Grid.Column="0"
+                       Text="{Binding EnableDeleteConfirmationText}"
+                       Width="220"
+                       VerticalAlignment="Center"
+                       Margin="0,8,16,8"
+                       Foreground="{DynamicResource TextForegroundBrush}"/>
+            <ToggleButton Grid.Row="2"
+                          Grid.Column="1"
+                          x:Name="ToggleDeleteConfirmation"
+                          Style="{StaticResource SwitchToggleStyle}"
+                          Width="50"
+                          Height="25"
+                          HorizontalAlignment="Left"
+                          IsChecked="{Binding AskOnDelete}"
+                          Checked="ToggleDeleteConfirmation_Checked"
+                          Unchecked="ToggleDeleteConfirmation_Unchecked"/>
 
             <!-- Toggle Dark Mode -->
-            <StackPanel Orientation="Horizontal" Margin="0,5">
-                <TextBlock Text="Toggle Dark Mode:"
-                           Width="200"
-                           VerticalAlignment="Center"
-                           Foreground="{DynamicResource ListBoxForegroundBrush}"/>
-                <ToggleButton x:Name="ToggleDarkMode"
-                              Style="{StaticResource SwitchToggleStyle}"
-                              Width="50"
-                              Height="25"/>
-            </StackPanel>
+            <TextBlock Grid.Row="3"
+                       Grid.Column="0"
+                       Text="{Binding ToggleDarkModeText}"
+                       Width="220"
+                       VerticalAlignment="Center"
+                       Margin="0,8,16,8"
+                       Foreground="{DynamicResource TextForegroundBrush}"/>
+            <ToggleButton Grid.Row="3"
+                          Grid.Column="1"
+                          x:Name="ToggleDarkMode"
+                          Style="{StaticResource SwitchToggleStyle}"
+                          Width="50"
+                          Height="25"
+                          HorizontalAlignment="Left"
+                          IsChecked="{Binding IsDarkMode}"
+                          Checked="ToggleDarkMode_Checked"
+                          Unchecked="ToggleDarkMode_Unchecked"/>
 
             <!-- Toggle Devmode -->
-            <StackPanel Orientation="Horizontal" Margin="0,5">
-                <TextBlock Text="Toggle Devmode:"
-                           Width="200"
-                           VerticalAlignment="Center"
-                           Foreground="{DynamicResource ListBoxForegroundBrush}"/>
-                <ToggleButton x:Name="ToggleDevMode"
-                              Style="{StaticResource SwitchToggleStyle}"
-                              Width="50"
-                              Height="25"/>
-            </StackPanel>
+            <TextBlock Grid.Row="4"
+                       Grid.Column="0"
+                       Text="{Binding ToggleDevModeText}"
+                       Width="220"
+                       VerticalAlignment="Center"
+                       Margin="0,8,16,8"
+                       Foreground="{DynamicResource TextForegroundBrush}"/>
+            <ToggleButton Grid.Row="4"
+                          Grid.Column="1"
+                          x:Name="ToggleDevMode"
+                          Style="{StaticResource SwitchToggleStyle}"
+                          Width="50"
+                          Height="25"
+                          HorizontalAlignment="Left"
+                          IsChecked="{Binding IsDevMode}"
+                          Checked="ToggleDevMode_Checked"
+                          Unchecked="ToggleDevMode_Unchecked"/>
 
             <!-- Toggle Update Notifications -->
-            <StackPanel Orientation="Horizontal" Margin="0,5">
-                <TextBlock Text="Toggle Update Notifications:"
-                           Width="200"
-                           VerticalAlignment="Center"
-                           Foreground="{DynamicResource ListBoxForegroundBrush}"/>
-                <ToggleButton x:Name="ToggleUpdateNotifications"
-                              Style="{StaticResource SwitchToggleStyle}"
-                              Width="50"
-                              Height="25"/>
-            </StackPanel>
+            <TextBlock Grid.Row="5"
+                       Grid.Column="0"
+                       Text="{Binding ToggleUpdateNotificationsText}"
+                       Width="220"
+                       VerticalAlignment="Center"
+                       Margin="0,8,16,8"
+                       Foreground="{DynamicResource TextForegroundBrush}"/>
+            <ToggleButton Grid.Row="5"
+                          Grid.Column="1"
+                          x:Name="ToggleUpdateNotifications"
+                          Style="{StaticResource SwitchToggleStyle}"
+                          Width="50"
+                          Height="25"
+                          HorizontalAlignment="Left"
+                          IsChecked="{Binding EnableUpdateNotifications}"
+                          Checked="ToggleUpdateNotifications_Checked"
+                          Unchecked="ToggleUpdateNotifications_Unchecked"/>
 
             <!-- Toggle Mod Order Creation -->
-            <StackPanel Orientation="Horizontal" Margin="0,5">
-                <TextBlock Text="Toggle Mod Order Creation:"
-                           Width="200"
-                           VerticalAlignment="Center"
-                           Foreground="{DynamicResource ListBoxForegroundBrush}"/>
-                <ToggleButton x:Name="ToggleModOrderCreation"
-                              Style="{StaticResource SwitchToggleStyle}"
-                              Width="50"
-                              Height="25"/>
-            </StackPanel>
+            <TextBlock Grid.Row="6"
+                       Grid.Column="0"
+                       Text="{Binding ToggleModOrderCreationText}"
+                       Width="220"
+                       VerticalAlignment="Center"
+                       Margin="0,8,16,8"
+                       Foreground="{DynamicResource TextForegroundBrush}"/>
+            <ToggleButton Grid.Row="6"
+                          Grid.Column="1"
+                          x:Name="ToggleModOrderCreation"
+                          Style="{StaticResource SwitchToggleStyle}"
+                          Width="50"
+                          Height="25"
+                          HorizontalAlignment="Left"
+                          IsChecked="{Binding ModOrderEnabled}"
+                          Checked="ToggleModOrderCreation_Checked"
+                          Unchecked="ToggleModOrderCreation_Unchecked"/>
 
             <!-- Separator -->
-            <Separator Margin="0,20,0,10"/>
+            <Separator Grid.Row="7"
+                      Grid.ColumnSpan="2"
+                      Margin="0,20,0,16"
+                      Background="{DynamicResource SeparatorBrush}"/>
+
+            <!-- Language Settings Section -->
+            <TextBlock Grid.Row="8"
+                       Grid.ColumnSpan="2"
+                       Text="{Binding LanguageSettingsText}"
+                       FontSize="18"
+                       FontWeight="SemiBold"
+                       Margin="0,0,0,16"
+                       Foreground="{DynamicResource TextForegroundBrush}"/>
+
+            <!-- Language Selection -->
+            <TextBlock Grid.Row="9"
+                       Grid.Column="0"
+                       Text="{Binding LanguageText}"
+                       Width="220"
+                       VerticalAlignment="Center"
+                       Margin="0,8,16,8"
+                       Foreground="{DynamicResource TextForegroundBrush}"/>
+            <ComboBox Grid.Row="9"
+                     Grid.Column="1"
+                     x:Name="LanguageComboBox"
+                     Width="150"
+                     Height="28"
+                     HorizontalAlignment="Left"
+                     SelectedValue="{Binding SelectedLanguage}"
+                     ItemsSource="{Binding AvailableLanguages}"
+                     DisplayMemberPath="Value"
+                     SelectedValuePath="Key"
+                     IsEditable="False"
+                     IsHitTestVisible="True"
+                     Focusable="True"
+                     SelectionChanged="LanguageComboBox_SelectionChanged"/>
+
+            <!-- Separator -->
+            <Separator Grid.Row="10"
+                      Grid.ColumnSpan="2"
+                      Margin="0,20,0,16"
+                      Background="{DynamicResource SeparatorBrush}"/>
 
             <!-- Backup Settings Section -->
-            <TextBlock Text="Backup Settings"
-                       FontSize="16"
-                       FontWeight="Bold"
-                       Margin="0,0,0,10"
-                       Foreground="{DynamicResource ListBoxForegroundBrush}"/>
+            <TextBlock Grid.Row="11"
+                       Grid.ColumnSpan="2"
+                       Text="{Binding BackupSettingsText}"
+                       FontSize="18"
+                       FontWeight="SemiBold"
+                       Margin="0,0,0,16"
+                       Foreground="{DynamicResource TextForegroundBrush}"/>
 
             <!-- Toggle Backup Creation -->
-            <StackPanel Orientation="Horizontal" Margin="0,5">
-                <TextBlock Text="Toggle Backup Creation:"
-                           Width="200"
-                           VerticalAlignment="Center"
-                           Foreground="{DynamicResource ListBoxForegroundBrush}"/>
-                <ToggleButton x:Name="ToggleBackupCreation"
-                              Style="{StaticResource SwitchToggleStyle}"
-                              Width="50"
-                              Height="25"/>
-            </StackPanel>
+            <TextBlock Grid.Row="12"
+                       Grid.Column="0"
+                       Text="{Binding ToggleBackupCreationText}"
+                       Width="220"
+                       VerticalAlignment="Center"
+                       Margin="0,8,16,8"
+                       Foreground="{DynamicResource TextForegroundBrush}"/>
+            <ToggleButton Grid.Row="12"
+                          Grid.Column="1"
+                          x:Name="ToggleBackupCreation"
+                          Style="{StaticResource SwitchToggleStyle}"
+                          Width="50"
+                          Height="25"
+                          HorizontalAlignment="Left"
+                          IsChecked="{Binding CreateBackup}"
+                          Checked="ToggleBackupCreation_Checked"
+                          Unchecked="ToggleBackupCreation_Unchecked"/>
 
             <!-- Backup on Startup -->
-            <StackPanel Orientation="Horizontal" Margin="0,5">
-                <TextBlock Text="Backup on Startup:"
-                           Width="200"
-                           VerticalAlignment="Center"
-                           Foreground="{DynamicResource ListBoxForegroundBrush}"/>
-                <ToggleButton x:Name="ToggleBackupOnStartup"
-                              Style="{StaticResource SwitchToggleStyle}"
-                              Width="50"
-                              Height="25"/>
-            </StackPanel>
+            <TextBlock Grid.Row="13"
+                       Grid.Column="0"
+                       Text="{Binding BackupOnStartupText}"
+                       Width="220"
+                       VerticalAlignment="Center"
+                       Margin="0,8,16,8"
+                       Foreground="{DynamicResource TextForegroundBrush}"/>
+            <ToggleButton Grid.Row="13"
+                          Grid.Column="1"
+                          x:Name="ToggleBackupOnStartup"
+                          Style="{StaticResource SwitchToggleStyle}"
+                          Width="50"
+                          Height="25"
+                          HorizontalAlignment="Left"
+                          IsChecked="{Binding BackupOnStartup}"
+                          Checked="ToggleBackupOnStartup_Checked"
+                          Unchecked="ToggleBackupOnStartup_Unchecked"/>
 
             <!-- Set Max Backups -->
-            <StackPanel Orientation="Horizontal" Margin="0,5">
-                <TextBlock Text="Set Max Backups:"
-                           Width="200"
-                           VerticalAlignment="Center"
-                           Foreground="{DynamicResource ListBoxForegroundBrush}"/>
-                <Button Content="Set" Click="SetMaxBackups_Click" Width="50" Height="25" Style="{StaticResource PrimaryButtonStyle}"/>
-            </StackPanel>
+            <TextBlock Grid.Row="14"
+                       Grid.Column="0"
+                       Text="{Binding SetMaxBackupsText}"
+                       Width="220"
+                       VerticalAlignment="Center"
+                       Margin="0,8,16,8"
+                       Foreground="{DynamicResource TextForegroundBrush}"/>
+            <Button Grid.Row="14"
+                    Grid.Column="1"
+                    Content="{Binding SetButtonText}" 
+                    Click="SetMaxBackups_Click" 
+                    Width="80" 
+                    Height="32" 
+                    HorizontalAlignment="Left"
+                    Style="{StaticResource SecondaryButtonStyle}"/>
 
-        </StackPanel>
+        </Grid>
     </ScrollViewer>
 </Window>

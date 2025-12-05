@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>KCD2 Mod Manager</value>
+  </data>
+  <data name="MenuSettings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="MenuLogin" xml:space="preserve">
+    <value>Log in to Nexus Mods</value>
+  </data>
+  <data name="MenuLogout" xml:space="preserve">
+    <value>Log out of Nexus Mods</value>
+  </data>
+  <data name="ButtonStartGame" xml:space="preserve">
+    <value>Start Game</value>
+  </data>
+  <data name="ButtonAddMod" xml:space="preserve">
+    <value>Add Mod</value>
+  </data>
+  <data name="ButtonSortLoadOrder" xml:space="preserve">
+    <value>Sort: Load Order</value>
+  </data>
+  <data name="ButtonSortTitle" xml:space="preserve">
+    <value>Sort: Title</value>
+  </data>
+  <data name="ButtonSortDisabled" xml:space="preserve">
+    <value>Sort: Disabled</value>
+  </data>
+  <data name="ButtonReloadMods" xml:space="preserve">
+    <value>Reload Mods</value>
+  </data>
+  <data name="StatusReady" xml:space="preserve">
+    <value>Status: Ready</value>
+  </data>
+  <data name="StatusStartingGame" xml:space="preserve">
+    <value>Starting game with mods...</value>
+  </data>
+  <data name="StatusGameStarted" xml:space="preserve">
+    <value>Game started.</value>
+  </data>
+  <data name="StatusFailedToStartGame" xml:space="preserve">
+    <value>Failed to start game.</value>
+  </data>
+  <data name="ModsEnabled" xml:space="preserve">
+    <value>Mods enabled: {0}</value>
+  </data>
+  <data name="ConflictsDetected" xml:space="preserve">
+    <value>Conflicts detected: {0}</value>
+  </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>Search mods...</value>
+  </data>
+  <data name="ToolTipClearSearch" xml:space="preserve">
+    <value>Clear Search</value>
+  </data>
+  <data name="ToolTipUpdateAvailable" xml:space="preserve">
+    <value>Update Available</value>
+  </data>
+  <data name="ToolTipMoveUp" xml:space="preserve">
+    <value>Move Up</value>
+  </data>
+  <data name="ToolTipMoveDown" xml:space="preserve">
+    <value>Move Down</value>
+  </data>
+  <data name="ToolTipDeleteMod" xml:space="preserve">
+    <value>Delete Mod</value>
+  </data>
+  <data name="ToolTipOpenFolder" xml:space="preserve">
+    <value>Open Folder</value>
+  </data>
+  <data name="ToolTipMoreOptions" xml:space="preserve">
+    <value>More options</value>
+  </data>
+  <data name="ContextMenuVisitWebsite" xml:space="preserve">
+    <value>Visit website</value>
+  </data>
+  <data name="ContextMenuChangeModName" xml:space="preserve">
+    <value>Change mod name</value>
+  </data>
+  <data name="ContextMenuChangeNote" xml:space="preserve">
+    <value>Change note</value>
+  </data>
+  <data name="ContextMenuEndorseMod" xml:space="preserve">
+    <value>Endorse mod</value>
+  </data>
+  <data name="ContextMenuChangeModNumber" xml:space="preserve">
+    <value>Change mod number</value>
+  </data>
+  <data name="ContextMenuToggleUpdateCheck" xml:space="preserve">
+    <value>Toggle update check</value>
+  </data>
+  <data name="GeneralSettings" xml:space="preserve">
+    <value>General Settings</value>
+  </data>
+  <data name="SetGamePath" xml:space="preserve">
+    <value>Set Game Path:</value>
+  </data>
+  <data name="ToggleDarkMode" xml:space="preserve">
+    <value>Toggle Dark Mode:</value>
+  </data>
+  <data name="ToggleDevMode" xml:space="preserve">
+    <value>Toggle Dev Mode:</value>
+  </data>
+  <data name="ToggleDeleteConfirmation" xml:space="preserve">
+    <value>Ask before deleting mods:</value>
+  </data>
+  <data name="ToggleUpdateNotifications" xml:space="preserve">
+    <value>Enable update notifications:</value>
+  </data>
+  <data name="ToggleModOrderCreation" xml:space="preserve">
+    <value>Create mod order file:</value>
+  </data>
+  <data name="LanguageSettings" xml:space="preserve">
+    <value>Language Settings</value>
+  </data>
+  <data name="SelectLanguage" xml:space="preserve">
+    <value>Select Language:</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="BackupSettings" xml:space="preserve">
+    <value>Backup Settings</value>
+  </data>
+  <data name="ToggleBackupCreation" xml:space="preserve">
+    <value>Create backups:</value>
+  </data>
+  <data name="BackupOnStartup" xml:space="preserve">
+    <value>Backup on startup:</value>
+  </data>
+  <data name="SetMaxBackups" xml:space="preserve">
+    <value>Set Max Backups:</value>
+  </data>
+  <data name="Set" xml:space="preserve">
+    <value>Set</value>
+  </data>
+  <data name="EnableDeleteConfirmation" xml:space="preserve">
+    <value>Enable Delete Confirmation</value>
+  </data>
+  <data name="ProfilesText" xml:space="preserve">
+    <value>Profile:</value>
+  </data>
+  <data name="CreateProfileText" xml:space="preserve">
+    <value>Create</value>
+  </data>
+  <data name="DuplicateProfileText" xml:space="preserve">
+    <value>Duplicate</value>
+  </data>
+  <data name="DeleteProfileText" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="SaveProfileText" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="LoadProfileText" xml:space="preserve">
+    <value>Load</value>
+  </data>
+  <data name="EnableAllModsText" xml:space="preserve">
+    <value>Enable All</value>
+  </data>
+  <data name="DisableAllModsText" xml:space="preserve">
+    <value>Disable All</value>
+  </data>
+  <data name="UpdateManifestText" xml:space="preserve">
+    <value>Update Manifest (Selected)</value>
+  </data>
+  <data name="UpdateAllManifestsText" xml:space="preserve">
+    <value>Update All Manifests</value>
+  </data>
+  <data name="SwitchGameText" xml:space="preserve">
+    <value>Switch Game</value>
+  </data>
+  <data name="GameText" xml:space="preserve">
+    <value>Game:</value>
+  </data>
+  <data name="ContextMenuOverrideVersion" xml:space="preserve">
+    <value>Override Version</value>
+  </data>
+  <data name="ContextMenuCheckForUpdate" xml:space="preserve">
+    <value>Check for Update</value>
+  </data>
+  <data name="UpdateCheckInProgress" xml:space="preserve">
+    <value>Checking for updates...</value>
+  </data>
+  <data name="UpdateCheckNoUpdate" xml:space="preserve">
+    <value>No update available. Current version: {0}</value>
+  </data>
+  <data name="UpdateCheckError" xml:space="preserve">
+    <value>Error checking for updates: {0}</value>
+  </data>
+  <data name="UpdateCheckNoModNumber" xml:space="preserve">
+    <value>Mod number not set. Cannot check for updates.</value>
+  </data>
+  <data name="LoadingModsText" xml:space="preserve">
+    <value>Loading Mods...</value>
+  </data>
+  <data name="SelectGameTitle" xml:space="preserve">
+    <value>Select Game</value>
+  </data>
+  <data name="SelectGameMessage" xml:space="preserve">
+    <value>Select installed game:</value>
+  </data>
+  <data name="KCD1DisplayName" xml:space="preserve">
+    <value>Kingdom Come: Deliverance</value>
+  </data>
+  <data name="KCD2DisplayName" xml:space="preserve">
+    <value>Kingdom Come: Deliverance II</value>
+  </data>
+  <data name="OkButton" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="CancelButton" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="DeleteModTitle" xml:space="preserve">
+    <value>Delete Mod</value>
+  </data>
+  <data name="DeleteModMessage" xml:space="preserve">
+    <value>Are you sure you want to delete this mod?</value>
+  </data>
+  <data name="DontAskAgain" xml:space="preserve">
+    <value>Don't ask again</value>
+  </data>
+  <data name="YesButton" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="NoButton" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="NameInputDialogTitle" xml:space="preserve">
+    <value>Input</value>
+  </data>
+  <data name="EnterProfileName" xml:space="preserve">
+    <value>Enter profile name:</value>
+  </data>
+  <data name="EnterModName" xml:space="preserve">
+    <value>Enter mod name:</value>
+  </data>
+  <data name="EnterModVersion" xml:space="preserve">
+    <value>Enter custom version (leave empty to use detected version):</value>
+  </data>
+  <data name="SetModVersionTitle" xml:space="preserve">
+    <value>Set Mod Version</value>
+  </data>
+  <data name="ChangeModNameTitle" xml:space="preserve">
+    <value>Change Mod Name</value>
+  </data>
+  <data name="DuplicateProfileTitle" xml:space="preserve">
+    <value>Duplicate Profile</value>
+  </data>
+  <data name="EnterDuplicateProfileName" xml:space="preserve">
+    <value>Enter name for duplicated profile:</value>
+  </data>
+  <data name="DeleteProfileConfirm" xml:space="preserve">
+    <value>Delete profile '{0}'?</value>
+  </data>
+  <data name="ConfirmDeleteTitle" xml:space="preserve">
+    <value>Confirm Delete</value>
+  </data>
+  <data name="UpdateAvailableTitle" xml:space="preserve">
+    <value>Update Available</value>
+  </data>
+  <data name="UpdateAvailableMessage" xml:space="preserve">
+    <value>A new version ({0}) is available. Do you want to update?</value>
+  </data>
+  <data name="ConfirmUpdateTitle" xml:space="preserve">
+    <value>Confirm Update</value>
+  </data>
+  <data name="UpdateAllManifestsMessage" xml:space="preserve">
+    <value>Update all manifests to game version {0}?</value>
+  </data>
+  <data name="ErrorTitle" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="SuccessTitle" xml:space="preserve">
+    <value>Success</value>
+  </data>
+  <data name="ErrorCreatingProfile" xml:space="preserve">
+    <value>Error creating profile: {0}</value>
+  </data>
+  <data name="ErrorLoadingProfile" xml:space="preserve">
+    <value>Error loading profile: {0}</value>
+  </data>
+  <data name="ErrorDeletingProfile" xml:space="preserve">
+    <value>Error deleting profile: {0}</value>
+  </data>
+  <data name="ErrorSavingProfile" xml:space="preserve">
+    <value>Error saving profile: {0}</value>
+  </data>
+  <data name="ErrorDuplicatingProfile" xml:space="preserve">
+    <value>Error duplicating profile: {0}</value>
+  </data>
+  <data name="ProfileNotFound" xml:space="preserve">
+    <value>Profile '{0}' not found</value>
+  </data>
+  <data name="UpdatedManifestsCount" xml:space="preserve">
+    <value>Updated {0} manifests</value>
+  </data>
+  <data name="FailedToUpdateManifest" xml:space="preserve">
+    <value>Failed to update manifest for {0}</value>
+  </data>
+  <data name="CouldNotDetectGameVersion" xml:space="preserve">
+    <value>Could not detect game version</value>
+  </data>
+  <data name="FailedToStartGame" xml:space="preserve">
+    <value>Failed to start the game: {0}</value>
+  </data>
+  <data name="FailedToDeleteMod" xml:space="preserve">
+    <value>Failed to delete mod: {0}</value>
+  </data>
+  <data name="UpdateInstalling" xml:space="preserve">
+    <value>Installing update...</value>
+  </data>
+  <data name="UpdateDownloadLinkFailed" xml:space="preserve">
+    <value>Failed to download update. You may need to download manually.</value>
+  </data>
+  <data name="UpdateInstalledSuccess" xml:space="preserve">
+    <value>Update successfully installed for {0}.</value>
+  </data>
+  <data name="UpdateInstallFailed" xml:space="preserve">
+    <value>Failed to install update. Please try again or download manually.</value>
+  </data>
+  <data name="ErrorNexusApiKeyMissing" xml:space="preserve">
+    <value>Nexus API Key not configured. Please log in to Nexus Mods first.</value>
+  </data>
+</root>
+

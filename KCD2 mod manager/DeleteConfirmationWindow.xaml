@@ -1,31 +1,55 @@
 ﻿<Window x:Class="KCD2_mod_manager.DeleteConfirmationWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Delete Mod" Height="150" Width="400"  Padding="0"
-        WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
-    <Window.Resources>
-        <SolidColorBrush x:Key="WindowBackgroundBrush" Color="White"/>
-        <SolidColorBrush x:Key="ListBoxForegroundBrush" Color="Black"/>
-        <SolidColorBrush x:Key="ButtonBackgroundBrush" Color="LightGray"/>
-        <SolidColorBrush x:Key="ButtonForegroundBrush" Color="Black"/>
-    </Window.Resources>
-    <Grid Background="{DynamicResource WindowBackgroundBrush}">
-        <!-- StackPanel für Text und Checkbox, zentriert im Fenster -->
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0">
-            <TextBlock TextWrapping="Wrap" Text="Are you sure you want to delete this mod?" 
-                       HorizontalAlignment="Center" Margin="-30"
-                       Foreground="{DynamicResource ListBoxForegroundBrush}"/>
-            <CheckBox x:Name="DontAskAgainCheckBox" Content="Don't ask again" HorizontalAlignment="Center" Margin="0"
-                      Foreground="{DynamicResource ListBoxForegroundBrush}"/>
-        </StackPanel>
-
-        <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="10">
-            <Button Content="Yes" Width="75" Margin="5" Click="YesButton_Click"
-                    Background="{DynamicResource ButtonBackgroundBrush}"
-                    Foreground="{DynamicResource ButtonForegroundBrush}"/>
-            <Button Content="No" Width="75" Margin="5" Click="NoButton_Click"
-                    Background="{DynamicResource ButtonBackgroundBrush}"
-                    Foreground="{DynamicResource ButtonForegroundBrush}"/>
+        xmlns:vm="clr-namespace:KCD2_mod_manager.ViewModels"
+        Title="{Binding Title}" Height="220" MinHeight="220" Width="440" MinWidth="440" Padding="0"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        Background="{DynamicResource WindowBackgroundBrush}">
+    <!-- WICHTIG: Verbesserte Layout-Struktur mit Grid für bessere Kontrolle und keine Überlappungen -->
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Message TextBlock -->
+        <TextBlock TextWrapping="Wrap" 
+                   Text="{Binding Message}" 
+                   Grid.Row="0"
+                   HorizontalAlignment="Center" 
+                   Margin="0,0,0,15"
+                   FontSize="14"
+                   Foreground="{DynamicResource ListBoxForegroundBrush}"/>
+        
+        <!-- CheckBox -->
+        <CheckBox x:Name="DontAskAgainCheckBox" 
+                  Content="{Binding DontAskAgainText}" 
+                  Grid.Row="1"
+                  HorizontalAlignment="Center" 
+                  Margin="0,0,0,20"
+                  Foreground="{DynamicResource ListBoxForegroundBrush}"/>
+        
+        <!-- Spacer -->
+        <Grid Grid.Row="2"/>
+        
+        <!-- Buttons -->
+        <StackPanel Grid.Row="3" 
+                    Orientation="Horizontal" 
+                    HorizontalAlignment="Right" 
+                    Margin="0,10,0,0">
+            <Button Content="{Binding YesButtonText}" 
+                    Width="80" 
+                    Height="30" 
+                    Margin="0,0,10,0" 
+                    Click="YesButton_Click"
+                    Style="{StaticResource SecondaryButtonStyle}"/>
+            <Button Content="{Binding NoButtonText}" 
+                    Width="80" 
+                    Height="30" 
+                    Click="NoButton_Click"
+                    Style="{StaticResource SecondaryButtonStyle}"/>
         </StackPanel>
     </Grid>
 </Window>

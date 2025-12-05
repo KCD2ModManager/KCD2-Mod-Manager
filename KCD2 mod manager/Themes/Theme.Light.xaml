@@ -1,0 +1,110 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- WICHTIG: Light Mode Theme - Moderne, klare Farben mit gutem Kontrast -->
+    
+    <!-- Window & Background Colors -->
+    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#FAFAFA"/>
+    <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="ListBoxBackgroundBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="ModListItemEvenBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="ModListItemOddBrush" Color="#F5F5F5"/>
+    <SolidColorBrush x:Key="ModListItemHoverBrush" Color="#E8F4F8"/>
+    <SolidColorBrush x:Key="SelectedItemBrush" Color="#D0E8F0"/>
+    
+    <!-- Text Colors -->
+    <SolidColorBrush x:Key="TextForegroundBrush" Color="#1A1A1A"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#666666"/>
+    <SolidColorBrush x:Key="TextDisabledBrush" Color="#999999"/>
+    <SolidColorBrush x:Key="ListBoxForegroundBrush" Color="#1A1A1A"/>
+    
+    <!-- Primary Button Colors -->
+    <SolidColorBrush x:Key="PrimaryButtonBrush" Color="#0078D4"/>
+    <SolidColorBrush x:Key="PrimaryButtonForegroundBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="PrimaryButtonBorderBrush" Color="#0078D4"/>
+    <SolidColorBrush x:Key="ButtonHoverBrush" Color="#106EBE"/>
+    <SolidColorBrush x:Key="ButtonHoverBorderBrush" Color="#106EBE"/>
+    <SolidColorBrush x:Key="ButtonPressedBrush" Color="#005A9E"/>
+    <SolidColorBrush x:Key="ButtonPressedBorderBrush" Color="#005A9E"/>
+    <SolidColorBrush x:Key="ButtonDisabledBrush" Color="#E0E0E0"/>
+    <SolidColorBrush x:Key="ButtonDisabledBorderBrush" Color="#CCCCCC"/>
+    
+    <!-- Secondary Button Colors -->
+    <SolidColorBrush x:Key="SecondaryButtonBrush" Color="#F3F3F3"/>
+    <SolidColorBrush x:Key="SecondaryButtonForegroundBrush" Color="#1A1A1A"/>
+    <SolidColorBrush x:Key="SecondaryButtonBorderBrush" Color="#D1D1D1"/>
+    
+    <!-- TextBox Colors -->
+    <SolidColorBrush x:Key="TextBoxBackgroundBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="TextBoxForegroundBrush" Color="#1A1A1A"/>
+    <SolidColorBrush x:Key="TextBoxBorderBrush" Color="#D1D1D1"/>
+    <SolidColorBrush x:Key="TextBoxHoverBorderBrush" Color="#0078D4"/>
+    <SolidColorBrush x:Key="TextBoxFocusedBorderBrush" Color="#0078D4"/>
+    <SolidColorBrush x:Key="TextBoxDisabledBrush" Color="#F5F5F5"/>
+    <SolidColorBrush x:Key="TextBoxDisabledBorderBrush" Color="#E0E0E0"/>
+    <SolidColorBrush x:Key="SearchBackgroundBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="SearchForegroundBrush" Color="#1A1A1A"/>
+    <SolidColorBrush x:Key="SearchBorderBrush" Color="#D1D1D1"/>
+    <SolidColorBrush x:Key="ClearButtonBrush" Color="#666666"/>
+    
+    <!-- CheckBox Colors -->
+    <SolidColorBrush x:Key="CheckBoxBackgroundBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="CheckBoxBorderBrush" Color="#D1D1D1"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="CheckBoxCheckedBackgroundBrush" Color="#0078D4"/>
+    <SolidColorBrush x:Key="CheckBoxCheckedBorderBrush" Color="#0078D4"/>
+    <SolidColorBrush x:Key="CheckBoxHoverBorderBrush" Color="#0078D4"/>
+    <SolidColorBrush x:Key="CheckBoxDisabledBrush" Color="#F5F5F5"/>
+    <SolidColorBrush x:Key="CheckBoxDisabledBorderBrush" Color="#E0E0E0"/>
+    
+    <!-- ComboBox Colors -->
+    <SolidColorBrush x:Key="ComboBoxBackgroundBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="ComboBoxForegroundBrush" Color="#1A1A1A"/>
+    <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#D1D1D1"/>
+    <SolidColorBrush x:Key="ComboBoxArrowBrush" Color="#666666"/>
+    <SolidColorBrush x:Key="ComboBoxHoverBorderBrush" Color="#0078D4"/>
+    <SolidColorBrush x:Key="ComboBoxDisabledBrush" Color="#F5F5F5"/>
+    <SolidColorBrush x:Key="ComboBoxDisabledBorderBrush" Color="#E0E0E0"/>
+    
+    <!-- RadioButton Colors -->
+    <SolidColorBrush x:Key="RadioButtonBackgroundBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="RadioButtonBorderBrush" Color="#D1D1D1"/>
+    <SolidColorBrush x:Key="RadioButtonSelectedBrush" Color="#0078D4"/>
+    <SolidColorBrush x:Key="RadioButtonSelectedBorderBrush" Color="#0078D4"/>
+    <SolidColorBrush x:Key="RadioButtonHoverBorderBrush" Color="#0078D4"/>
+    <SolidColorBrush x:Key="RadioButtonDisabledBrush" Color="#F5F5F5"/>
+    <SolidColorBrush x:Key="RadioButtonDisabledBorderBrush" Color="#E0E0E0"/>
+    
+    <!-- Menu & Context Menu Colors -->
+    <SolidColorBrush x:Key="MenuItemHoverBrush" Color="#E8F4F8"/>
+    <SolidColorBrush x:Key="MenuItemHighlightBrush" Color="#D0E8F0"/>
+    
+    <!-- ToolTip Colors -->
+    <SolidColorBrush x:Key="ToolTipBackgroundBrush" Color="#2D2D30"/>
+    <SolidColorBrush x:Key="ToolTipForegroundBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="ToolTipBorderBrush" Color="#3F3F46"/>
+    
+    <!-- Separator Colors -->
+    <SolidColorBrush x:Key="SeparatorBrush" Color="#E0E0E0"/>
+    
+    <!-- Accent Colors -->
+    <SolidColorBrush x:Key="AccentBrush" Color="#0078D4"/>
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="#106EBE"/>
+    <SolidColorBrush x:Key="SuccessBrush" Color="#107C10"/>
+    <SolidColorBrush x:Key="WarningBrush" Color="#FFB900"/>
+    <SolidColorBrush x:Key="ErrorBrush" Color="#E81123"/>
+    <SolidColorBrush x:Key="InfoBrush" Color="#0078D4"/>
+    
+    <!-- Premium Badge Colors - Gold Gradient -->
+    <LinearGradientBrush x:Key="PremiumBadgeBackgroundBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#FFD700" Offset="0"/>
+        <GradientStop Color="#FFA500" Offset="1"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="PremiumBadgeBorderBrush" Color="#FF8C00"/>
+    <SolidColorBrush x:Key="PremiumBadgeForegroundBrush" Color="#1A1A1A"/>
+    
+    <!-- Toggle Switch Colors -->
+    <SolidColorBrush x:Key="ToggleOnBackgroundBrush" Color="#107C10"/>
+    <SolidColorBrush x:Key="ToggleOffBackgroundBrush" Color="#CCCCCC"/>
+    
+</ResourceDictionary>
+

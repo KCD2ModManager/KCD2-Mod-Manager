@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>KCD2 Mod Manager</value>
+  </data>
+  <data name="MenuSettings" xml:space="preserve">
+    <value>Einstellungen</value>
+  </data>
+  <data name="MenuLogin" xml:space="preserve">
+    <value>Bei Nexus Mods anmelden</value>
+  </data>
+  <data name="MenuLogout" xml:space="preserve">
+    <value>Von Nexus Mods abmelden</value>
+  </data>
+  <data name="ButtonStartGame" xml:space="preserve">
+    <value>Spiel starten</value>
+  </data>
+  <data name="ButtonAddMod" xml:space="preserve">
+    <value>Mod hinzufügen</value>
+  </data>
+  <data name="ButtonSortLoadOrder" xml:space="preserve">
+    <value>Sortieren: Lade-Reihenfolge</value>
+  </data>
+  <data name="ButtonSortTitle" xml:space="preserve">
+    <value>Sortieren: Titel</value>
+  </data>
+  <data name="ButtonSortDisabled" xml:space="preserve">
+    <value>Sortieren: Deaktiviert</value>
+  </data>
+  <data name="ButtonReloadMods" xml:space="preserve">
+    <value>Mods neu laden</value>
+  </data>
+  <data name="StatusReady" xml:space="preserve">
+    <value>Status: Bereit</value>
+  </data>
+  <data name="StatusStartingGame" xml:space="preserve">
+    <value>Spiel wird mit Mods gestartet...</value>
+  </data>
+  <data name="StatusGameStarted" xml:space="preserve">
+    <value>Spiel gestartet.</value>
+  </data>
+  <data name="StatusFailedToStartGame" xml:space="preserve">
+    <value>Spiel konnte nicht gestartet werden.</value>
+  </data>
+  <data name="ModsEnabled" xml:space="preserve">
+    <value>Mods aktiviert: {0}</value>
+  </data>
+  <data name="ConflictsDetected" xml:space="preserve">
+    <value>Konflikte erkannt: {0}</value>
+  </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>Mods suchen...</value>
+  </data>
+  <data name="ToolTipClearSearch" xml:space="preserve">
+    <value>Suche löschen</value>
+  </data>
+  <data name="ToolTipUpdateAvailable" xml:space="preserve">
+    <value>Update verfügbar</value>
+  </data>
+  <data name="ToolTipMoveUp" xml:space="preserve">
+    <value>Nach oben</value>
+  </data>
+  <data name="ToolTipMoveDown" xml:space="preserve">
+    <value>Nach unten</value>
+  </data>
+  <data name="ToolTipDeleteMod" xml:space="preserve">
+    <value>Mod löschen</value>
+  </data>
+  <data name="ToolTipOpenFolder" xml:space="preserve">
+    <value>Ordner öffnen</value>
+  </data>
+  <data name="ToolTipMoreOptions" xml:space="preserve">
+    <value>Weitere Optionen</value>
+  </data>
+  <data name="ContextMenuVisitWebsite" xml:space="preserve">
+    <value>Website besuchen</value>
+  </data>
+  <data name="ContextMenuChangeModName" xml:space="preserve">
+    <value>Mod-Name ändern</value>
+  </data>
+  <data name="ContextMenuChangeNote" xml:space="preserve">
+    <value>Notiz ändern</value>
+  </data>
+  <data name="ContextMenuEndorseMod" xml:space="preserve">
+    <value>Mod empfehlen</value>
+  </data>
+  <data name="ContextMenuChangeModNumber" xml:space="preserve">
+    <value>Mod-Nummer ändern</value>
+  </data>
+  <data name="ContextMenuToggleUpdateCheck" xml:space="preserve">
+    <value>Update-Prüfung umschalten</value>
+  </data>
+  <data name="GeneralSettings" xml:space="preserve">
+    <value>Allgemeine Einstellungen</value>
+  </data>
+  <data name="SetGamePath" xml:space="preserve">
+    <value>Spielpfad festlegen:</value>
+  </data>
+  <data name="Set" xml:space="preserve">
+    <value>Festlegen</value>
+  </data>
+  <data name="EnableDeleteConfirmation" xml:space="preserve">
+    <value>Löschbestätigung aktivieren:</value>
+  </data>
+  <data name="ToggleDarkMode" xml:space="preserve">
+    <value>Dunklen Modus umschalten:</value>
+  </data>
+  <data name="ToggleDevMode" xml:space="preserve">
+    <value>Entwicklermodus umschalten:</value>
+  </data>
+  <data name="ToggleUpdateNotifications" xml:space="preserve">
+    <value>Update-Benachrichtigungen umschalten:</value>
+  </data>
+  <data name="ToggleModOrderCreation" xml:space="preserve">
+    <value>Mod-Reihenfolge-Erstellung umschalten:</value>
+  </data>
+  <data name="LanguageSettings" xml:space="preserve">
+    <value>Spracheinstellungen</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Sprache:</value>
+  </data>
+  <data name="BackupSettings" xml:space="preserve">
+    <value>Backup-Einstellungen</value>
+  </data>
+  <data name="ToggleBackupCreation" xml:space="preserve">
+    <value>Backup-Erstellung umschalten:</value>
+  </data>
+  <data name="BackupOnStartup" xml:space="preserve">
+    <value>Backup beim Start:</value>
+  </data>
+  <data name="SetMaxBackups" xml:space="preserve">
+    <value>Maximale Backups festlegen:</value>
+  </data>
+  <data name="ProfilesText" xml:space="preserve">
+    <value>Profil:</value>
+  </data>
+  <data name="CreateProfileText" xml:space="preserve">
+    <value>Erstellen</value>
+  </data>
+  <data name="DuplicateProfileText" xml:space="preserve">
+    <value>Duplizieren</value>
+  </data>
+  <data name="DeleteProfileText" xml:space="preserve">
+    <value>Löschen</value>
+  </data>
+  <data name="SaveProfileText" xml:space="preserve">
+    <value>Speichern</value>
+  </data>
+  <data name="LoadProfileText" xml:space="preserve">
+    <value>Laden</value>
+  </data>
+  <data name="EnableAllModsText" xml:space="preserve">
+    <value>Alle aktivieren</value>
+  </data>
+  <data name="DisableAllModsText" xml:space="preserve">
+    <value>Alle deaktivieren</value>
+  </data>
+  <data name="UpdateManifestText" xml:space="preserve">
+    <value>Manifest aktualisieren (Ausgewählt)</value>
+  </data>
+  <data name="UpdateAllManifestsText" xml:space="preserve">
+    <value>Alle Manifeste aktualisieren</value>
+  </data>
+  <data name="SwitchGameText" xml:space="preserve">
+    <value>Spiel wechseln</value>
+  </data>
+  <data name="GameText" xml:space="preserve">
+    <value>Spiel:</value>
+  </data>
+  <data name="ContextMenuOverrideVersion" xml:space="preserve">
+    <value>Version überschreiben</value>
+  </data>
+  <data name="ContextMenuCheckForUpdate" xml:space="preserve">
+    <value>Nach Updates suchen</value>
+  </data>
+  <data name="UpdateCheckInProgress" xml:space="preserve">
+    <value>Suche nach Updates...</value>
+  </data>
+  <data name="UpdateCheckNoUpdate" xml:space="preserve">
+    <value>Kein Update verfügbar. Aktuelle Version: {0}</value>
+  </data>
+  <data name="UpdateCheckError" xml:space="preserve">
+    <value>Fehler beim Prüfen auf Updates: {0}</value>
+  </data>
+  <data name="UpdateCheckNoModNumber" xml:space="preserve">
+    <value>Mod-Nummer nicht gesetzt. Update-Prüfung nicht möglich.</value>
+  </data>
+  <data name="LoadingModsText" xml:space="preserve">
+    <value>Lade Mods...</value>
+  </data>
+  <data name="SelectGameTitle" xml:space="preserve">
+    <value>Spiel auswählen</value>
+  </data>
+  <data name="SelectGameMessage" xml:space="preserve">
+    <value>Installiertes Spiel auswählen:</value>
+  </data>
+  <data name="KCD1DisplayName" xml:space="preserve">
+    <value>Kingdom Come: Deliverance</value>
+  </data>
+  <data name="KCD2DisplayName" xml:space="preserve">
+    <value>Kingdom Come: Deliverance II</value>
+  </data>
+  <data name="OkButton" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="CancelButton" xml:space="preserve">
+    <value>Abbrechen</value>
+  </data>
+  <data name="DeleteModTitle" xml:space="preserve">
+    <value>Mod löschen</value>
+  </data>
+  <data name="DeleteModMessage" xml:space="preserve">
+    <value>Sind Sie sicher, dass Sie diesen Mod löschen möchten?</value>
+  </data>
+  <data name="DontAskAgain" xml:space="preserve">
+    <value>Nicht erneut fragen</value>
+  </data>
+  <data name="YesButton" xml:space="preserve">
+    <value>Ja</value>
+  </data>
+  <data name="NoButton" xml:space="preserve">
+    <value>Nein</value>
+  </data>
+  <data name="NameInputDialogTitle" xml:space="preserve">
+    <value>Eingabe</value>
+  </data>
+  <data name="EnterProfileName" xml:space="preserve">
+    <value>Profilname eingeben:</value>
+  </data>
+  <data name="EnterModName" xml:space="preserve">
+    <value>Mod-Name eingeben:</value>
+  </data>
+  <data name="EnterModVersion" xml:space="preserve">
+    <value>Benutzerdefinierte Version eingeben (leer lassen für erkannte Version):</value>
+  </data>
+  <data name="SetModVersionTitle" xml:space="preserve">
+    <value>Mod-Version setzen</value>
+  </data>
+  <data name="ChangeModNameTitle" xml:space="preserve">
+    <value>Mod-Name ändern</value>
+  </data>
+  <data name="DuplicateProfileTitle" xml:space="preserve">
+    <value>Profil duplizieren</value>
+  </data>
+  <data name="EnterDuplicateProfileName" xml:space="preserve">
+    <value>Name für dupliziertes Profil eingeben:</value>
+  </data>
+  <data name="DeleteProfileConfirm" xml:space="preserve">
+    <value>Profil '{0}' löschen?</value>
+  </data>
+  <data name="ConfirmDeleteTitle" xml:space="preserve">
+    <value>Löschen bestätigen</value>
+  </data>
+  <data name="UpdateAvailableTitle" xml:space="preserve">
+    <value>Update verfügbar</value>
+  </data>
+  <data name="UpdateAvailableMessage" xml:space="preserve">
+    <value>Eine neue Version ({0}) ist verfügbar. Möchten Sie aktualisieren?</value>
+  </data>
+  <data name="ConfirmUpdateTitle" xml:space="preserve">
+    <value>Update bestätigen</value>
+  </data>
+  <data name="UpdateAllManifestsMessage" xml:space="preserve">
+    <value>Alle Manifeste auf Spiel-Version {0} aktualisieren?</value>
+  </data>
+  <data name="UpdateInstalling" xml:space="preserve">
+    <value>Installiere Update...</value>
+  </data>
+  <data name="UpdateDownloadLinkFailed" xml:space="preserve">
+    <value>Download des Updates fehlgeschlagen. Bitte manuell herunterladen.</value>
+  </data>
+  <data name="UpdateInstalledSuccess" xml:space="preserve">
+    <value>Update für {0} erfolgreich installiert.</value>
+  </data>
+  <data name="UpdateInstallFailed" xml:space="preserve">
+    <value>Installation des Updates fehlgeschlagen. Bitte erneut versuchen oder manuell herunterladen.</value>
+  </data>
+  <data name="ErrorNexusApiKeyMissing" xml:space="preserve">
+    <value>Nexus API-Schlüssel nicht konfiguriert. Bitte zuerst bei Nexus Mods anmelden.</value>
+  </data>
+</root>
+
