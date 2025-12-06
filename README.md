@@ -1,106 +1,122 @@
-# KCD2 Mod Manager - Refactored Version
+# KCD2 Mod Manager – Refactored Version
 
-## Überblick
-Dies ist die vollständig refactorierte Version des KCD2 Mod Managers mit moderner MVVM-Architektur, Dependency Injection und sauberer Code-Struktur.
+## Overview
 
-## Was wurde geändert?
+This is the fully refactored version of the KCD2 Mod Manager featuring a modern MVVM architecture, dependency injection, and clean code structure.
 
-### Architektur
-- ✅ MVVM-Pattern vollständig implementiert
-- ✅ Dependency Injection mit Microsoft.Extensions.DependencyInjection
-- ✅ Service-Layer für alle Geschäftslogik
-- ✅ ViewModels mit Commands statt Event-Handler
-- ✅ Async/await für alle IO- und HTTP-Operationen
+## What Has Changed?
 
-### Projektstruktur
+### Architecture
+
+* ✅ Fully implemented MVVM pattern
+* ✅ Dependency Injection using Microsoft.Extensions.DependencyInjection
+* ✅ Service layer for all business logic
+* ✅ ViewModels use commands instead of event handlers
+* ✅ Async/await for all IO and HTTP operations
+
+### Project Structure
+
 ```
 KCD2 mod manager/
-├── Models/              # Domain-Modelle
+├── Models/              # Domain models
 ├── ViewModels/          # ViewModels
-├── Services/            # Service-Implementierungen
-├── Views/               # (Vorbereitet für zukünftige Trennung)
-├── Resources/           # (Vorbereitet für Lokalisierung)
-└── Tests/              # (Vorbereitet für Unit Tests)
+├── Services/            # Service implementations
+├── Views/               # (Prepared for future separation)
+├── Resources/           # (Prepared for localization)
+└── Tests/               # (Prepared for unit tests)
 ```
 
-## Build & Start
+## Build & Run
 
-### Voraussetzungen
-- .NET 10 SDK
-- Visual Studio 2022 oder höher (oder VS Code mit C# Extension)
+### Requirements
+
+* .NET 10 SDK
+* Visual Studio 2022 or newer (or VS Code with C# extension)
 
 ### Build
+
 ```bash
 dotnet build
 ```
 
-### Start
+### Run
+
 ```bash
 dotnet run
 ```
 
 ## Testing
 
-### Unit Tests (geplant)
+### Unit Tests (planned)
+
 ```bash
 dotnet test
 ```
 
-## Architektur-Übersicht
+## Architecture Overview
 
 ### Services
-- **IModManifestService**: Manifest-Parsing und -Generierung
-- **IFileService**: Datei- und Verzeichnisoperationen
-- **INexusService**: Nexus Mods API-Integration
-- **IModInstallerService**: Mod-Installation und -Verwaltung
-- **IDialogService**: Dialog-Wrapper
-- **IAppSettings**: Einstellungen-Verwaltung
-- **ILog**: Logging-Funktionalität
+
+* **IModManifestService**: Manifest parsing and generation
+* **IFileService**: File and directory operations
+* **INexusService**: Nexus Mods API integration
+* **IModInstallerService**: Mod installation and management
+* **IDialogService**: Dialog wrapper
+* **IAppSettings**: Settings management
+* **ILog**: Logging functionality
 
 ### ViewModels
-- **MainWindowViewModel**: Hauptlogik für MainWindow
+
+* **MainWindowViewModel**: Main logic for MainWindow
 
 ### Models
-- **Mod**: Mod-Repräsentation
-- **ModVersionInfo**: Versionsinformationen
-- **NexusModFile**: Nexus Mods API-Modelle
+
+* **Mod**: Mod representation
+* **ModVersionInfo**: Version information
+* **NexusModFile**: Nexus Mods API models
 
 ## Logging
-Logs werden im `logs/`-Verzeichnis gespeichert mit täglichem Rolling.
 
-## Bekannte Einschränkungen
-- Einige UI-spezifische Event-Handler bleiben im Code-Behind (Drag & Drop, Context-Menus)
-- SettingsWindowViewModel muss noch erstellt werden
-- Unit Tests müssen noch geschrieben werden
-- Lokalisierung (.resx) muss noch implementiert werden
+Logs are stored in the `logs/` directory with daily rolling.
 
-## Manuelle Tests empfohlen
-1. Mod-Installation aus ZIP/RAR/7z
-2. Mod-Installation aus Ordner
-3. Mod-Update-Funktionalität
-4. Nexus SSO-Login
-5. Mod-Order-Verwaltung (Drag & Drop)
-6. Backup-Erstellung
-7. Theme-Wechsel (Dark/Light Mode)
-8. Suchfunktion
-9. Sort-Funktionalität
+## Known Limitations
 
-## Entwickler-Hinweise
+* Some UI-specific event handlers remain in the code-behind (Drag & Drop, context menus)
+* SettingsWindowViewModel still needs to be created
+* Unit tests still need to be written
+* Localization (.resx) still needs to be implemented
 
-### Neue Features hinzufügen
-1. Service-Interface erstellen (z.B. `INewService`)
-2. Service-Implementierung erstellen (z.B. `NewService`)
-3. In `App.xaml.cs` registrieren
-4. Im ViewModel injizieren und verwenden
+## Recommended Manual Tests
 
-### ViewModel erweitern
-1. Property hinzufügen mit `SetProperty`
-2. Command erstellen mit `RelayCommand`
-3. Im XAML binden
+1. Mod installation from ZIP/RAR/7z
+2. Mod installation from folder
+3. Mod update functionality
+4. Nexus SSO login
+5. Mod order management (drag & drop)
+6. Backup creation
+7. Theme switching (dark/light mode)
+8. Search functionality
+9. Sort functionality
+
+## Developer Notes
+
+### Adding New Features
+
+1. Create service interface (e.g., `INewService`)
+2. Create service implementation (e.g., `NewService`)
+3. Register it in `App.xaml.cs`
+4. Inject into the ViewModel and use it
+
+### Extending a ViewModel
+
+1. Add a property using `SetProperty`
+2. Create a command using `RelayCommand`
+3. Bind it in XAML
 
 ## Changelog
-Siehe [CHANGELOG.md](CHANGELOG.md) für detaillierte Änderungen.
+
+See [CHANGELOG.md](CHANGELOG.md) for detailed changes.
 
 ## Credits
-- Original-Entwickler: coolzumjax
-- Refactoring: Vollständig automatisiert durch AI-Assistent
+
+* Original developer: coolzumjax
