@@ -80,6 +80,10 @@ namespace KCD2_mod_manager
 
             _viewModel.Settings.WindowState = this.WindowState.ToString();
             _viewModel.Settings.Save();
+
+            // WICHTIG: Anwendung explizit beenden, da ShutdownMode.OnExplicitShutdown gesetzt ist
+            // Dies stellt sicher, dass die App vollständig beendet wird, wenn das MainWindow geschlossen wird
+            Application.Current.Shutdown();
         }
 
         private void EnsureWindowIsVisible()
