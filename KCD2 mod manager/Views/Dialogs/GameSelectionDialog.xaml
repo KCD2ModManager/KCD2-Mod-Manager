@@ -4,7 +4,7 @@
         xmlns:vm="clr-namespace:KCD2_mod_manager.ViewModels"
         xmlns:local="clr-namespace:KCD2_mod_manager"
         xmlns:services="clr-namespace:KCD2_mod_manager.Services"
-        Title="{Binding SelectGameTitle}" Height="260" MinHeight="260" Width="440" MinWidth="440"
+        Title="{Binding SelectGameTitle}" Height="500" MinHeight="520" Width="800" MinWidth="800"
         Background="{DynamicResource WindowBackgroundBrush}"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
@@ -14,21 +14,63 @@
         <!-- Converter für GameType-Vergleich -->
         <local:GameTypeEqualsConverter x:Key="GameTypeEqualsConverter"/>
         
-        <!-- Sicherstellen, dass Foreground für Text-Elemente gesetzt ist -->
-        <Style TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{DynamicResource ListBoxForegroundBrush}"/>
+        <!-- BooleanToVisibility Converter -->
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <local:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+        
+        <!-- Style für Game-Karten -->
+        <Style x:Key="GameCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SeparatorBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Margin" Value="10"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                    <Setter Property="BorderThickness" Value="3"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
-        <Style TargetType="RadioButton">
-            <Setter Property="Foreground" Value="{DynamicResource ListBoxForegroundBrush}"/>
+        
+        <!-- Style für Status-Overlay -->
+        <Style x:Key="StatusOverlayStyle" TargetType="Border">
+            <Setter Property="Background">
+                <Setter.Value>
+                    <SolidColorBrush Color="#80000000" Opacity="0.7"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="15,10"/>
         </Style>
+        
+        <!-- Style für Status-Overlay (gefunden) -->
+        <Style x:Key="StatusOverlayFoundStyle" TargetType="Border" BasedOn="{StaticResource StatusOverlayStyle}">
+            <Setter Property="Background">
+                <Setter.Value>
+                    <SolidColorBrush Color="#8000AA00" Opacity="0.8"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <!-- Style für Status-Overlay (nicht gefunden) -->
+        <Style x:Key="StatusOverlayNotFoundStyle" TargetType="Border" BasedOn="{StaticResource StatusOverlayStyle}">
+            <Setter Property="Background">
+                <Setter.Value>
+                    <SolidColorBrush Color="#80AA0000" Opacity="0.8"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
         <!-- Button-Style aus App.xaml verwenden -->
         <Style TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}"/>
     </Window.Resources>
-    <!-- WICHTIG: Verbesserte Layout-Struktur für bessere Lesbarkeit und keine Überlappungen -->
+    
     <Grid Margin="20">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
@@ -37,57 +79,210 @@
         <!-- Message -->
         <TextBlock Grid.Row="0" 
                    Text="{Binding SelectGameMessage}" 
-                   FontSize="14" 
+                   FontSize="16" 
+                   FontWeight="SemiBold"
                    Margin="0,0,0,20"
                    TextWrapping="Wrap"
-                   Foreground="{DynamicResource ListBoxForegroundBrush}" />
+                   Foreground="{DynamicResource TextForegroundBrush}"
+                   HorizontalAlignment="Center" />
 
-        <!-- KCD1 RadioButton -->
-        <RadioButton x:Name="KCD1Radio" 
-                     Grid.Row="1" 
-                     Content="{Binding KCD1DisplayName}"
-                     IsEnabled="{Binding HasKCD1}"
-                     IsChecked="{Binding SelectedGame, Converter={StaticResource GameTypeEqualsConverter}, ConverterParameter={x:Static services:GameType.KCD1}, Mode=TwoWay}"
-                     Margin="0,0,0,15"
-                     Padding="5,8,0,8"
-                     VerticalAlignment="Center"
-                     VerticalContentAlignment="Center"
-                     Foreground="{DynamicResource ListBoxForegroundBrush}" />
+        <!-- Game Cards Grid -->
+        <Grid Grid.Row="1" Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- KCD1 Card -->
+            <Border Grid.Column="0" Style="{StaticResource GameCardStyle}" MinHeight="300">
+                <Border.InputBindings>
+                    <MouseBinding Gesture="LeftClick" Command="{Binding SelectGameCommand}" CommandParameter="{x:Static services:GameType.KCD1}"/>
+                </Border.InputBindings>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Background Image Area mit KCD1-Bild -->
+                    <Border Grid.Row="0" 
+                            Background="{DynamicResource PanelBackgroundBrush}"
+                            ClipToBounds="True">
+                        <Grid>
+                            <!-- KCD1 Hintergrundbild (16:9 Seitenverhältnis) -->
+                            <Image Source="pack://application:,,,/Images/kcd1.jpg"
+                                   Stretch="UniformToFill"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                            
+                            <!-- Status Overlay -->
+                            <Border VerticalAlignment="Top"
+                                    HorizontalAlignment="Stretch"
+                                    Padding="15,10">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Background">
+                                            <Setter.Value>
+                                                <SolidColorBrush Color="#80AA0000" Opacity="0.8"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding KCD1FolderFound}" Value="True">
+                                                <Setter Property="Background">
+                                                    <Setter.Value>
+                                                        <SolidColorBrush Color="#8000AA00" Opacity="0.8"/>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock Text="{Binding KCD1FolderStatus}" 
+                                           FontSize="14" 
+                                           FontWeight="Bold"
+                                           Foreground="White"
+                                           TextAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+                    
+                    <!-- Game Info and Controls -->
+                    <StackPanel Grid.Row="1" Margin="15">
+                        <!-- Game Name -->
+                        <TextBlock Text="{Binding KCD1DisplayName}" 
+                                   FontSize="18" 
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource TextForegroundBrush}"
+                                   TextAlignment="Center"
+                                   Margin="0,0,0,5"/>
+                        
+                        <!-- Folder Path (wenn gefunden) -->
+                        <TextBlock Text="{Binding KCD1FolderPath}" 
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextAlignment="Center"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,10"
+                                   Visibility="{Binding KCD1FolderFound, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        
+                        <!-- Folder Selection Button -->
+                        <Button Content="{Binding SelectFolderButtonText}"
+                                Command="{Binding SelectKCD1FolderCommand}"
+                                ToolTip="{Binding SelectFolderTooltipText}"
+                                HorizontalAlignment="Stretch"
+                                Height="35"
+                                Style="{StaticResource SecondaryButtonStyle}">
+                            <Button.InputBindings>
+                                <MouseBinding Gesture="LeftClick" Command="{Binding SelectKCD1FolderCommand}"/>
+                            </Button.InputBindings>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            
+            <!-- KCD2 Card -->
+            <Border Grid.Column="1" Style="{StaticResource GameCardStyle}" MinHeight="300">
+                <Border.InputBindings>
+                    <MouseBinding Gesture="LeftClick" Command="{Binding SelectGameCommand}" CommandParameter="{x:Static services:GameType.KCD2}"/>
+                </Border.InputBindings>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Background Image Area mit KCD2-Bild -->
+                    <Border Grid.Row="0" 
+                            Background="{DynamicResource PanelBackgroundBrush}"
+                            ClipToBounds="True">
+                        <Grid>
+                            <!-- KCD2 Hintergrundbild -->
+                            <Image Source="pack://application:,,,/Images/kcd2.jpg"
+                                   Stretch="UniformToFill"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                            
+                            <!-- Status Overlay -->
+                            <Border VerticalAlignment="Top"
+                                    HorizontalAlignment="Stretch"
+                                    Padding="15,10">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Background">
+                                            <Setter.Value>
+                                                <SolidColorBrush Color="#80AA0000" Opacity="0.8"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding KCD2FolderFound}" Value="True">
+                                                <Setter Property="Background">
+                                                    <Setter.Value>
+                                                        <SolidColorBrush Color="#8000AA00" Opacity="0.8"/>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock Text="{Binding KCD2FolderStatus}" 
+                                           FontSize="14" 
+                                           FontWeight="Bold"
+                                           Foreground="White"
+                                           TextAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+                    
+                    <!-- Game Info and Controls -->
+                    <StackPanel Grid.Row="1" Margin="15">
+                        <!-- Game Name -->
+                        <TextBlock Text="{Binding KCD2DisplayName}" 
+                                   FontSize="18" 
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource TextForegroundBrush}"
+                                   TextAlignment="Center"
+                                   Margin="0,0,0,5"/>
+                        
+                        <!-- Folder Path (wenn gefunden) -->
+                        <TextBlock Text="{Binding KCD2FolderPath}" 
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   TextAlignment="Center"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,10"
+                                   Visibility="{Binding KCD2FolderFound, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        
+                        <!-- Folder Selection Button -->
+                        <Button Content="{Binding SelectFolderButtonText}"
+                                Command="{Binding SelectKCD2FolderCommand}"
+                                ToolTip="{Binding SelectFolderTooltipText}"
+                                HorizontalAlignment="Stretch"
+                                Height="35"
+                                Style="{StaticResource SecondaryButtonStyle}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
 
-        <!-- KCD2 RadioButton -->
-        <RadioButton x:Name="KCD2Radio" 
-                     Grid.Row="2"
-                     Content="{Binding KCD2DisplayName}"
-                     IsEnabled="{Binding HasKCD2}"
-                     IsChecked="{Binding SelectedGame, Converter={StaticResource GameTypeEqualsConverter}, ConverterParameter={x:Static services:GameType.KCD2}, Mode=TwoWay}"
-                     Margin="0,0,0,20"
-                     Padding="5,8,0,8"
-                     VerticalAlignment="Center"
-                     VerticalContentAlignment="Center"
-                     Foreground="{DynamicResource ListBoxForegroundBrush}" />
-
-        <!-- Spacer -->
-        <Grid Grid.Row="3"/>
-
-        <!-- Buttons -->
-        <StackPanel Grid.Row="4" 
+        <!-- Info Text und Cancel Button -->
+        <StackPanel Grid.Row="2" 
                     Orientation="Horizontal" 
                     HorizontalAlignment="Right" 
                     Margin="0,10,0,0">
-            <Button Content="{Binding OkButtonText}" 
-                    Width="80" 
-                    Height="30" 
-                    Margin="0,0,10,0" 
-                    Click="OkButton_Click" 
-                    IsDefault="True"
-                    Style="{StaticResource SecondaryButtonStyle}" />
+            <TextBlock Text="{Binding ClickCardToSelectText}"
+                       VerticalAlignment="Center"
+                       Margin="0,0,15,0"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       FontSize="12"
+                       FontStyle="Italic"/>
             <Button Content="{Binding CancelButtonText}" 
-                    Width="80" 
-                    Height="30" 
+                    Width="100" 
+                    Height="35" 
                     Click="CancelButton_Click" 
                     IsCancel="True"
                     Style="{StaticResource SecondaryButtonStyle}" />
         </StackPanel>
     </Grid>
 </Window>
-

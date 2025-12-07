@@ -2,6 +2,9 @@ using Microsoft.Win32;
 using Microsoft.Extensions.DependencyInjection;
 using System.Windows;
 using KCD2_mod_manager.ViewModels;
+using System.Threading;
+using System.IO;
+using System.Linq;
 
 namespace KCD2_mod_manager.Services
 {
@@ -22,17 +25,68 @@ namespace KCD2_mod_manager.Services
             _themeService = themeService ?? _serviceProvider?.GetService<IThemeService>();
         }
 
+        /// <summary>
+        /// Zeigt einen lokalisierten Custom MessageBox-Dialog
+        /// WICHTIG: Verwendet CustomMessageBoxWindow mit ViewModel für Lokalisierung und ThemeService
+        /// </summary>
         public bool? ShowMessageBox(string message, string title, MessageBoxButton buttons, MessageBoxImage icon)
         {
-            var result = MessageBox.Show(message, title, buttons, icon);
-            return result switch
+            if (_serviceProvider != null)
             {
-                MessageBoxResult.Yes => true,
-                MessageBoxResult.No => false,
-                MessageBoxResult.OK => true,
-                MessageBoxResult.Cancel => null,
-                _ => null
-            };
+                // WICHTIG: Verwende lokalisierten Dialog über DI
+                var viewModel = _serviceProvider.GetRequiredService<ViewModels.CustomMessageBoxViewModel>();
+                
+                // Setze Inhalt BEVOR das Window erstellt wird
+                viewModel.SetContent(message, title, buttons, icon);
+                
+                // WICHTIG: Erstelle Window mit dem bereits konfigurierten ViewModel
+                var themeService = _serviceProvider.GetService<IThemeService>();
+                var window = new CustomMessageBoxWindow(viewModel, themeService);
+                
+                // WICHTIG: Setze Owner für korrekte Anzeige
+                // WICHTIG: Prüfe, ob MainWindow existiert und nicht das gleiche Fenster ist (verhindert Owner-Fehler)
+                if (Application.Current?.MainWindow != null && Application.Current.MainWindow != window)
+                {
+                    window.Owner = Application.Current.MainWindow;
+                }
+                else
+                {
+                    // Beim App-Start: Verwende das aktive Fenster als Owner (falls vorhanden)
+                    var activeWindow = Application.Current?.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive);
+                    if (activeWindow != null && activeWindow != window)
+                    {
+                        window.Owner = activeWindow;
+                    }
+                }
+                
+                // WICHTIG: ThemeService wird über DI injiziert
+                var result = window.ShowDialog();
+                if (result == true)
+                {
+                    return window.Result switch
+                    {
+                        MessageBoxResult.Yes => true,
+                        MessageBoxResult.No => false,
+                        MessageBoxResult.OK => true,
+                        MessageBoxResult.Cancel => null,
+                        _ => null
+                    };
+                }
+                return null;
+            }
+            else
+            {
+                // Fallback: Legacy MessageBox (nicht lokalisiert, kein Dark Mode)
+                var result = MessageBox.Show(message, title, buttons, icon);
+                return result switch
+                {
+                    MessageBoxResult.Yes => true,
+                    MessageBoxResult.No => false,
+                    MessageBoxResult.OK => true,
+                    MessageBoxResult.Cancel => null,
+                    _ => null
+                };
+            }
         }
 
         public string? ShowOpenFileDialog(string filter, string title, bool multiselect = false)
@@ -63,13 +117,15 @@ namespace KCD2_mod_manager.Services
         /// WICHTIG: Verwendet NameInputDialog mit ViewModel für Lokalisierung und ThemeService
         /// Der Prompt wird gesetzt, aber Title und Button-Text kommen aus den Resources
         /// </summary>
-        public string? ShowInputDialog(string prompt, string title, string defaultValue = "")
+        public string? ShowInputDialog(string prompt, string title, string defaultValue = "", bool isMultiline = false)
         {
             if (_serviceProvider != null)
             {
                 // WICHTIG: Verwende lokalisierten Dialog über DI
                 var viewModel = _serviceProvider.GetRequiredService<NameInputDialogViewModel>();
-                // WICHTIG: Nur Prompt setzen - Title und Button-Text kommen aus Resources (werden automatisch aktualisiert)
+                var themeService = _serviceProvider.GetService<IThemeService>();
+                
+                // WICHTIG: Konfiguriere ViewModel BEVOR der Dialog erstellt wird
                 viewModel.Prompt = prompt;
                 // Title wird vom ViewModel aus Resources geladen, aber wir können es überschreiben wenn nötig
                 if (!string.IsNullOrEmpty(title))
@@ -77,9 +133,13 @@ namespace KCD2_mod_manager.Services
                     viewModel.Title = title;
                 }
                 viewModel.DefaultValue = defaultValue;
+                viewModel.IsMultiline = isMultiline;
                 
-                var dialog = _serviceProvider.GetRequiredService<NameInputDialog>();
-                // WICHTIG: ThemeService wird über DI injiziert
+                // WICHTIG: Erstelle Dialog mit dem konfigurierten ViewModel (nicht über DI, da DI ein neues ViewModel erstellen würde)
+                var dialog = new NameInputDialog(viewModel, themeService);
+                // WICHTIG: Owner setzen für korrektes Zentrieren
+                dialog.Owner = Application.Current.MainWindow;
+                
                 if (dialog.ShowDialog() == true)
                 {
                     return dialog.EnteredText;
@@ -128,6 +188,52 @@ namespace KCD2_mod_manager.Services
                     return window.UserConfirmed;
                 }
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Zeigt einen Folder-Picker-Dialog
+        /// WICHTIG: Verwendet OpenFileDialog mit FolderSelection-Option (WPF-kompatibel)
+        /// </summary>
+        public string? ShowFolderPicker(string description, string? initialPath = null)
+        {
+            // WICHTIG: OpenFileDialog mit ValidateNames=false und CheckFileExists=false simuliert Folder-Picker
+            var dialog = new OpenFileDialog
+            {
+                Title = description,
+                ValidateNames = false,
+                CheckFileExists = false,
+                FileName = "Folder Selection."
+            };
+            
+            if (!string.IsNullOrEmpty(initialPath) && Directory.Exists(initialPath))
+            {
+                dialog.InitialDirectory = initialPath;
+            }
+
+            if (dialog.ShowDialog() == true)
+            {
+                string? selectedPath = Path.GetDirectoryName(dialog.FileName);
+                if (!string.IsNullOrEmpty(selectedPath) && Directory.Exists(selectedPath))
+                {
+                    return selectedPath;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Zeigt einen Progress-Dialog (vereinfacht: nur Progress-Reporting)
+        /// WICHTIG: Für längere Operationen, die cancellable sein sollen
+        /// Die eigentliche UI wird vom Aufrufer verwaltet (z.B. via MessageBox oder Custom Window)
+        /// </summary>
+        public void ShowProgressDialog(string title, string message, CancellationToken cancellationToken, IProgress<string>? progress = null)
+        {
+            // WICHTIG: Vereinfachte Implementierung - nur Progress-Reporting
+            // Der Aufrufer kann einen eigenen Progress-Dialog zeigen
+            if (progress != null)
+            {
+                progress.Report(message);
             }
         }
     }

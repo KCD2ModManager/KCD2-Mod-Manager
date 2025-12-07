@@ -199,5 +199,47 @@
   <data name="ErrorInvalidNumber" xml:space="preserve">
     <value>Invalid number. Please enter a positive integer.</value>
   </data>
+  <data name="ErrorGameInstallationNotFound" xml:space="preserve">
+    <value>Game installation not found</value>
+  </data>
+  <data name="ErrorInitialization" xml:space="preserve">
+    <value>Initialization error: {0}</value>
+  </data>
+  <data name="ErrorProfileNotFound" xml:space="preserve">
+    <value>Profile '{0}' not found</value>
+  </data>
+  <data name="ErrorGameVersion" xml:space="preserve">
+    <value>Could not detect game version</value>
+  </data>
+  <data name="DialogTitleQuestion" xml:space="preserve">
+    <value>Question</value>
+  </data>
+  <data name="ExitApplicationMessage" xml:space="preserve">
+    <value>Closing this window will exit the application. Do you want to continue?</value>
+  </data>
+  <data name="NoGameSelectedMessage" xml:space="preserve">
+    <value>No game was selected. The application will be closed.</value>
+  </data>
+  <data name="ErrorNoGameSelected" xml:space="preserve">
+    <value>Critical error: No game could be selected.</value>
+  </data>
+  <data name="ErrorMainWindowCreation" xml:space="preserve">
+    <value>Error creating main window:\n{0}\n\n{1}</value>
+  </data>
+  <data name="ErrorGameSelectionDialog" xml:space="preserve">
+    <value>Error displaying game selection dialog:\n{0}</value>
+  </data>
+  <data name="PromptSetMaxBackups" xml:space="preserve">
+    <value>Enter the maximum number of backups to keep:</value>
+  </data>
+  <data name="TitleSetMaxBackups" xml:space="preserve">
+    <value>Set Max Backups</value>
+  </data>
+  <data name="PromptSelectGameExecutable" xml:space="preserve">
+    <value>Select Kingdom Come Deliverance 2 Executable</value>
+  </data>
+  <data name="TitleSelectGameExecutable" xml:space="preserve">
+    <value>Select Game Executable</value>
+  </data>
 </root>
 

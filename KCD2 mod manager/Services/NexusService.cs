@@ -149,20 +149,83 @@ namespace KCD2_mod_manager.Services
 
         public async Task<string?> GetLatestVersionAsync(string modPageUrl, CancellationToken cancellationToken = default)
         {
+            const string githubApiUrl = "https://api.github.com/repos/KCD2ModManager/KCD2-Mod-Manager/releases/latest";
+            
             try
             {
-                var client = _httpClientFactory.CreateClient();
-                string html = await client.GetStringAsync(modPageUrl, cancellationToken);
-                var match = Regex.Match(html, "<meta property=\"twitter:data1\" content=\"([^\"]+)\"");
-                if (match.Success)
+                _logger.Info("Starte Version-Abruf von GitHub API");
+                
+                using (var client = new HttpClient())
                 {
-                    return match.Groups[1].Value.Trim();
+                    // GitHub API erfordert User-Agent Header
+                    client.DefaultRequestHeaders.Add("User-Agent", "KCD2-Mod-Manager/1.0");
+                    client.DefaultRequestHeaders.Add("Accept", "application/vnd.github.v3+json");
+                    client.Timeout = TimeSpan.FromSeconds(30);
+                    
+                    _logger.Info($"Requesting GitHub API: {githubApiUrl}");
+                    
+                    using (var request = new HttpRequestMessage(HttpMethod.Get, githubApiUrl))
+                    {
+                        var response = await client.SendAsync(request, cancellationToken);
+                        
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            string errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                            _logger.Error($"GitHub API returned status {response.StatusCode}: {errorContent.Substring(0, Math.Min(500, errorContent.Length))}");
+                            throw new HttpRequestException($"Response status code does not indicate success: {(int)response.StatusCode} ({response.StatusCode})");
+                        }
+                        
+                        string jsonContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                        _logger.Info($"GitHub API response received, length: {jsonContent?.Length ?? 0} characters");
+                        
+                        // Parse JSON response
+                        using (JsonDocument doc = JsonDocument.Parse(jsonContent))
+                        {
+                            JsonElement root = doc.RootElement;
+                            
+                            if (!root.TryGetProperty("tag_name", out JsonElement tagNameElement))
+                            {
+                                _logger.Warning("GitHub API response does not contain 'tag_name' field");
+                                return null;
+                            }
+                            
+                            string tagName = tagNameElement.GetString() ?? string.Empty;
+                            
+                            if (string.IsNullOrEmpty(tagName))
+                            {
+                                _logger.Warning("GitHub API 'tag_name' field is null or empty");
+                                return null;
+                            }
+                            
+                            // Remove leading "v" if present (e.g., "v2.3" -> "2.3")
+                            string version = tagName.TrimStart('v', 'V');
+                            
+                            _logger.Info($"Version erfolgreich von GitHub API extrahiert: '{version}' (original tag: '{tagName}')");
+                            return version;
+                        }
+                    }
                 }
+            }
+            catch (HttpRequestException httpEx)
+            {
+                if (httpEx.StatusCode.HasValue)
+                {
+                    _logger.Error($"HTTP-Fehler beim Abrufen der neuesten Version von GitHub: Status {httpEx.StatusCode.Value} - {httpEx.Message}", httpEx);
+                }
+                else
+                {
+                    _logger.Error($"HTTP-Fehler beim Abrufen der neuesten Version von GitHub: {httpEx.Message}", httpEx);
+                }
+            }
+            catch (JsonException jsonEx)
+            {
+                _logger.Error($"JSON-Parsing-Fehler beim Verarbeiten der GitHub API Antwort: {jsonEx.Message}", jsonEx);
             }
             catch (Exception ex)
             {
-                _logger.Error($"Fehler beim Abrufen der neuesten Version von {modPageUrl}", ex);
+                _logger.Error($"Fehler beim Abrufen der neuesten Version von GitHub: {ex.Message}", ex);
             }
+            
             return null;
         }
 

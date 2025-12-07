@@ -1,0 +1,63 @@
+<Window x:Class="KCD2_mod_manager.CustomMessageBoxWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:KCD2_mod_manager.ViewModels"
+        Title="{Binding Title}" Height="200" MinHeight="200" Width="440" MinWidth="440" Padding="0"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        Background="{DynamicResource WindowBackgroundBrush}">
+    <Window.Resources>
+        <!-- Built-in BooleanToVisibilityConverter -->
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </Window.Resources>
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Message TextBlock -->
+        <TextBlock TextWrapping="Wrap" 
+                   Text="{Binding Message}" 
+                   Grid.Row="0"
+                   HorizontalAlignment="Left" 
+                   VerticalAlignment="Center"
+                   Margin="0,0,0,20"
+                   FontSize="14"
+                   Foreground="{DynamicResource ListBoxForegroundBrush}"/>
+        
+        <!-- Buttons -->
+        <StackPanel Grid.Row="1" 
+                    Orientation="Horizontal" 
+                    HorizontalAlignment="Right" 
+                    Margin="0,10,0,0">
+            <Button Content="{Binding OKButtonText}" 
+                    Width="80" 
+                    Height="30" 
+                    Margin="0,0,10,0" 
+                    Click="OKButton_Click"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Visibility="{Binding ShowOKButton, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Visible}"/>
+            <Button Content="{Binding YesButtonText}" 
+                    Width="80" 
+                    Height="30" 
+                    Margin="0,0,10,0" 
+                    Click="YesButton_Click"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Visibility="{Binding ShowYesButton, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            <Button Content="{Binding NoButtonText}" 
+                    Width="80" 
+                    Height="30" 
+                    Margin="0,0,10,0" 
+                    Click="NoButton_Click"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Visibility="{Binding ShowNoButton, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            <Button Content="{Binding CancelButtonText}" 
+                    Width="80" 
+                    Height="30" 
+                    Click="CancelButton_Click"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Visibility="{Binding ShowCancelButton, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+        </StackPanel>
+    </Grid>
+</Window>
+

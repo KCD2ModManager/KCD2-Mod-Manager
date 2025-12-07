@@ -15,6 +15,7 @@ namespace KCD2_mod_manager.ViewModels
         private string _title = string.Empty;
         private string _okButtonText = string.Empty;
         private string _defaultValue = string.Empty;
+        private bool _isMultiline = false;
 
         public NameInputDialogViewModel(ILocalizationService localizationService)
         {
@@ -64,6 +65,12 @@ namespace KCD2_mod_manager.ViewModels
         {
             get => _defaultValue;
             set => SetProperty(ref _defaultValue, value);
+        }
+
+        public bool IsMultiline
+        {
+            get => _isMultiline;
+            set => SetProperty(ref _isMultiline, value);
         }
     }
 }

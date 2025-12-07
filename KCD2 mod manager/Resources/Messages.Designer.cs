@@ -541,6 +541,132 @@ namespace KCD2_mod_manager.Resources {
                 return ResourceManager.GetString("DialogTitleUpdateAvailable", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Game installation not found ähnelt.
+        /// </summary>
+        internal static string ErrorGameInstallationNotFound {
+            get {
+                return ResourceManager.GetString("ErrorGameInstallationNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Initialization error: {0} ähnelt.
+        /// </summary>
+        internal static string ErrorInitialization {
+            get {
+                return ResourceManager.GetString("ErrorInitialization", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Profile '{0}' not found ähnelt.
+        /// </summary>
+        internal static string ErrorProfileNotFound {
+            get {
+                return ResourceManager.GetString("ErrorProfileNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Could not detect game version ähnelt.
+        /// </summary>
+        internal static string ErrorGameVersion {
+            get {
+                return ResourceManager.GetString("ErrorGameVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Question ähnelt.
+        /// </summary>
+        internal static string DialogTitleQuestion {
+            get {
+                return ResourceManager.GetString("DialogTitleQuestion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Closing this window will exit the application. Do you want to continue? ähnelt.
+        /// </summary>
+        internal static string ExitApplicationMessage {
+            get {
+                return ResourceManager.GetString("ExitApplicationMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die No game was selected. The application will be closed. ähnelt.
+        /// </summary>
+        internal static string NoGameSelectedMessage {
+            get {
+                return ResourceManager.GetString("NoGameSelectedMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Critical error: No game could be selected. ähnelt.
+        /// </summary>
+        internal static string ErrorNoGameSelected {
+            get {
+                return ResourceManager.GetString("ErrorNoGameSelected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Error creating main window:\n{0}\n\n{1} ähnelt.
+        /// </summary>
+        internal static string ErrorMainWindowCreation {
+            get {
+                return ResourceManager.GetString("ErrorMainWindowCreation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Error displaying game selection dialog:\n{0} ähnelt.
+        /// </summary>
+        internal static string ErrorGameSelectionDialog {
+            get {
+                return ResourceManager.GetString("ErrorGameSelectionDialog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enter the maximum number of backups to keep: ähnelt.
+        /// </summary>
+        internal static string PromptSetMaxBackups {
+            get {
+                return ResourceManager.GetString("PromptSetMaxBackups", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Set Max Backups ähnelt.
+        /// </summary>
+        internal static string TitleSetMaxBackups {
+            get {
+                return ResourceManager.GetString("TitleSetMaxBackups", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Select Kingdom Come Deliverance 2 Executable ähnelt.
+        /// </summary>
+        internal static string PromptSelectGameExecutable {
+            get {
+                return ResourceManager.GetString("PromptSelectGameExecutable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Select Game Executable ähnelt.
+        /// </summary>
+        internal static string TitleSelectGameExecutable {
+            get {
+                return ResourceManager.GetString("TitleSelectGameExecutable", resourceCulture);
+            }
+        }
     }
 }
 

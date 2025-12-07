@@ -7,6 +7,7 @@ using System.IO;
 using System;
 using KCD2_mod_manager.Services;
 using KCD2_mod_manager.ViewModels;
+using KCD2_mod_manager.Resources;
 
 namespace KCD2_mod_manager
 {
@@ -113,8 +114,22 @@ namespace KCD2_mod_manager
                     {
                         // Dialog abgebrochen oder Fehler - Anwendung beenden
                         logger.Warning("Spiel-Auswahl abgebrochen - Anwendung wird beendet");
-                        MessageBox.Show("Kein Spiel ausgewählt. Die Anwendung wird beendet.", 
-                            "Keine Auswahl", MessageBoxButton.OK, MessageBoxImage.Information);
+                        
+                        // WICHTIG: Verwende DialogService für Dark/Light Mode Kompatibilität
+                        var dialogService = _serviceProvider?.GetService<IDialogService>();
+                        if (dialogService != null)
+                        {
+                            var message = Messages.NoGameSelectedMessage ?? "No game was selected. The application will be closed.";
+                            var title = Messages.DialogTitleInformation ?? "No Selection";
+                            dialogService.ShowMessageBox(message, title, MessageBoxButton.OK, MessageBoxImage.Information);
+                        }
+                        else
+                        {
+                            // Fallback: Standard MessageBox
+                            MessageBox.Show(Messages.NoGameSelectedMessage ?? "No game was selected. The application will be closed.", 
+                                Messages.DialogTitleInformation ?? "No Selection", MessageBoxButton.OK, MessageBoxImage.Information);
+                        }
+                        
                         Shutdown();
                         return;
                     }
@@ -140,8 +155,22 @@ namespace KCD2_mod_manager
                     if (!selectedGame.HasValue)
                     {
                         logger.Warning("Spiel-Auswahl abgebrochen - Anwendung wird beendet");
-                        MessageBox.Show("Kein Spiel ausgewählt. Die Anwendung wird beendet.", 
-                            "Keine Auswahl", MessageBoxButton.OK, MessageBoxImage.Information);
+                        
+                        // WICHTIG: Verwende DialogService für Dark/Light Mode Kompatibilität
+                        var dialogService = _serviceProvider?.GetService<IDialogService>();
+                        if (dialogService != null)
+                        {
+                            var message = Messages.NoGameSelectedMessage ?? "No game was selected. The application will be closed.";
+                            var title = Messages.DialogTitleInformation ?? "No Selection";
+                            dialogService.ShowMessageBox(message, title, MessageBoxButton.OK, MessageBoxImage.Information);
+                        }
+                        else
+                        {
+                            // Fallback: Standard MessageBox
+                            MessageBox.Show(Messages.NoGameSelectedMessage ?? "No game was selected. The application will be closed.", 
+                                Messages.DialogTitleInformation ?? "No Selection", MessageBoxButton.OK, MessageBoxImage.Information);
+                        }
+                        
                         Shutdown();
                         return;
                     }
@@ -152,8 +181,22 @@ namespace KCD2_mod_manager
             if (!selectedGame.HasValue)
             {
                 logger.Error("Kritischer Fehler: SelectedGame ist null nach Auswahl-Logik");
-                MessageBox.Show("Kritischer Fehler: Kein Spiel konnte ausgewählt werden.", 
-                    "Kritischer Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+                
+                // WICHTIG: Verwende DialogService für Dark/Light Mode Kompatibilität
+                var dialogService = _serviceProvider?.GetService<IDialogService>();
+                if (dialogService != null)
+                {
+                    var message = Messages.ErrorNoGameSelected ?? "Critical error: No game could be selected.";
+                    var title = Messages.DialogTitleError ?? "Critical Error";
+                    dialogService.ShowMessageBox(message, title, MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                else
+                {
+                    // Fallback: Standard MessageBox
+                    MessageBox.Show(Messages.ErrorNoGameSelected ?? "Critical error: No game could be selected.", 
+                        Messages.DialogTitleError ?? "Critical Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                
                 Shutdown();
                 return;
             }
@@ -184,8 +227,22 @@ namespace KCD2_mod_manager
             catch (Exception ex)
             {
                 logger.Error("Fehler beim Erstellen/Anzeigen des MainWindow", ex);
-                MessageBox.Show($"Fehler beim Erstellen des Hauptfensters:\n{ex.Message}\n\n{ex.StackTrace}", 
-                    "Kritischer Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+                
+                // WICHTIG: Verwende DialogService für Dark/Light Mode Kompatibilität
+                var dialogService = _serviceProvider?.GetService<IDialogService>();
+                var errorMessage = string.Format(Messages.ErrorMainWindowCreation ?? "Error creating main window:\n{0}\n\n{1}", ex.Message, ex.StackTrace);
+                var title = Messages.DialogTitleError ?? "Critical Error";
+                
+                if (dialogService != null)
+                {
+                    dialogService.ShowMessageBox(errorMessage, title, MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                else
+                {
+                    // Fallback: Standard MessageBox
+                    MessageBox.Show(errorMessage, title, MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                
                 Shutdown();
             }
         }
@@ -227,8 +284,21 @@ namespace KCD2_mod_manager
             catch (Exception ex)
             {
                 logger.Error("Fehler beim Anzeigen des GameSelectionDialog", ex);
-                MessageBox.Show($"Fehler beim Anzeigen des Spiel-Auswahl-Dialogs:\n{ex.Message}", 
-                    "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+                
+                // WICHTIG: Verwende DialogService für Dark/Light Mode Kompatibilität
+                var dialogService = _serviceProvider?.GetService<IDialogService>();
+                var errorMessage = string.Format(Messages.ErrorGameSelectionDialog ?? "Error displaying game selection dialog:\n{0}", ex.Message);
+                var title = Messages.DialogTitleError ?? "Error";
+                
+                if (dialogService != null)
+                {
+                    dialogService.ShowMessageBox(errorMessage, title, MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                else
+                {
+                    // Fallback: Standard MessageBox
+                    MessageBox.Show(errorMessage, title, MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
             
             return result;
@@ -279,6 +349,7 @@ namespace KCD2_mod_manager
             services.AddSingleton<IModInstallerService, ModInstallerService>();
             services.AddSingleton<IUserModDataService, UserModDataService>();
             services.AddSingleton<IProfilesService, ProfilesService>();
+            services.AddSingleton<IModOrderFileManager, ModOrderFileManager>();
             services.AddSingleton<IGameInstallService, GameInstallService>();
             services.AddSingleton<IManifestUpdateService, ManifestUpdateService>();
 
@@ -288,6 +359,7 @@ namespace KCD2_mod_manager
             services.AddTransient<GameSelectionDialogViewModel>();
             services.AddTransient<ViewModels.NameInputDialogViewModel>();
             services.AddTransient<ViewModels.DeleteConfirmationDialogViewModel>();
+            services.AddTransient<ViewModels.CustomMessageBoxViewModel>();
 
             // Views registrieren (NACH ViewModels)
             services.AddTransient<MainWindow>();
@@ -295,6 +367,7 @@ namespace KCD2_mod_manager
             services.AddTransient<Views.Dialogs.GameSelectionDialog>();
             services.AddTransient<NameInputDialog>();
             services.AddTransient<DeleteConfirmationWindow>();
+            services.AddTransient<CustomMessageBoxWindow>();
 
             // Logs-Verzeichnis erstellen
             Directory.CreateDirectory("logs");

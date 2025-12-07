@@ -84,30 +84,13 @@ namespace KCD2_mod_manager
                 }
             }
 
-            if (string.IsNullOrWhiteSpace(gamePath))
-            {
-                const string DefaultGamePath = @"C:\Program Files (x86)\Steam\steamapps\common\KingdomComeDeliverance2\Bin\Win64MasterMasterSteamPGO\KingdomCome.exe";
-                if (System.IO.File.Exists(DefaultGamePath))
-                {
-                    _viewModel.Settings.GamePath = DefaultGamePath;
-                    _viewModel.Settings.Save();
-                }
-                else
-                {
-                    MessageBox.Show(KCD2_mod_manager.Resources.Messages.ErrorGamePathRequired, KCD2_mod_manager.Resources.Messages.DialogTitleGamePathRequired, MessageBoxButton.OK, MessageBoxImage.Information);
-                    _viewModel.SetGamePathCommand.Execute(null);
-                }
-            }
+            // WICHTIG: Game Path wird jetzt automatisch über GameInstallService ermittelt
+            // Kein manuelles Setting mehr nötig
 
             if (!string.IsNullOrWhiteSpace(_viewModel.Settings.GamePath) && !System.IO.File.Exists(_viewModel.Settings.GamePath))
             {
                 MessageBox.Show(KCD2_mod_manager.Resources.Messages.ErrorInvalidPath, KCD2_mod_manager.Resources.Messages.DialogTitleInvalidPath, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
-        }
-
-        private void SetGamePath_Click(object sender, RoutedEventArgs e)
-        {
-            _viewModel?.SetGamePathCommand.Execute(null);
         }
 
         private void SetMaxBackups_Click(object sender, RoutedEventArgs e)

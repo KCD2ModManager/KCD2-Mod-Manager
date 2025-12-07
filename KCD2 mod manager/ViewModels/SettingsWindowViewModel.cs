@@ -16,6 +16,9 @@ namespace KCD2_mod_manager.ViewModels
         private readonly IDialogService _dialogService;
         private readonly ILog _logger;
         private readonly ILocalizationService _localizationService;
+        private readonly IModOrderFileManager? _modOrderFileManager;
+        private readonly IGameInstallService? _gameInstallService;
+        private readonly IFileService? _fileService;
 
         private const string DefaultGamePath = @"C:\Program Files (x86)\Steam\steamapps\common\KingdomComeDeliverance2\Bin\Win64MasterMasterSteamPGO\KingdomCome.exe";
 
@@ -31,7 +34,6 @@ namespace KCD2_mod_manager.ViewModels
         
         // Lokalisierte Text-Properties - werden in UpdateLocalizedStrings() initialisiert
         private string _generalSettingsText = string.Empty;
-        private string _setGamePathText = string.Empty;
         private string _toggleDarkModeText = string.Empty;
         private string _toggleDevModeText = string.Empty;
         private string _toggleDeleteConfirmationText = string.Empty;
@@ -47,12 +49,22 @@ namespace KCD2_mod_manager.ViewModels
         private string _setButtonText = string.Empty;
         private string _enableDeleteConfirmationText = string.Empty;
 
-        public SettingsWindowViewModel(IAppSettings settings, IDialogService dialogService, ILog logger, ILocalizationService localizationService)
+        public SettingsWindowViewModel(
+            IAppSettings settings, 
+            IDialogService dialogService, 
+            ILog logger, 
+            ILocalizationService localizationService,
+            IModOrderFileManager? modOrderFileManager = null,
+            IGameInstallService? gameInstallService = null,
+            IFileService? fileService = null)
         {
             _settings = settings;
             _dialogService = dialogService;
             _logger = logger;
             _localizationService = localizationService;
+            _modOrderFileManager = modOrderFileManager;
+            _gameInstallService = gameInstallService;
+            _fileService = fileService;
 
             LoadSettings();
             InitializeCommands();
@@ -64,7 +76,6 @@ namespace KCD2_mod_manager.ViewModels
 
         private void InitializeCommands()
         {
-            SetGamePathCommand = new RelayCommand(_ => SetGamePath());
             SetMaxBackupsCommand = new RelayCommand(_ => SetMaxBackups());
             ToggleDarkModeCommand = new RelayCommand<bool?>(isChecked => ToggleDarkMode(isChecked ?? false));
             ToggleDevModeCommand = new RelayCommand<bool?>(isChecked => ToggleDevMode(isChecked ?? false));
@@ -149,12 +160,6 @@ namespace KCD2_mod_manager.ViewModels
         {
             get => _generalSettingsText;
             set => SetProperty(ref _generalSettingsText, value);
-        }
-
-        public string SetGamePathText
-        {
-            get => _setGamePathText;
-            set => SetProperty(ref _setGamePathText, value);
         }
 
         public string SetButtonText
@@ -244,7 +249,6 @@ namespace KCD2_mod_manager.ViewModels
         public IAppSettings Settings => _settings;
 
         // Commands
-        public ICommand SetGamePathCommand { get; private set; } = null!;
         public ICommand SetMaxBackupsCommand { get; private set; } = null!;
         public ICommand ToggleDarkModeCommand { get; private set; } = null!;
         public ICommand ToggleDevModeCommand { get; private set; } = null!;
@@ -258,20 +262,12 @@ namespace KCD2_mod_manager.ViewModels
         public event EventHandler? ThemeChanged;
         public event EventHandler? LanguageChanged;
 
-        private void SetGamePath()
-        {
-            string? selectedPath = _dialogService.ShowOpenFileDialog("Game Executable (*.exe)|*.exe", "Select Kingdom Come Deliverance 2 Executable");
-            if (!string.IsNullOrEmpty(selectedPath))
-            {
-                _settings.GamePath = selectedPath;
-                _settings.Save();
-                _logger.Info($"Game path set to: {selectedPath}");
-            }
-        }
-
         private void SetMaxBackups()
         {
-            string? input = _dialogService.ShowInputDialog("Enter the maximum number of backups to keep:", "Set Max Backups", _settings.BackupMaxCount.ToString());
+            string? input = _dialogService.ShowInputDialog(
+                Resources.Messages.PromptSetMaxBackups, 
+                Resources.Messages.TitleSetMaxBackups, 
+                _settings.BackupMaxCount.ToString());
             if (!string.IsNullOrEmpty(input) && int.TryParse(input, out int maxBackups) && maxBackups > 0)
             {
                 BackupMaxCount = maxBackups;
@@ -314,11 +310,58 @@ namespace KCD2_mod_manager.ViewModels
             _settings.Save();
         }
 
-        private void ToggleModOrderCreation(bool isChecked)
+        private async void ToggleModOrderCreation(bool isChecked)
         {
+            bool oldValue = ModOrderEnabled;
             ModOrderEnabled = isChecked;
             _settings.ModOrderEnabled = isChecked;
             _settings.Save();
+            
+            // WICHTIG: Wende das Setting sofort an (verschiebe Dateien atomar)
+            if (_modOrderFileManager != null && _gameInstallService != null)
+            {
+                try
+                {
+                    // Bestimme Mod-Ordner basierend auf ausgewähltem Spiel
+                    // Da wir im SettingsWindow sind, nehmen wir das aktuelle Spiel aus GameInstallService
+                    var selectedGame = _gameInstallService.SelectedGame;
+                    string? modFolder = null;
+                    
+                    if (selectedGame == GameType.KCD1 && _gameInstallService.KCD1Install != null)
+                    {
+                        modFolder = _gameInstallService.KCD1Install.ModsPath;
+                    }
+                    else if (selectedGame == GameType.KCD2 && _gameInstallService.KCD2Install != null)
+                    {
+                        modFolder = _gameInstallService.KCD2Install.ModsPath;
+                    }
+                    
+                    if (!string.IsNullOrEmpty(modFolder) && _fileService.DirectoryExists(modFolder))
+                    {
+                        _logger.Info($"Toggle ModOrderEnabled: {oldValue} -> {isChecked}, wende auf Mod-Ordner an: {modFolder}");
+                        await _modOrderFileManager.ApplyModOrderSettingAsync(isChecked, modFolder);
+                        _logger.Info($"ModOrderEnabled-Setting erfolgreich angewendet");
+                    }
+                    else
+                    {
+                        _logger.Warning($"Mod-Ordner nicht gefunden, kann ModOrderEnabled-Setting nicht anwenden");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Fehler beim Anwenden des ModOrderEnabled-Settings: {ex.Message}", ex);
+                    // Stelle alten Wert wieder her
+                    ModOrderEnabled = oldValue;
+                    _settings.ModOrderEnabled = oldValue;
+                    _settings.Save();
+                    
+                    _dialogService.ShowMessageBox(
+                        $"Fehler beim Ändern der Mod-Order-Einstellung: {ex.Message}",
+                        Resources.Messages.DialogTitleError,
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Error);
+                }
+            }
         }
 
         private void ToggleBackupCreation(bool isChecked)
@@ -381,7 +424,6 @@ namespace KCD2_mod_manager.ViewModels
             // WICHTIG: Verwende aktuelle Culture für Resource-Lookup
             var culture = System.Globalization.CultureInfo.CurrentUICulture;
             GeneralSettingsText = Resources.Strings.ResourceManager.GetString("GeneralSettings", culture) ?? Resources.Strings.GeneralSettings;
-            SetGamePathText = Resources.Strings.ResourceManager.GetString("SetGamePath", culture) ?? Resources.Strings.SetGamePath;
             ToggleDarkModeText = Resources.Strings.ResourceManager.GetString("ToggleDarkMode", culture) ?? Resources.Strings.ToggleDarkMode;
             ToggleDevModeText = Resources.Strings.ResourceManager.GetString("ToggleDevMode", culture) ?? Resources.Strings.ToggleDevMode;
             ToggleDeleteConfirmationText = Resources.Strings.ResourceManager.GetString("ToggleDeleteConfirmation", culture) ?? Resources.Strings.ToggleDeleteConfirmation;

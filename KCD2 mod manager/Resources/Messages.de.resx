@@ -199,11 +199,47 @@
   <data name="ErrorInvalidNumber" xml:space="preserve">
     <value>Ungültige Zahl. Bitte geben Sie eine positive Ganzzahl ein.</value>
   </data>
-  <data name="ErrorSortingDisabled" xml:space="preserve">
-    <value>Sortierung ist während der Suche deaktiviert.</value>
+  <data name="ErrorGameInstallationNotFound" xml:space="preserve">
+    <value>Spiel-Installation nicht gefunden</value>
   </data>
-  <data name="ErrorActionNotAllowed" xml:space="preserve">
-    <value>Aktion nicht erlaubt</value>
+  <data name="ErrorInitialization" xml:space="preserve">
+    <value>Initialisierungsfehler: {0}</value>
+  </data>
+  <data name="ErrorProfileNotFound" xml:space="preserve">
+    <value>Profil '{0}' nicht gefunden</value>
+  </data>
+  <data name="ErrorGameVersion" xml:space="preserve">
+    <value>Spielversion konnte nicht erkannt werden</value>
+  </data>
+  <data name="DialogTitleQuestion" xml:space="preserve">
+    <value>Frage</value>
+  </data>
+  <data name="ExitApplicationMessage" xml:space="preserve">
+    <value>Das Schließen dieses Fensters beendet die Anwendung. Möchten Sie fortfahren?</value>
+  </data>
+  <data name="NoGameSelectedMessage" xml:space="preserve">
+    <value>Kein Spiel wurde ausgewählt. Die Anwendung wird beendet.</value>
+  </data>
+  <data name="ErrorNoGameSelected" xml:space="preserve">
+    <value>Kritischer Fehler: Kein Spiel konnte ausgewählt werden.</value>
+  </data>
+  <data name="ErrorMainWindowCreation" xml:space="preserve">
+    <value>Fehler beim Erstellen des Hauptfensters:\n{0}\n\n{1}</value>
+  </data>
+  <data name="ErrorGameSelectionDialog" xml:space="preserve">
+    <value>Fehler beim Anzeigen des Spiel-Auswahl-Dialogs:\n{0}</value>
+  </data>
+  <data name="PromptSetMaxBackups" xml:space="preserve">
+    <value>Geben Sie die maximale Anzahl der zu behaltenden Backups ein:</value>
+  </data>
+  <data name="TitleSetMaxBackups" xml:space="preserve">
+    <value>Maximale Backups festlegen</value>
+  </data>
+  <data name="PromptSelectGameExecutable" xml:space="preserve">
+    <value>Kingdom Come Deliverance 2 ausführbare Datei auswählen</value>
+  </data>
+  <data name="TitleSelectGameExecutable" xml:space="preserve">
+    <value>Spiel ausführbare Datei auswählen</value>
   </data>
   <data name="InfoModEndorsed" xml:space="preserve">
     <value>Mod erfolgreich empfohlen!</value>
@@ -225,9 +261,6 @@
   </data>
   <data name="DialogTitleUpdateAvailable" xml:space="preserve">
     <value>Update verfügbar</value>
-  </data>
-  <data name="ErrorModFolderNotExists" xml:space="preserve">
-    <value>Der Mod-Ordner existiert nicht oder ist nicht angegeben.</value>
   </data>
 </root>
 

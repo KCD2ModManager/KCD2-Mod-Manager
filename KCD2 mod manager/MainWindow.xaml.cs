@@ -112,9 +112,9 @@ namespace KCD2_mod_manager
                     {
                         // Ordner-Verarbeitung
                         await _viewModel.ProcessModFolderAsync(file);
-                    }
-                    else
-                    {
+            }
+            else
+            {
                         // Datei-Verarbeitung
                         await _viewModel.ProcessModFileAsync(file);
                     }

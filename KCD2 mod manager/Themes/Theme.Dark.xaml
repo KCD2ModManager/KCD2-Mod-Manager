@@ -105,6 +105,17 @@
     <!-- Toggle Switch Colors für Dark Mode -->
     <SolidColorBrush x:Key="ToggleOnBackgroundBrush" Color="#6FCF97"/>
     <SolidColorBrush x:Key="ToggleOffBackgroundBrush" Color="#505052"/>
-    
+
+    <!-- ScrollBar Background / Track -->
+    <SolidColorBrush x:Key="ScrollBarBackgroundBrush" Color="#1E1E1E"/>
+
+    <!-- Thumb -->
+    <SolidColorBrush x:Key="ScrollBarThumbBrush" Color="#3F3F46"/>
+    <SolidColorBrush x:Key="ScrollBarThumbHoverBrush" Color="#505052"/>
+    <SolidColorBrush x:Key="ScrollBarThumbPressedBrush" Color="#0E639C"/>
+
+    <!-- Arrow icons -->
+    <SolidColorBrush x:Key="ScrollBarButtonArrowBrush" Color="#CCCCCC"/>
+
 </ResourceDictionary>
 

@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="KCD2 Mod Manager" Height="500" Width="800"
         xmlns:local="clr-namespace:KCD2_mod_manager"
+        xmlns:behaviors="clr-namespace:KCD2_mod_manager.Behaviors"
         MinWidth="700" MinHeight="400">
     <Window.Resources>
         <!-- Built-in BooleanToVisibilityConverter -->
@@ -11,6 +12,8 @@
         <local:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
         <!-- Is Not Null Converter -->
         <local:IsNotNullConverter x:Key="IsNotNullConverter"/>
+        <!-- ScrollBar Corner Visibility Converter -->
+        <local:ScrollBarCornerVisibilityConverter x:Key="ScrollBarCornerVisibilityConverter"/>
 
         <!-- Modern Mod List Item Style mit verbessertem Kontrast -->
         <Style x:Key="ModListStyle" TargetType="ListBoxItem">
@@ -76,6 +79,96 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+        </Style>
+
+        <!-- ============================================ -->
+        <!-- LOKALER FIX: ScrollBar-Corner für ModList -->
+        <!-- ============================================ -->
+        <!-- WICHTIG: Nur für ModList, nicht global -->
+        <!-- Problem: Wenn beide ScrollBars sichtbar sind, erscheint unten rechts die ScrollBar-Corner als weiße Fläche -->
+        <!-- Lösung: Lokaler ScrollViewer-Template-Override mit gefärbter Corner-Region -->
+        <ControlTemplate x:Key="ModListScrollViewerTemplate" TargetType="ScrollViewer">
+            <Grid x:Name="Grid" Background="{TemplateBinding Background}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                
+                <!-- Content -->
+                <ScrollContentPresenter x:Name="PART_ScrollContentPresenter"
+                                      CanContentScroll="{TemplateBinding CanContentScroll}"
+                                      CanHorizontallyScroll="False"
+                                      CanVerticallyScroll="False"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      Content="{TemplateBinding Content}"
+                                      Grid.Column="0"
+                                      Grid.Row="0"
+                                      Margin="{TemplateBinding Padding}"/>
+                
+                <!-- Vertical ScrollBar -->
+                <ScrollBar x:Name="PART_VerticalScrollBar"
+                          AutomationProperties.AutomationId="VerticalScrollBar"
+                          Cursor="Arrow"
+                          Grid.Column="1"
+                          Grid.Row="0"
+                          Maximum="{TemplateBinding ScrollableHeight}"
+                          Minimum="0"
+                          Orientation="Vertical"
+                          ViewportSize="{TemplateBinding ViewportHeight}"
+                          Value="{Binding VerticalOffset, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}}"
+                          Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"/>
+                
+                <!-- Horizontal ScrollBar -->
+                <ScrollBar x:Name="PART_HorizontalScrollBar"
+                          AutomationProperties.AutomationId="HorizontalScrollBar"
+                          Cursor="Arrow"
+                          Grid.Column="0"
+                          Grid.Row="1"
+                          Maximum="{TemplateBinding ScrollableWidth}"
+                          Minimum="0"
+                          Orientation="Horizontal"
+                          ViewportSize="{TemplateBinding ViewportWidth}"
+                          Value="{Binding HorizontalOffset, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}}"
+                          Visibility="{TemplateBinding ComputedHorizontalScrollBarVisibility}"/>
+                
+                <!-- WICHTIG: Corner-Region mit Theme-Farbe füllen -->
+                <!-- Diese Border füllt die Ecke unten rechts, wenn beide ScrollBars sichtbar sind -->
+                <!-- WICHTIG: Visibility wird über MultiBinding gesteuert, das auf die ScrollBar-Sichtbarkeiten zugreift -->
+                <Border x:Name="Corner"
+                       Grid.Column="1"
+                       Grid.Row="1"
+                       Background="{DynamicResource ScrollBarBackgroundBrush}">
+                    <Border.Visibility>
+                        <MultiBinding Converter="{StaticResource ScrollBarCornerVisibilityConverter}">
+                            <Binding ElementName="PART_VerticalScrollBar" Path="Visibility"/>
+                            <Binding ElementName="PART_HorizontalScrollBar" Path="Visibility"/>
+                        </MultiBinding>
+                    </Border.Visibility>
+                </Border>
+            </Grid>
+        </ControlTemplate>
+
+        <!-- Style für ModList: Verwendet lokalen ScrollViewer-Template mit Corner-Fix -->
+        <Style x:Key="ModListScrollViewerStyle" TargetType="ScrollViewer">
+            <Setter Property="Template" Value="{StaticResource ModListScrollViewerTemplate}"/>
+        </Style>
+
+        <!-- ============================================ -->
+        <!-- LOKALER STYLE: SearchBar ohne ScrollBars -->
+        <!-- ============================================ -->
+        <!-- WICHTIG: Nur für SearchBar, nicht global -->
+        <!-- ScrollBars werden versteckt (Hidden statt Disabled), damit ScrollViewer noch scrollen kann -->
+        <!-- Aktiviert automatisches horizontales Scrollen, damit Cursor immer sichtbar bleibt -->
+        <Style x:Key="SearchBarTextBoxStyle" TargetType="TextBox">
+            <!-- WICHTIG: Hidden statt Disabled, damit ScrollViewer noch programmatisch scrollen kann -->
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Hidden"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled"/>
+            <!-- WICHTIG: Attached Behavior für automatisches horizontales Scrollen -->
+            <Setter Property="behaviors:AutoScrollBehavior.EnableAutoScroll" Value="True"/>
         </Style>
 
     </Window.Resources>
@@ -257,11 +350,6 @@
                            Orientation="Horizontal" 
                            VerticalAlignment="Center" 
                            HorizontalAlignment="Right">
-                    <Button Content="{Binding UpdateManifestText}" 
-                           Command="{Binding UpdateManifestCommand}" 
-                           CommandParameter="{Binding SelectedMod}" 
-                           Style="{StaticResource SecondaryButtonStyle}" 
-                           IsEnabled="{Binding SelectedMod, Converter={StaticResource IsNotNullConverter}}"/>
                     <Button Content="{Binding UpdateAllManifestsText}" 
                            Command="{Binding UpdateAllManifestsCommand}" 
                            Style="{StaticResource SecondaryButtonStyle}"/>
@@ -296,6 +384,11 @@
                                 PreviewMouseLeftButtonDown="ModList_PreviewMouseLeftButtonDown"
                                 PreviewMouseMove="ModList_PreviewMouseMove" 
                                 Drop="ModList_Drop">
+                            <!-- WICHTIG: Lokaler Fix für ScrollBar-Corner -->
+                            <!-- Überschreibt den internen ScrollViewer mit Corner-Fix -->
+                            <ListBox.Resources>
+                                <Style TargetType="ScrollViewer" BasedOn="{StaticResource ModListScrollViewerStyle}"/>
+                            </ListBox.Resources>
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <Grid>
@@ -498,15 +591,15 @@
                             </Grid.ColumnDefinitions>
 
                             <!-- Textbox ohne feste Höhe -->
+                            <!-- WICHTIG: Lokaler Style deaktiviert alle ScrollBars -->
                             <TextBox x:Name="SearchTextBox"
                                      Grid.Column="0"
+                                     Style="{StaticResource SearchBarTextBoxStyle}"
                                      VerticalAlignment="Center"
                                      HorizontalAlignment="Stretch"
                                      VerticalContentAlignment="Center"
                                      HorizontalContentAlignment="Left"
                                      TextWrapping="NoWrap"
-                                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                                     ScrollViewer.VerticalScrollBarVisibility="Disabled"
                                      TextChanged="SearchTextBox_TextChanged"
                                      ToolTip="Search mods..."
                                      FontSize="15"

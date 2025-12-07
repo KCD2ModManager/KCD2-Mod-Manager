@@ -36,12 +36,14 @@ namespace KCD2_mod_manager.Services
     {
         private readonly IFileService _fileService;
         private readonly ILog _logger;
+        private readonly IAppSettings _settings;
         private readonly string _profilesRootDirectory;
 
-        public ProfilesService(IFileService fileService, ILog logger)
+        public ProfilesService(IFileService fileService, ILog logger, IAppSettings settings)
         {
             _fileService = fileService;
             _logger = logger;
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
             // Pfad: %AppData%/KCDModManager/profiles/
             string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -392,13 +394,18 @@ namespace KCD2_mod_manager.Services
 
         /// <summary>
         /// Schreibt mod_order.txt in das Spiel-Mods-Verzeichnis (für das aktive Profil)
-        /// WICHTIG: Diese Datei wird beim Aktivieren eines Profils überschrieben
+        /// WICHTIG: Respektiert das ModOrderEnabled-Setting:
+        /// - Wenn ModOrderEnabled=true: Schreibt in mod_order.txt
+        /// - Wenn ModOrderEnabled=false: Schreibt in mod_order_backup.txt und löscht mod_order.txt
         /// </summary>
         public async Task WriteModOrderToGameFolderAsync(string modFolder, List<Mod> mods, CancellationToken cancellationToken = default)
         {
             try
             {
-                string modOrderPath = Path.Combine(modFolder, "mod_order.txt");
+                // Bestimme Dateiname basierend auf Setting
+                string modOrderFileName = _settings.ModOrderEnabled ? "mod_order.txt" : "mod_order_backup.txt";
+                string modOrderPath = Path.Combine(modFolder, modOrderFileName);
+                string modOrderMainPath = Path.Combine(modFolder, "mod_order.txt");
 
                 var lines = new List<string>();
                 foreach (var mod in mods.OrderBy(m => m.Number))
@@ -423,11 +430,19 @@ namespace KCD2_mod_manager.Services
                 }
                 
                 _fileService.MoveFile(tempPath, modOrderPath);
-                _logger.Info($"mod_order.txt in Spiel-Mods-Verzeichnis geschrieben: {modOrderPath}");
+                
+                // WICHTIG: Wenn ModOrderEnabled=false, lösche mod_order.txt falls vorhanden
+                if (!_settings.ModOrderEnabled && _fileService.FileExists(modOrderMainPath))
+                {
+                    _fileService.DeleteFile(modOrderMainPath);
+                    _logger.Info($"mod_order.txt gelöscht (ModOrderEnabled=false)");
+                }
+                
+                _logger.Info($"Mod-Order in Spiel-Mods-Verzeichnis geschrieben: {modOrderPath} (ModOrderEnabled={_settings.ModOrderEnabled})");
             }
             catch (Exception ex)
             {
-                _logger.Error($"Fehler beim Schreiben der mod_order.txt in Spiel-Mods-Verzeichnis: {ex.Message}", ex);
+                _logger.Error($"Fehler beim Schreiben der Mod-Order in Spiel-Mods-Verzeichnis: {ex.Message}", ex);
                 throw;
             }
         }

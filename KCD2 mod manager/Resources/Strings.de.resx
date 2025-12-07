@@ -280,6 +280,9 @@
   <data name="NoButton" xml:space="preserve">
     <value>Nein</value>
   </data>
+  <data name="OKButton" xml:space="preserve">
+    <value>OK</value>
+  </data>
   <data name="NameInputDialogTitle" xml:space="preserve">
     <value>Eingabe</value>
   </data>
@@ -336,6 +339,27 @@
   </data>
   <data name="ErrorNexusApiKeyMissing" xml:space="preserve">
     <value>Nexus API-Schlüssel nicht konfiguriert. Bitte zuerst bei Nexus Mods anmelden.</value>
+  </data>
+  <data name="GameFolderFound" xml:space="preserve">
+    <value>Spiel-Ordner gefunden</value>
+  </data>
+  <data name="GameFolderNotFound" xml:space="preserve">
+    <value>Spiel-Ordner nicht gefunden</value>
+  </data>
+  <data name="SelectGameFolderPrompt" xml:space="preserve">
+    <value>Bitte wählen Sie den Installationsordner für {0} aus.\n\nDer Ordner sollte die Datei 'KingdomCome.exe' enthalten.</value>
+  </data>
+  <data name="GameFolderSaved" xml:space="preserve">
+    <value>Pfad gespeichert: {0}</value>
+  </data>
+  <data name="SelectFolderButton" xml:space="preserve">
+    <value>Ordner auswählen</value>
+  </data>
+  <data name="SelectFolderTooltip" xml:space="preserve">
+    <value>Spiel-Installationsordner manuell auswählen oder ändern</value>
+  </data>
+  <data name="ClickCardToSelect" xml:space="preserve">
+    <value>Klicken Sie auf eine Karte, um das Spiel auszuwählen</value>
   </data>
 </root>
 
