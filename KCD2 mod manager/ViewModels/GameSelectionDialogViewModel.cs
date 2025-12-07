@@ -132,47 +132,66 @@ namespace KCD2_mod_manager.ViewModels
         
         /// <summary>
         /// Wählt einen Folder für ein Spiel aus
+        /// WICHTIG: Verwendet EXE-Auswahl statt Folder-Picker für bessere Kompatibilität
         /// </summary>
         private async Task SelectFolderAsync(GameType gameType)
         {
             try
             {
                 string gameName = gameType == GameType.KCD1 ? KCD1DisplayName : KCD2DisplayName;
-                string description = string.Format(
-                    Strings.ResourceManager.GetString("SelectGameFolderPrompt") ?? 
-                    "Please select the installation folder for {0}.\n\nThe folder should contain the file 'KingdomCome.exe'.",
-                    gameName);
+                string exeName = "KingdomCome.exe";
                 
-                string? selectedPath = _dialogService.ShowFolderPicker(description);
-                if (!string.IsNullOrEmpty(selectedPath))
+                // Zeige Dialog zur EXE-Auswahl
+                string filter = $"Game Executable ({exeName})|{exeName}|All Files (*.*)|*.*";
+                string title = string.Format(
+                    Strings.ResourceManager.GetString("SelectGameExecutablePrompt") ?? 
+                    "Select {0} Executable ({1})",
+                    gameName, exeName);
+                
+                string? selectedExePath = _dialogService.ShowOpenFileDialog(filter, title);
+                if (!string.IsNullOrEmpty(selectedExePath) && System.IO.File.Exists(selectedExePath))
                 {
-                    // Validiere den Pfad
-                    bool isValid = await ValidateGameFolderAsync(gameType, selectedPath);
-                    if (isValid)
+                    // Ermittle den Game-Ordner aus dem EXE-Pfad
+                    string? gameFolder = GetGameFolderFromExePath(gameType, selectedExePath);
+                    
+                    if (!string.IsNullOrEmpty(gameFolder) && System.IO.Directory.Exists(gameFolder))
                     {
-                        // Speichere den Pfad
-                        if (gameType == GameType.KCD1)
-                            _settings.GamePath_KCD1 = selectedPath;
+                        // Validiere den Pfad
+                        bool isValid = await ValidateGameFolderAsync(gameType, gameFolder);
+                        if (isValid)
+                        {
+                            // Speichere den Pfad
+                            if (gameType == GameType.KCD1)
+                                _settings.GamePath_KCD1 = gameFolder;
+                            else
+                                _settings.GamePath_KCD2 = gameFolder;
+                            _settings.Save();
+                            
+                            _logger.Info($"Game folder selected for {gameType}: {gameFolder} (from EXE: {selectedExePath})");
+                            
+                            // Status aktualisieren
+                            UpdateFolderStatus();
+                            
+                            // Info-Dialog
+                            _dialogService.ShowMessageBox(
+                                string.Format(Strings.ResourceManager.GetString("GameFolderSaved") ?? "Path saved: {0}", gameFolder),
+                                Strings.ResourceManager.GetString("DialogTitleInformation") ?? "Information",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Information);
+                        }
                         else
-                            _settings.GamePath_KCD2 = selectedPath;
-                        _settings.Save();
-                        
-                        _logger.Info($"Game folder selected for {gameType}: {selectedPath}");
-                        
-                        // Status aktualisieren
-                        UpdateFolderStatus();
-                        
-                        // Info-Dialog
-                        _dialogService.ShowMessageBox(
-                            string.Format(Strings.ResourceManager.GetString("GameFolderSaved") ?? "Path saved: {0}", selectedPath),
-                            Strings.ResourceManager.GetString("DialogTitleInformation") ?? "Information",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
+                        {
+                            _dialogService.ShowMessageBox(
+                                Strings.ResourceManager.GetString("ErrorInvalidPath") ?? "The selected executable does not appear to be a valid game installation.",
+                                Strings.ResourceManager.GetString("DialogTitleError") ?? "Invalid Path",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Error);
+                        }
                     }
                     else
                     {
                         _dialogService.ShowMessageBox(
-                            Strings.ResourceManager.GetString("ErrorInvalidPath") ?? "The selected folder does not contain a valid game installation.",
+                            Strings.ResourceManager.GetString("ErrorInvalidExePath") ?? "Could not determine the game folder from the selected executable path.",
                             Strings.ResourceManager.GetString("DialogTitleError") ?? "Invalid Path",
                             MessageBoxButton.OK,
                             MessageBoxImage.Error);
@@ -187,6 +206,68 @@ namespace KCD2_mod_manager.ViewModels
                     Strings.ResourceManager.GetString("DialogTitleError") ?? "Error",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
+            }
+        }
+        
+        /// <summary>
+        /// Ermittelt den Game-Ordner aus dem EXE-Pfad
+        /// </summary>
+        private string? GetGameFolderFromExePath(GameType gameType, string exePath)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(exePath) || !System.IO.File.Exists(exePath))
+                    return null;
+                
+                string directory = System.IO.Path.GetDirectoryName(exePath) ?? "";
+                
+                // Für KCD1: EXE ist normalerweise in Bin\Win64
+                // Für KCD2: EXE kann in Bin\Win64MasterMasterSteamPGO oder Bin\Win64 sein
+                if (gameType == GameType.KCD1)
+                {
+                    // Prüfe ob wir in Bin\Win64 sind
+                    if (directory.EndsWith("Bin\\Win64", StringComparison.OrdinalIgnoreCase) ||
+                        directory.EndsWith("Bin/Win64", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Gehe 2 Ebenen nach oben: Bin\Win64 -> Bin -> Game-Ordner
+                        return System.IO.Directory.GetParent(System.IO.Directory.GetParent(directory)?.FullName ?? "")?.FullName;
+                    }
+                }
+                else // KCD2
+                {
+                    // Prüfe ob wir in Bin\Win64MasterMasterSteamPGO oder Bin\Win64 sind
+                    if (directory.EndsWith("Bin\\Win64MasterMasterSteamPGO", StringComparison.OrdinalIgnoreCase) ||
+                        directory.EndsWith("Bin/Win64MasterMasterSteamPGO", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Gehe 2 Ebenen nach oben: Bin\Win64MasterMasterSteamPGO -> Bin -> Game-Ordner
+                        return System.IO.Directory.GetParent(System.IO.Directory.GetParent(directory)?.FullName ?? "")?.FullName;
+                    }
+                    else if (directory.EndsWith("Bin\\Win64", StringComparison.OrdinalIgnoreCase) ||
+                             directory.EndsWith("Bin/Win64", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Gehe 2 Ebenen nach oben: Bin\Win64 -> Bin -> Game-Ordner
+                        return System.IO.Directory.GetParent(System.IO.Directory.GetParent(directory)?.FullName ?? "")?.FullName;
+                    }
+                }
+                
+                // Fallback: Wenn die Struktur nicht erkannt wird, versuche den Ordner zu finden, der "Bin" enthält
+                string? currentDir = directory;
+                while (!string.IsNullOrEmpty(currentDir) && currentDir != System.IO.Path.GetPathRoot(currentDir))
+                {
+                    string binPath = System.IO.Path.Combine(currentDir, "Bin");
+                    if (System.IO.Directory.Exists(binPath))
+                    {
+                        return currentDir;
+                    }
+                    currentDir = System.IO.Directory.GetParent(currentDir)?.FullName;
+                }
+                
+                // Letzter Fallback: Verwende das Verzeichnis der EXE
+                return directory;
+            }
+            catch
+            {
+                return null;
             }
         }
         
