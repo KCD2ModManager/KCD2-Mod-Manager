@@ -55,6 +55,7 @@ namespace KCD2_mod_manager.Services
 
         /// <summary>
         /// Schreibt mod_order.txt in das Spiel-Mods-Verzeichnis (für das aktive Profil)
+        /// WICHTIG: Respektiert das ModOrderEnabled-Setting
         /// </summary>
         Task WriteModOrderToGameFolderAsync(string modFolder, List<Mod> mods, CancellationToken cancellationToken = default);
 

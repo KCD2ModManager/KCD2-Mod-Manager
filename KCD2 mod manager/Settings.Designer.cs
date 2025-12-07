@@ -334,5 +334,29 @@ namespace KCD2_mod_manager {
                 this["Language"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string GamePath_KCD1 {
+            get {
+                return ((string)(this["GamePath_KCD1"]));
+            }
+            set {
+                this["GamePath_KCD1"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string GamePath_KCD2 {
+            get {
+                return ((string)(this["GamePath_KCD2"]));
+            }
+            set {
+                this["GamePath_KCD2"] = value;
+            }
+        }
     }
 }

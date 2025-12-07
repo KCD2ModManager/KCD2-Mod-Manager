@@ -152,6 +152,18 @@ namespace KCD2_mod_manager.Services
             set => _lastUsedProfile_KCD2 = value;
         }
 
+        public string GamePath_KCD1
+        {
+            get => Settings.Default.GamePath_KCD1;
+            set => Settings.Default.GamePath_KCD1 = value;
+        }
+
+        public string GamePath_KCD2
+        {
+            get => Settings.Default.GamePath_KCD2;
+            set => Settings.Default.GamePath_KCD2 = value;
+        }
+
         public void Save()
         {
             Settings.Default.Save();

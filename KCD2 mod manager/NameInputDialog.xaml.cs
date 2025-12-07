@@ -27,6 +27,26 @@ namespace KCD2_mod_manager
             
             // WICHTIG: Theme anwenden
             ApplyTheme();
+            
+            // WICHTIG: Höhe basierend auf IsMultiline setzen
+            UpdateWindowHeight();
+            
+            // WICHTIG: TextBox-Text explizit setzen, um sicherzustellen, dass DefaultValue angezeigt wird
+            ModNameTextBox.Text = _viewModel.DefaultValue;
+            
+            // WICHTIG: Auf Änderungen von IsMultiline reagieren
+            _viewModel.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(NameInputDialogViewModel.IsMultiline))
+                {
+                    UpdateWindowHeight();
+                }
+                else if (e.PropertyName == nameof(NameInputDialogViewModel.DefaultValue))
+                {
+                    // WICHTIG: TextBox aktualisieren, wenn DefaultValue geändert wird
+                    ModNameTextBox.Text = _viewModel.DefaultValue;
+                }
+            };
         }
 
         /// <summary>
@@ -58,6 +78,26 @@ namespace KCD2_mod_manager
             
             // WICHTIG: Theme anwenden
             ApplyTheme();
+            
+            // WICHTIG: Höhe basierend auf IsMultiline setzen
+            UpdateWindowHeight();
+            
+            // WICHTIG: TextBox-Text explizit setzen, um sicherzustellen, dass DefaultValue angezeigt wird
+            ModNameTextBox.Text = _viewModel.DefaultValue;
+            
+            // WICHTIG: Auf Änderungen von IsMultiline reagieren
+            _viewModel.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(NameInputDialogViewModel.IsMultiline))
+                {
+                    UpdateWindowHeight();
+                }
+                else if (e.PropertyName == nameof(NameInputDialogViewModel.DefaultValue))
+                {
+                    // WICHTIG: TextBox aktualisieren, wenn DefaultValue geändert wird
+                    ModNameTextBox.Text = _viewModel.DefaultValue;
+                }
+            };
         }
 
         /// <summary>
@@ -89,9 +129,29 @@ namespace KCD2_mod_manager
             }
         }
 
+        /// <summary>
+        /// Aktualisiert die Fensterhöhe basierend auf IsMultiline
+        /// </summary>
+        private void UpdateWindowHeight()
+        {
+            if (_viewModel != null)
+            {
+                this.Height = _viewModel.IsMultiline ? 320.0 : 220.0;
+            }
+        }
+
         private void OKButton_Click(object sender, RoutedEventArgs e)
         {
-            EnteredText = ModNameTextBox.Text.Trim();
+            // WICHTIG: Bei multiline Text nicht trimmen (Zeilenumbrüche behalten)
+            // Nur führende/abschließende Leerzeilen entfernen
+            if (_viewModel.IsMultiline)
+            {
+                EnteredText = ModNameTextBox.Text.TrimEnd('\r', '\n').Trim();
+            }
+            else
+            {
+                EnteredText = ModNameTextBox.Text.Trim();
+            }
             DialogResult = true;
             Close();
         }

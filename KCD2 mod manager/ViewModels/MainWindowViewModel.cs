@@ -33,6 +33,7 @@ namespace KCD2_mod_manager.ViewModels
         private readonly IGameInstallService _gameInstallService;
         private readonly IManifestUpdateService _manifestUpdateService;
         private readonly IServiceProvider _serviceProvider;
+        private readonly IModOrderFileManager? _modOrderFileManager;
 
         private const string DefaultGamePath = @"C:\Program Files (x86)\Steam\steamapps\common\KingdomComeDeliverance2\Bin\Win64MasterMasterSteamPGO\KingdomCome.exe";
         private const string currentManagerVersion = "2.2";
@@ -102,7 +103,8 @@ namespace KCD2_mod_manager.ViewModels
             IProfilesService profilesService,
             IGameInstallService gameInstallService,
             IManifestUpdateService manifestUpdateService,
-            IServiceProvider serviceProvider)
+            IServiceProvider serviceProvider,
+            IModOrderFileManager? modOrderFileManager = null)
         {
             _modInstallerService = modInstallerService;
             _nexusService = nexusService;
@@ -117,6 +119,7 @@ namespace KCD2_mod_manager.ViewModels
             _gameInstallService = gameInstallService;
             _manifestUpdateService = manifestUpdateService;
             _serviceProvider = serviceProvider;
+            _modOrderFileManager = modOrderFileManager;
 
             // Auf Sprachänderungen reagieren
             _localizationService.LanguageChanged += (s, e) => UpdateLocalizedStrings();
@@ -179,7 +182,11 @@ namespace KCD2_mod_manager.ViewModels
             if (selectedInstall == null)
             {
                 _logger.Error("Keine Spiel-Installation gefunden nach Auswahl", null);
-                _dialogService.ShowMessageBox("Spiel-Installation nicht gefunden", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+                _dialogService.ShowMessageBox(
+                    Resources.Messages.ErrorGameInstallationNotFound, 
+                    Resources.Messages.DialogTitleError, 
+                    MessageBoxButton.OK, 
+                    MessageBoxImage.Error);
                 Application.Current.Shutdown();
                 return;
             }
@@ -214,6 +221,21 @@ namespace KCD2_mod_manager.ViewModels
             {
                 IsLoadingMods = true;
                 
+                // WICHTIG: Konsolidiere Mod-Order-Dateien BEVOR Mods geladen werden
+                if (_modOrderFileManager != null && !string.IsNullOrEmpty(ModFolder))
+                {
+                    try
+                    {
+                        _logger.Info($"Konsolidiere Mod-Order-Dateien beim Start (ModOrderEnabled={_settings.ModOrderEnabled})");
+                        await _modOrderFileManager.ConsolidateModOrderFilesAsync(_settings.ModOrderEnabled, ModFolder);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Error($"Fehler bei der Konsolidierung der Mod-Order-Dateien: {ex.Message}", ex);
+                        // Nicht weiterwerfen - Konsolidierung ist nicht kritisch
+                    }
+                }
+
                 // Backup erstellen, falls aktiviert
                 if (_settings.BackupOnStartup && !string.IsNullOrEmpty(ModFolder))
                 {
@@ -246,7 +268,11 @@ namespace KCD2_mod_manager.ViewModels
             catch (Exception ex)
             {
                 _logger.Error($"Fehler bei der Initialisierung nach Spiel-Auswahl: {ex.Message}", ex);
-                _dialogService.ShowMessageBox($"Fehler bei der Initialisierung: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+                _dialogService.ShowMessageBox(
+                    string.Format(Resources.Messages.ErrorInitialization, ex.Message), 
+                    Resources.Messages.DialogTitleError, 
+                    MessageBoxButton.OK, 
+                    MessageBoxImage.Error);
             }
             finally
             {
@@ -696,11 +722,14 @@ namespace KCD2_mod_manager.ViewModels
                 // Stelle sicher, dass Notizen auf Mods gemappt sind (falls noch nicht geschehen)
                 foreach (var mod in Mods)
                 {
-                    if (string.IsNullOrEmpty(mod.Note) && _modNotes.TryGetValue(mod.Id, out var note))
+                    // WICHTIG: Verwende _modNotes als primäre Quelle, überschreibe mod.Note nur wenn leer
+                    if (_modNotes.TryGetValue(mod.Id, out var note) && !string.IsNullOrEmpty(note))
                     {
                         mod.Note = note;
                     }
                 }
+                
+                _logger.Info($"Mod Notes geladen: {_modNotes.Count} Notizen für {Mods.Count} Mods");
 
                 UpdateModsEnabledCount();
                 ApplySearchFilter();
@@ -1342,13 +1371,28 @@ namespace KCD2_mod_manager.ViewModels
         private async Task ChangeModNoteAsync(Mod? mod)
         {
             if (mod == null) return;
-            string currentNote = _modNotes.ContainsKey(mod.Id) ? _modNotes[mod.Id] : "";
-            string? newNote = _dialogService.ShowInputDialog(Resources.Messages.PromptEnterNote, Resources.Messages.TitleChangeModNote, currentNote);
+            
+            // WICHTIG: Verwende mod.Note als primäre Quelle, fallback zu _modNotes
+            string currentNote = !string.IsNullOrEmpty(mod.Note) 
+                ? mod.Note 
+                : (_modNotes.ContainsKey(mod.Id) ? _modNotes[mod.Id] : "");
+            
+            _logger.Info($"ChangeModNote: Mod={mod.Name}, CurrentNote length={currentNote?.Length ?? 0}");
+            
+            // WICHTIG: isMultiline=true für Mod Notes
+            string? newNote = _dialogService.ShowInputDialog(
+                Resources.Messages.PromptEnterNote, 
+                Resources.Messages.TitleChangeModNote, 
+                currentNote,
+                isMultiline: true);
+            
             if (newNote == null) return;
 
             mod.Note = newNote;
             _modNotes[mod.Id] = newNote;
             await _modInstallerService.SaveModNotesAsync(_modNotes, _modFolder);
+            
+            _logger.Info($"Mod Note gespeichert: Mod={mod.Name}, Note length={newNote.Length}");
         }
 
         /// <summary>
@@ -1390,14 +1434,12 @@ namespace KCD2_mod_manager.ViewModels
                 ? "kingdomcomedeliverance" 
                 : "kingdomcomedeliverance2";
             bool success = await _nexusService.EndorseModAsync(gameDomain, mod.ModNumber, _settings.NexusUserToken);
-            if (success)
-            {
-                _dialogService.ShowMessageBox(Resources.Messages.InfoModEndorsed, Resources.Messages.DialogTitleSuccess, MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
+            // WICHTIG: Nur bei Fehlern einen Dialog anzeigen, bei Erfolg nichts anzeigen
+            if (!success)
             {
                 _dialogService.ShowMessageBox(Resources.Messages.ErrorEndorseFailed, Resources.Messages.DialogTitleError, MessageBoxButton.OK, MessageBoxImage.Error);
             }
+            // Bei Erfolg: Kein Dialog, stille Bestätigung
         }
 
         private async Task ChangeModNumberAsync(Mod? mod)
@@ -1498,26 +1540,121 @@ namespace KCD2_mod_manager.ViewModels
 
         private async Task CheckForUpdateAsync()
         {
+            System.Diagnostics.Debug.WriteLine("=== CheckForUpdateAsync GESTARTET ===");
+            Console.WriteLine("=== CheckForUpdateAsync GESTARTET ===");
+            _logger.Info("CheckForUpdateAsync gestartet");
+            
             if (!_settings.EnableUpdateNotifications)
+            {
+                System.Diagnostics.Debug.WriteLine("Update-Benachrichtigungen sind DEAKTIVIERT");
+                Console.WriteLine("Update-Benachrichtigungen sind DEAKTIVIERT");
+                _logger.Info("Update-Benachrichtigungen sind deaktiviert - Update-Check übersprungen");
                 return;
+            }
 
             try
             {
-                string? latestVersion = await _nexusService.GetLatestVersionAsync("https://www.nexusmods.com/kingdomcomedeliverance2/mods/187");
-                if (latestVersion != null && Version.TryParse(currentManagerVersion, out Version currentVersion) &&
-                    Version.TryParse(latestVersion, out Version onlineVersion))
+                System.Diagnostics.Debug.WriteLine($"Aktuelle Manager-Version: {currentManagerVersion}");
+                Console.WriteLine($"Aktuelle Manager-Version: {currentManagerVersion}");
+                _logger.Info($"Aktuelle Manager-Version: {currentManagerVersion}");
+                
+                // GetLatestVersionAsync verwendet jetzt GitHub API (Parameter wird ignoriert)
+                string? latestVersion = await _nexusService.GetLatestVersionAsync(string.Empty);
+                
+                if (latestVersion == null)
                 {
-                    if (onlineVersion > currentVersion)
+                    System.Diagnostics.Debug.WriteLine("FEHLER: Keine Online-Version gefunden!");
+                    Console.WriteLine("FEHLER: Keine Online-Version gefunden!");
+                    _logger.Warning("Keine Online-Version gefunden - Update-Check abgebrochen");
+                    return;
+                }
+                
+                System.Diagnostics.Debug.WriteLine($"Online-Version empfangen: '{latestVersion}'");
+                Console.WriteLine($"Online-Version empfangen: '{latestVersion}'");
+                _logger.Info($"Online-Version empfangen: '{latestVersion}'");
+                
+                if (!Version.TryParse(currentManagerVersion, out Version currentVersion))
+                {
+                    System.Diagnostics.Debug.WriteLine($"FEHLER: Konnte aktuelle Version '{currentManagerVersion}' nicht parsen");
+                    Console.WriteLine($"FEHLER: Konnte aktuelle Version '{currentManagerVersion}' nicht parsen");
+                    _logger.Error($"Konnte aktuelle Version '{currentManagerVersion}' nicht parsen");
+                    return;
+                }
+                
+                if (!Version.TryParse(latestVersion, out Version onlineVersion))
+                {
+                    System.Diagnostics.Debug.WriteLine($"FEHLER: Konnte Online-Version '{latestVersion}' nicht parsen");
+                    Console.WriteLine($"FEHLER: Konnte Online-Version '{latestVersion}' nicht parsen");
+                    _logger.Error($"Konnte Online-Version '{latestVersion}' nicht parsen");
+                    return;
+                }
+                
+                System.Diagnostics.Debug.WriteLine($"Version-Vergleich: Online={onlineVersion}, Aktuell={currentVersion}, Online > Aktuell = {onlineVersion > currentVersion}");
+                Console.WriteLine($"Version-Vergleich: Online={onlineVersion}, Aktuell={currentVersion}, Online > Aktuell = {onlineVersion > currentVersion}");
+                _logger.Info($"Version-Vergleich: Online={onlineVersion}, Aktuell={currentVersion}");
+                
+                if (onlineVersion > currentVersion)
+                {
+                    System.Diagnostics.Debug.WriteLine("*** NEUE VERSION VERFÜGBAR! Zeige Dialog... ***");
+                    Console.WriteLine("*** NEUE VERSION VERFÜGBAR! Zeige Dialog... ***");
+                    _logger.Info($"Neue Version verfügbar! Zeige Update-Dialog...");
+                    
+                    // Load localized strings
+                    string? updateTitle = Resources.Strings.ResourceManager.GetString("UpdateAvailableTitle");
+                    string? updateMessageTemplate = Resources.Strings.ResourceManager.GetString("UpdateAvailableMessage");
+                    
+                    if (string.IsNullOrEmpty(updateTitle))
                     {
-                        string updateMessage = string.Format(
-                            Resources.Strings.ResourceManager.GetString("UpdateAvailableMessage") ?? "A new version ({0}) is available. Do you want to update?",
-                            latestVersion);
-                        bool? result = _dialogService.ShowMessageBox(
+                        updateTitle = "Update Available";
+                        _logger.Warning("UpdateAvailableTitle nicht in Resources gefunden - verwende Fallback");
+                    }
+                    
+                    if (string.IsNullOrEmpty(updateMessageTemplate))
+                    {
+                        updateMessageTemplate = "A new version ({0}) is available. Do you want to update?";
+                        _logger.Warning("UpdateAvailableMessage nicht in Resources gefunden - verwende Fallback");
+                    }
+                    
+                    string updateMessage = string.Format(updateMessageTemplate, latestVersion);
+                    
+                    _logger.Info($"Update-Dialog wird angezeigt: Title='{updateTitle}', Message='{updateMessage}'");
+                    
+                    // WICHTIG: MessageBox muss auf UI-Thread aufgerufen werden
+                    bool? result = null;
+                    if (Application.Current?.Dispatcher != null)
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            try
+                            {
+                                result = _dialogService.ShowMessageBox(
+                                    updateMessage,
+                                    updateTitle,
+                                    MessageBoxButton.YesNo,
+                                    MessageBoxImage.Information);
+                                _logger.Info($"Update-Dialog Ergebnis: {result}");
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.Error($"Fehler beim Anzeigen des Update-Dialogs: {ex.Message}", ex);
+                            }
+                        });
+                    }
+                    else
+                    {
+                        // Fallback: Direkter Aufruf (sollte nicht passieren, aber sicherheitshalber)
+                        _logger.Warning("Application.Current.Dispatcher ist null - verwende Fallback");
+                        result = _dialogService.ShowMessageBox(
                             updateMessage,
-                            Resources.Strings.ResourceManager.GetString("UpdateAvailableTitle") ?? "Update Available",
+                            updateTitle,
                             MessageBoxButton.YesNo,
                             MessageBoxImage.Information);
-                        if (result == true)
+                    }
+                    
+                    if (result == true)
+                    {
+                        _logger.Info("Benutzer hat Update bestätigt - öffne NexusMods-Seite");
+                        try
                         {
                             Process.Start(new ProcessStartInfo
                             {
@@ -1525,12 +1662,33 @@ namespace KCD2_mod_manager.ViewModels
                                 UseShellExecute = true
                             });
                         }
+                        catch (Exception ex)
+                        {
+                            _logger.Error($"Fehler beim Öffnen der NexusMods-Seite: {ex.Message}", ex);
+                        }
                     }
+                    else
+                    {
+                        _logger.Info("Benutzer hat Update-Dialog abgebrochen");
+                    }
+                }
+                else
+                {
+                    _logger.Info($"Keine neue Version verfügbar. Online-Version ({onlineVersion}) ist nicht neuer als aktuelle Version ({currentVersion})");
                 }
             }
             catch (Exception ex)
             {
-                _logger.Error("Fehler beim Prüfen auf Updates", ex);
+                System.Diagnostics.Debug.WriteLine($"FEHLER in CheckForUpdateAsync: {ex.GetType().Name}: {ex.Message}");
+                Console.WriteLine($"FEHLER in CheckForUpdateAsync: {ex.GetType().Name}: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Inner Exception: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+                    Console.WriteLine($"Inner Exception: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+                }
+                System.Diagnostics.Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
+                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
+                _logger.Error($"Fehler beim Prüfen auf Updates: {ex.Message}", ex);
             }
         }
 
@@ -2022,7 +2180,11 @@ namespace KCD2_mod_manager.ViewModels
                 var profile = await _profilesService.LoadProfileAsync(SelectedGame, profileName);
                 if (profile == null)
                 {
-                    _dialogService.ShowMessageBox($"Profile '{profileName}' not found", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    _dialogService.ShowMessageBox(
+                        string.Format(Resources.Messages.ErrorProfileNotFound, profileName), 
+                        Resources.Messages.DialogTitleError, 
+                        MessageBoxButton.OK, 
+                        MessageBoxImage.Error);
                     return;
                 }
 
@@ -2237,7 +2399,11 @@ namespace KCD2_mod_manager.ViewModels
             
             if (newInstall == null)
             {
-                _dialogService.ShowMessageBox("Spiel-Installation nicht gefunden", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+                _dialogService.ShowMessageBox(
+                    Resources.Messages.ErrorGameInstallationNotFound, 
+                    Resources.Messages.DialogTitleError, 
+                    MessageBoxButton.OK, 
+                    MessageBoxImage.Error);
                 return;
             }
             
@@ -2279,7 +2445,11 @@ namespace KCD2_mod_manager.ViewModels
             string? gameVersion = await _gameInstallService.GetGameVersionAsync(SelectedGame);
             if (string.IsNullOrEmpty(gameVersion))
             {
-                _dialogService.ShowMessageBox("Could not detect game version", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                _dialogService.ShowMessageBox(
+                    Resources.Messages.ErrorGameVersion, 
+                    Resources.Messages.DialogTitleError, 
+                    MessageBoxButton.OK, 
+                    MessageBoxImage.Error);
                 return;
             }
 
@@ -2311,7 +2481,11 @@ namespace KCD2_mod_manager.ViewModels
             string? gameVersion = await _gameInstallService.GetGameVersionAsync(SelectedGame);
             if (string.IsNullOrEmpty(gameVersion))
             {
-                _dialogService.ShowMessageBox("Could not detect game version", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                _dialogService.ShowMessageBox(
+                    Resources.Messages.ErrorGameVersion, 
+                    Resources.Messages.DialogTitleError, 
+                    MessageBoxButton.OK, 
+                    MessageBoxImage.Error);
                 return;
             }
 
@@ -2363,7 +2537,11 @@ namespace KCD2_mod_manager.ViewModels
                 var originalProfile = await _profilesService.LoadProfileAsync(SelectedGame, profileName);
                 if (originalProfile == null)
                 {
-                    _dialogService.ShowMessageBox($"Profile '{profileName}' not found", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    _dialogService.ShowMessageBox(
+                        string.Format(Resources.Messages.ErrorProfileNotFound, profileName), 
+                        Resources.Messages.DialogTitleError, 
+                        MessageBoxButton.OK, 
+                        MessageBoxImage.Error);
                     return;
                 }
 

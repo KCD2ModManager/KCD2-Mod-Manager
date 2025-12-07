@@ -29,6 +29,10 @@ namespace KCD2_mod_manager.Services
         string? LastSelectedGame { get; set; } // Feature 11: KCD1 oder KCD2
         string? LastUsedProfile_KCD1 { get; set; } // Letztes verwendetes Profil für KCD1
         string? LastUsedProfile_KCD2 { get; set; } // Letztes verwendetes Profil für KCD2
+        
+        // Pro-Spiel Game Paths
+        string GamePath_KCD1 { get; set; }
+        string GamePath_KCD2 { get; set; }
 
         void Save();
     }

@@ -108,7 +108,6 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <!-- General Settings Section -->
@@ -120,126 +119,109 @@
                        Margin="0,0,0,16"
                        Foreground="{DynamicResource TextForegroundBrush}"/>
 
-            <!-- Set Game Path (button, not a toggle) -->
-            <TextBlock Grid.Row="1"
-                       Grid.Column="0"
-                       Text="{Binding SetGamePathText}"
-                       Width="220"
-                       VerticalAlignment="Center"
-                       Margin="0,8,16,8"
-                       Foreground="{DynamicResource TextForegroundBrush}"/>
-            <Button Grid.Row="1"
-                    Grid.Column="1"
-                    Content="{Binding SetButtonText}" 
-                    Click="SetGamePath_Click" 
-                    Width="80" 
-                    Height="32" 
-                    HorizontalAlignment="Left"
-                    Style="{StaticResource SecondaryButtonStyle}"/>
-
             <!-- Enable Delete Confirmation -->
-            <TextBlock Grid.Row="2"
+            <TextBlock Grid.Row="1"
                        Grid.Column="0"
                        Text="{Binding EnableDeleteConfirmationText}"
                        Width="220"
                        VerticalAlignment="Center"
                        Margin="0,8,16,8"
                        Foreground="{DynamicResource TextForegroundBrush}"/>
-            <ToggleButton Grid.Row="2"
+            <ToggleButton Grid.Row="1"
                           Grid.Column="1"
                           x:Name="ToggleDeleteConfirmation"
                           Style="{StaticResource SwitchToggleStyle}"
                           Width="50"
                           Height="25"
-                          HorizontalAlignment="Left"
+                          HorizontalAlignment="Center"
                           IsChecked="{Binding AskOnDelete}"
                           Checked="ToggleDeleteConfirmation_Checked"
                           Unchecked="ToggleDeleteConfirmation_Unchecked"/>
 
             <!-- Toggle Dark Mode -->
-            <TextBlock Grid.Row="3"
+            <TextBlock Grid.Row="2"
                        Grid.Column="0"
                        Text="{Binding ToggleDarkModeText}"
                        Width="220"
                        VerticalAlignment="Center"
                        Margin="0,8,16,8"
                        Foreground="{DynamicResource TextForegroundBrush}"/>
-            <ToggleButton Grid.Row="3"
+            <ToggleButton Grid.Row="2"
                           Grid.Column="1"
                           x:Name="ToggleDarkMode"
                           Style="{StaticResource SwitchToggleStyle}"
                           Width="50"
                           Height="25"
-                          HorizontalAlignment="Left"
+                          HorizontalAlignment="Center"
                           IsChecked="{Binding IsDarkMode}"
                           Checked="ToggleDarkMode_Checked"
                           Unchecked="ToggleDarkMode_Unchecked"/>
 
             <!-- Toggle Devmode -->
-            <TextBlock Grid.Row="4"
+            <TextBlock Grid.Row="3"
                        Grid.Column="0"
                        Text="{Binding ToggleDevModeText}"
                        Width="220"
                        VerticalAlignment="Center"
                        Margin="0,8,16,8"
                        Foreground="{DynamicResource TextForegroundBrush}"/>
-            <ToggleButton Grid.Row="4"
+            <ToggleButton Grid.Row="3"
                           Grid.Column="1"
                           x:Name="ToggleDevMode"
                           Style="{StaticResource SwitchToggleStyle}"
                           Width="50"
                           Height="25"
-                          HorizontalAlignment="Left"
+                          HorizontalAlignment="Center"
                           IsChecked="{Binding IsDevMode}"
                           Checked="ToggleDevMode_Checked"
                           Unchecked="ToggleDevMode_Unchecked"/>
 
             <!-- Toggle Update Notifications -->
-            <TextBlock Grid.Row="5"
+            <TextBlock Grid.Row="4"
                        Grid.Column="0"
                        Text="{Binding ToggleUpdateNotificationsText}"
                        Width="220"
                        VerticalAlignment="Center"
                        Margin="0,8,16,8"
                        Foreground="{DynamicResource TextForegroundBrush}"/>
-            <ToggleButton Grid.Row="5"
+            <ToggleButton Grid.Row="4"
                           Grid.Column="1"
                           x:Name="ToggleUpdateNotifications"
                           Style="{StaticResource SwitchToggleStyle}"
                           Width="50"
                           Height="25"
-                          HorizontalAlignment="Left"
+                          HorizontalAlignment="Center"
                           IsChecked="{Binding EnableUpdateNotifications}"
                           Checked="ToggleUpdateNotifications_Checked"
                           Unchecked="ToggleUpdateNotifications_Unchecked"/>
 
             <!-- Toggle Mod Order Creation -->
-            <TextBlock Grid.Row="6"
+            <TextBlock Grid.Row="5"
                        Grid.Column="0"
                        Text="{Binding ToggleModOrderCreationText}"
                        Width="220"
                        VerticalAlignment="Center"
                        Margin="0,8,16,8"
                        Foreground="{DynamicResource TextForegroundBrush}"/>
-            <ToggleButton Grid.Row="6"
+            <ToggleButton Grid.Row="5"
                           Grid.Column="1"
                           x:Name="ToggleModOrderCreation"
                           Style="{StaticResource SwitchToggleStyle}"
                           Width="50"
                           Height="25"
-                          HorizontalAlignment="Left"
+                          HorizontalAlignment="Center"
                           IsChecked="{Binding ModOrderEnabled}"
                           Checked="ToggleModOrderCreation_Checked"
                           Unchecked="ToggleModOrderCreation_Unchecked"/>
 
             <!-- Separator -->
-            <Separator Grid.Row="7"
+            <Separator Grid.Row="6"
                       Grid.ColumnSpan="2"
                       Margin="0,20,0,16"
                       Background="{DynamicResource SeparatorBrush}"/>
 
             <!-- Language Settings Section -->
-            <TextBlock Grid.Row="8"
+            <TextBlock Grid.Row="7"
                        Grid.ColumnSpan="2"
                        Text="{Binding LanguageSettingsText}"
                        FontSize="18"
@@ -248,19 +230,19 @@
                        Foreground="{DynamicResource TextForegroundBrush}"/>
 
             <!-- Language Selection -->
-            <TextBlock Grid.Row="9"
+            <TextBlock Grid.Row="8"
                        Grid.Column="0"
                        Text="{Binding LanguageText}"
                        Width="220"
                        VerticalAlignment="Center"
                        Margin="0,8,16,8"
                        Foreground="{DynamicResource TextForegroundBrush}"/>
-            <ComboBox Grid.Row="9"
+            <ComboBox Grid.Row="8"
                      Grid.Column="1"
                      x:Name="LanguageComboBox"
                      Width="150"
                      Height="28"
-                     HorizontalAlignment="Left"
+                     HorizontalAlignment="Center"
                      SelectedValue="{Binding SelectedLanguage}"
                      ItemsSource="{Binding AvailableLanguages}"
                      DisplayMemberPath="Value"
@@ -271,13 +253,13 @@
                      SelectionChanged="LanguageComboBox_SelectionChanged"/>
 
             <!-- Separator -->
-            <Separator Grid.Row="10"
+            <Separator Grid.Row="9"
                       Grid.ColumnSpan="2"
                       Margin="0,20,0,16"
                       Background="{DynamicResource SeparatorBrush}"/>
 
             <!-- Backup Settings Section -->
-            <TextBlock Grid.Row="11"
+            <TextBlock Grid.Row="10"
                        Grid.ColumnSpan="2"
                        Text="{Binding BackupSettingsText}"
                        FontSize="18"
@@ -286,58 +268,58 @@
                        Foreground="{DynamicResource TextForegroundBrush}"/>
 
             <!-- Toggle Backup Creation -->
-            <TextBlock Grid.Row="12"
+            <TextBlock Grid.Row="11"
                        Grid.Column="0"
                        Text="{Binding ToggleBackupCreationText}"
                        Width="220"
                        VerticalAlignment="Center"
                        Margin="0,8,16,8"
                        Foreground="{DynamicResource TextForegroundBrush}"/>
-            <ToggleButton Grid.Row="12"
+            <ToggleButton Grid.Row="11"
                           Grid.Column="1"
                           x:Name="ToggleBackupCreation"
                           Style="{StaticResource SwitchToggleStyle}"
                           Width="50"
                           Height="25"
-                          HorizontalAlignment="Left"
+                          HorizontalAlignment="Center"
                           IsChecked="{Binding CreateBackup}"
                           Checked="ToggleBackupCreation_Checked"
                           Unchecked="ToggleBackupCreation_Unchecked"/>
 
             <!-- Backup on Startup -->
-            <TextBlock Grid.Row="13"
+            <TextBlock Grid.Row="12"
                        Grid.Column="0"
                        Text="{Binding BackupOnStartupText}"
                        Width="220"
                        VerticalAlignment="Center"
                        Margin="0,8,16,8"
                        Foreground="{DynamicResource TextForegroundBrush}"/>
-            <ToggleButton Grid.Row="13"
+            <ToggleButton Grid.Row="12"
                           Grid.Column="1"
                           x:Name="ToggleBackupOnStartup"
                           Style="{StaticResource SwitchToggleStyle}"
                           Width="50"
                           Height="25"
-                          HorizontalAlignment="Left"
+                          HorizontalAlignment="Center"
                           IsChecked="{Binding BackupOnStartup}"
                           Checked="ToggleBackupOnStartup_Checked"
                           Unchecked="ToggleBackupOnStartup_Unchecked"/>
 
             <!-- Set Max Backups -->
-            <TextBlock Grid.Row="14"
+            <TextBlock Grid.Row="13"
                        Grid.Column="0"
                        Text="{Binding SetMaxBackupsText}"
                        Width="220"
                        VerticalAlignment="Center"
                        Margin="0,8,16,8"
                        Foreground="{DynamicResource TextForegroundBrush}"/>
-            <Button Grid.Row="14"
+            <Button Grid.Row="13"
                     Grid.Column="1"
                     Content="{Binding SetButtonText}" 
                     Click="SetMaxBackups_Click" 
                     Width="80" 
                     Height="32" 
-                    HorizontalAlignment="Left"
+                    HorizontalAlignment="Center"
                     Style="{StaticResource SecondaryButtonStyle}"/>
 
         </Grid>

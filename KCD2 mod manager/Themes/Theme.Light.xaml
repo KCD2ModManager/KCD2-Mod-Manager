@@ -105,6 +105,17 @@
     <!-- Toggle Switch Colors -->
     <SolidColorBrush x:Key="ToggleOnBackgroundBrush" Color="#107C10"/>
     <SolidColorBrush x:Key="ToggleOffBackgroundBrush" Color="#CCCCCC"/>
-    
+
+    <!-- ScrollBar Background / Track -->
+    <SolidColorBrush x:Key="ScrollBarBackgroundBrush" Color="#FAFAFA"/>
+
+    <!-- Thumb -->
+    <SolidColorBrush x:Key="ScrollBarThumbBrush" Color="#CCCCCC"/>
+    <SolidColorBrush x:Key="ScrollBarThumbHoverBrush" Color="#999999"/>
+    <SolidColorBrush x:Key="ScrollBarThumbPressedBrush" Color="#0078D4"/>
+
+    <!-- Arrow icons -->
+    <SolidColorBrush x:Key="ScrollBarButtonArrowBrush" Color="#666666"/>
+
 </ResourceDictionary>
 

@@ -2,11 +2,17 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:KCD2_mod_manager.ViewModels"
-        Title="{Binding Title}" Height="220" MinHeight="220" Width="420" MinWidth="420"
+        xmlns:local="clr-namespace:KCD2_mod_manager"
+        Title="{Binding Title}" Height="220" MinHeight="240" Width="500" MinWidth="420"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource WindowBackgroundBrush}"
         Foreground="{DynamicResource ListBoxForegroundBrush}"
         ResizeMode="NoResize">
+    <Window.Resources>
+        <local:BooleanToHeightConverter x:Key="BooleanToHeightConverter" />
+        <local:BooleanToTextWrappingConverter x:Key="BooleanToTextWrappingConverter" />
+        <local:BooleanToScrollBarVisibilityConverter x:Key="BooleanToScrollBarVisibilityConverter" />
+    </Window.Resources>
     <!-- WICHTIG: Verbesserte Layout-Struktur für bessere Lesbarkeit und keine Überlappungen -->
     <Grid Margin="20">
         <Grid.RowDefinitions>
@@ -25,12 +31,19 @@
         <!-- Input TextBox -->
         <TextBox x:Name="ModNameTextBox" 
                  Grid.Row="1" 
-                 Height="35"
+                 MinHeight="35"
+                 Height="{Binding IsMultiline, Converter={StaticResource BooleanToHeightConverter}}"
+                 MaxHeight="200"
                  Margin="0,0,0,20"
-                 Text="{Binding DefaultValue, UpdateSourceTrigger=PropertyChanged}"
+                 Text="{Binding DefaultValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                 TextWrapping="{Binding IsMultiline, Converter={StaticResource BooleanToTextWrappingConverter}}"
+                 AcceptsReturn="{Binding IsMultiline}"
+                 VerticalScrollBarVisibility="{Binding IsMultiline, Converter={StaticResource BooleanToScrollBarVisibilityConverter}}"
+                 VerticalContentAlignment="Top"
                  Background="{DynamicResource SearchBackgroundBrush}"
                  Foreground="{DynamicResource SearchForegroundBrush}"
                  CaretBrush="{DynamicResource SearchForegroundBrush}"
+                 SelectionBrush="{DynamicResource SearchForegroundBrush}"
                  BorderBrush="{DynamicResource SearchBorderBrush}"
                  BorderThickness="1"
                  Padding="5"/>
