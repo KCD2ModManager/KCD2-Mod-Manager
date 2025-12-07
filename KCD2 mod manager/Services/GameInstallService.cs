@@ -170,12 +170,16 @@ namespace KCD2_mod_manager.Services
 
         /// <summary>
         /// Findet Executable in einem Root-Pfad
+        /// WICHTIG: Unterstützt alle möglichen Pfadstrukturen (Steam, GOG, etc.)
         /// </summary>
         private string? FindExecutableInPath(string rootPath, GameType gameType)
         {
+            string exeName = "KingdomCome.exe";
+            
+            // Strategie 1: Standard-Pfade (Steam)
             if (gameType == GameType.KCD1)
             {
-                string exePath = Path.Combine(rootPath, "Bin", "Win64", "KingdomCome.exe");
+                string exePath = Path.Combine(rootPath, "Bin", "Win64", exeName);
                 if (_fileService.FileExists(exePath))
                     return exePath;
             }
@@ -184,8 +188,8 @@ namespace KCD2_mod_manager.Services
                 // KCD2 kann verschiedene Bin-Pfade haben
                 string[] possibleBinPaths = new[]
                 {
-                    Path.Combine(rootPath, "Bin", "Win64MasterMasterSteamPGO", "KingdomCome.exe"),
-                    Path.Combine(rootPath, "Bin", "Win64", "KingdomCome.exe")
+                    Path.Combine(rootPath, "Bin", "Win64MasterMasterSteamPGO", exeName),
+                    Path.Combine(rootPath, "Bin", "Win64", exeName)
                 };
 
                 foreach (var exePath in possibleBinPaths)
@@ -194,6 +198,77 @@ namespace KCD2_mod_manager.Services
                         return exePath;
                 }
             }
+            
+            // Strategie 2: Rekursive Suche im Bin-Ordner (für GOG und andere Strukturen)
+            string binPath = Path.Combine(rootPath, "Bin");
+            if (_fileService.DirectoryExists(binPath))
+            {
+                var foundExe = FindExecutableRecursive(binPath, exeName);
+                if (!string.IsNullOrEmpty(foundExe) && _fileService.FileExists(foundExe))
+                    return foundExe;
+            }
+            
+            // Strategie 3: Prüfe ob EXE direkt im Root liegt (selten, aber möglich)
+            string rootExe = Path.Combine(rootPath, exeName);
+            if (_fileService.FileExists(rootExe))
+                return rootExe;
+            
+            return null;
+        }
+        
+        /// <summary>
+        /// Sucht rekursiv nach einer EXE-Datei in einem Verzeichnis
+        /// </summary>
+        private string? FindExecutableRecursive(string directory, string exeName)
+        {
+            try
+            {
+                if (!_fileService.DirectoryExists(directory))
+                    return null;
+                
+                // Prüfe direkt in diesem Verzeichnis
+                string directPath = Path.Combine(directory, exeName);
+                if (_fileService.FileExists(directPath))
+                    return directPath;
+                
+                // Suche rekursiv in Unterordnern (max. 3 Ebenen tief für Performance)
+                return FindExecutableRecursive(directory, exeName, 0, 3);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+        
+        private string? FindExecutableRecursive(string directory, string exeName, int currentDepth, int maxDepth)
+        {
+            if (currentDepth >= maxDepth)
+                return null;
+            
+            try
+            {
+                if (!_fileService.DirectoryExists(directory))
+                    return null;
+                
+                // Prüfe direkt in diesem Verzeichnis
+                string directPath = Path.Combine(directory, exeName);
+                if (_fileService.FileExists(directPath))
+                    return directPath;
+                
+                // Suche in Unterordnern
+                var subdirs = Directory.GetDirectories(directory);
+                foreach (var subdir in subdirs)
+                {
+                    var found = FindExecutableRecursive(subdir, exeName, currentDepth + 1, maxDepth);
+                    if (!string.IsNullOrEmpty(found))
+                        return found;
+                }
+            }
+            catch
+            {
+                // Ignoriere Fehler (z.B. Zugriffsrechte)
+            }
+            
             return null;
         }
 
