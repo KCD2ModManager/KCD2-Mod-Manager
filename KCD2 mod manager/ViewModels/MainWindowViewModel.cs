@@ -36,7 +36,7 @@ namespace KCD2_mod_manager.ViewModels
         private readonly IModOrderFileManager? _modOrderFileManager;
 
         private const string DefaultGamePath = @"C:\Program Files (x86)\Steam\steamapps\common\KingdomComeDeliverance2\Bin\Win64MasterMasterSteamPGO\KingdomCome.exe";
-        private const string currentManagerVersion = "2.2";
+        private const string currentManagerVersion = "3.0";
 
         private ObservableCollection<Mod> _mods = new();
         private ICollectionView? _modsView;
