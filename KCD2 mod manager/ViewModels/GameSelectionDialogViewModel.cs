@@ -192,6 +192,8 @@ namespace KCD2_mod_manager.ViewModels
                             else
                                 _settings.GamePath_KCD2 = gameFolder;
                             _settings.Save();
+
+                            _gameInstallService.ApplyManualInstall(gameType, gameFolder, selectedExePath);
                             
                             _logger.Info($"Game folder selected for {gameType}: {gameFolder} (from EXE: {selectedExePath})");
                             
@@ -628,6 +630,17 @@ namespace KCD2_mod_manager.ViewModels
         /// </summary>
         public void SelectGame(GameType gameType)
         {
+            bool folderFound = gameType == GameType.KCD1 ? KCD1FolderFound : KCD2FolderFound;
+            if (!folderFound)
+            {
+                _dialogService.ShowMessageBox(
+                    Messages.ErrorGameFolderNotFound ?? "Game folder not found. Please set the folder path first.",
+                    Messages.DialogTitleError ?? "Invalid Path",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+
             SelectedGame = gameType;
         }
         

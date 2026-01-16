@@ -40,6 +40,11 @@ namespace KCD2_mod_manager.Services
         Task DetectInstalledGamesAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Wendet eine manuelle Installation an (z.B. Portable/GOG)
+        /// </summary>
+        bool ApplyManualInstall(GameType gameType, string rootPath, string executablePath);
+
+        /// <summary>
         /// Ermittelt die Version eines installierten Spiels
         /// </summary>
         Task<string?> GetGameVersionAsync(GameType gameType, CancellationToken cancellationToken = default);

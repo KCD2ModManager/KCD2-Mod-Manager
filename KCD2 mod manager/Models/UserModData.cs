@@ -31,6 +31,16 @@ namespace KCD2_mod_manager.Models
         /// Benutzerdefinierte Notizen für den Mod
         /// </summary>
         public string? CustomNote { get; set; }
+
+        /// <summary>
+        /// Benutzerdefinierter Anzeigename für den Mod
+        /// </summary>
+        public string? CustomName { get; set; }
+
+        /// <summary>
+        /// Global zugewiesene Kategorie-ID
+        /// </summary>
+        public string? CategoryId { get; set; }
     }
 }
 

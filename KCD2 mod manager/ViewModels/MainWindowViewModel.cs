@@ -20,6 +20,18 @@ namespace KCD2_mod_manager.ViewModels
     /// </summary>
     public class MainWindowViewModel : ViewModelBase
     {
+        private enum SortMode
+        {
+            LoadOrder,
+            Title,
+            Category
+        }
+
+        public class CategoryFilterOption
+        {
+            public string? Id { get; set; }
+            public string Name { get; set; } = string.Empty;
+        }
         private readonly IModInstallerService _modInstallerService;
         private readonly INexusService _nexusService;
         private readonly IDialogService _dialogService;
@@ -32,11 +44,14 @@ namespace KCD2_mod_manager.ViewModels
         private readonly IProfilesService _profilesService;
         private readonly IGameInstallService _gameInstallService;
         private readonly IManifestUpdateService _manifestUpdateService;
+        private readonly IConflictCheckerService _conflictCheckerService;
+        private readonly ICategoryService _categoryService;
+        private readonly IModCategoryAssignmentService _categoryAssignmentService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IModOrderFileManager? _modOrderFileManager;
 
         private const string DefaultGamePath = @"C:\Program Files (x86)\Steam\steamapps\common\KingdomComeDeliverance2\Bin\Win64MasterMasterSteamPGO\KingdomCome.exe";
-        private const string currentManagerVersion = "3.0";
+        private const string currentManagerVersion = "4.0";
 
         private ObservableCollection<Mod> _mods = new();
         private ICollectionView? _modsView;
@@ -45,12 +60,17 @@ namespace KCD2_mod_manager.ViewModels
         private string _statusText = Resources.Strings.StatusReady;
         private string _modsEnabledCount = string.Format(Resources.Strings.ModsEnabled, 0);
         private string _conflictCount = string.Format(Resources.Strings.ConflictsDetected, 0);
+        private int _conflictFileCount;
+        private bool _hasConflicts;
+        private ObservableCollection<ModConflictGroup> _conflictGroups = new();
         private bool _isUserLoggedIn;
         private string _nexusUsername = string.Empty;
         private bool _nexusIsPremium = false;
         private bool _sortByLoadOrder = true;
-        private bool? _savedSortByLoadOrder = null;
+        private SortMode? _savedSortMode = null;
         private string _sortButtonText = Resources.Strings.ButtonSortLoadOrder;
+        private SortMode _sortMode = SortMode.LoadOrder;
+        private SortMode _secondarySortMode = SortMode.Title;
         private string _windowTitle = Resources.Strings.WindowTitle;
         private string _menuSettingsText = Resources.Strings.MenuSettings;
         private string _menuLoginText = Resources.Strings.MenuLogin;
@@ -58,9 +78,16 @@ namespace KCD2_mod_manager.ViewModels
         private string _buttonStartGameText = Resources.Strings.ButtonStartGame;
         private string _buttonAddModText = Resources.Strings.ButtonAddMod;
         private string _buttonReloadModsText = Resources.Strings.ButtonReloadMods;
+        private bool _allowWorkshopModActions;
+        private string _workshopBadgeText = Resources.Strings.ResourceManager.GetString("WorkshopBadgeText") ?? "Workshop";
+        private string _workshopBadgeTooltip = Resources.Strings.ResourceManager.GetString("WorkshopBadgeTooltip") ?? "Installed from Steam Workshop";
+        private string _workshopConflictNote = Resources.Strings.ResourceManager.GetString("WorkshopConflictNote") ?? "Workshop files may be managed by Steam.";
         private string _contextMenuVisitWebsiteText = Resources.Strings.ContextMenuVisitWebsite;
         private string _contextMenuChangeModNameText = Resources.Strings.ContextMenuChangeModName;
         private string _contextMenuChangeNoteText = Resources.Strings.ContextMenuChangeNote;
+        private string _contextMenuAssignCategoryText = Resources.Strings.ResourceManager.GetString("ContextMenuAssignCategory") ?? "Assign category...";
+        private string _contextMenuClearCategoryText = Resources.Strings.ResourceManager.GetString("ContextMenuClearCategory") ?? "Clear category";
+        private string _contextMenuToggleSeparatorText = Resources.Strings.ResourceManager.GetString("ContextMenuToggleSeparator") ?? "Toggle Separator";
         private string _contextMenuEndorseModText = Resources.Strings.ContextMenuEndorseMod;
         private string _contextMenuChangeModNumberText = Resources.Strings.ContextMenuChangeModNumber;
         private string _contextMenuToggleUpdateCheckText = Resources.Strings.ContextMenuToggleUpdateCheck;
@@ -71,14 +98,24 @@ namespace KCD2_mod_manager.ViewModels
         private string _duplicateProfileText = Resources.Strings.ResourceManager.GetString("DuplicateProfileText") ?? "Duplicate";
         private string _deleteProfileText = Resources.Strings.ResourceManager.GetString("DeleteProfileText") ?? "Delete";
         private string _saveProfileText = Resources.Strings.ResourceManager.GetString("SaveProfileText") ?? "Save";
+        private string _manageCategoriesText = Resources.Strings.ResourceManager.GetString("ManageCategoriesText") ?? "Manage Categories";
         private string _enableAllModsText = Resources.Strings.ResourceManager.GetString("EnableAllModsText") ?? "Enable All";
         private string _disableAllModsText = Resources.Strings.ResourceManager.GetString("DisableAllModsText") ?? "Disable All";
         private string _updateManifestText = Resources.Strings.ResourceManager.GetString("UpdateManifestText") ?? "Update Manifest (Selected)";
         private string _updateAllManifestsText = Resources.Strings.ResourceManager.GetString("UpdateAllManifestsText") ?? "Update All Manifests";
         private string _switchGameText = Resources.Strings.ResourceManager.GetString("SwitchGameText") ?? "Switch Game";
         private string _gameText = Resources.Strings.ResourceManager.GetString("GameText") ?? "Game:";
+        private string _conflictsButtonText = Resources.Strings.ResourceManager.GetString("ConflictsButtonText") ?? "Conflicts";
         private string _loadingModsText = Resources.Strings.ResourceManager.GetString("LoadingModsText") ?? "Loading Mods...";
         private bool _isLoadingMods = false;
+        private bool _hasCategories;
+        private ObservableCollection<ModCategory> _categories = new();
+        private ObservableCollection<CategoryFilterOption> _categoryFilterOptions = new();
+        private string? _selectedCategoryFilterId;
+        private string _uncategorizedText = Resources.Strings.ResourceManager.GetString("UncategorizedText") ?? "Uncategorized";
+        private string _filterCategoryText = Resources.Strings.ResourceManager.GetString("FilterCategoryText") ?? "Category:";
+        private string _filterAllText = Resources.Strings.ResourceManager.GetString("FilterCategoryAll") ?? "All";
+        private string _filterUncategorizedText = Resources.Strings.ResourceManager.GetString("FilterCategoryUncategorized") ?? "Uncategorized";
 
         private string _gamePath = string.Empty;
         private string _modFolder = string.Empty;
@@ -103,6 +140,9 @@ namespace KCD2_mod_manager.ViewModels
             IProfilesService profilesService,
             IGameInstallService gameInstallService,
             IManifestUpdateService manifestUpdateService,
+            IConflictCheckerService conflictCheckerService,
+            ICategoryService categoryService,
+            IModCategoryAssignmentService categoryAssignmentService,
             IServiceProvider serviceProvider,
             IModOrderFileManager? modOrderFileManager = null)
         {
@@ -118,11 +158,24 @@ namespace KCD2_mod_manager.ViewModels
             _profilesService = profilesService;
             _gameInstallService = gameInstallService;
             _manifestUpdateService = manifestUpdateService;
+            _conflictCheckerService = conflictCheckerService;
+            _categoryService = categoryService;
+            _categoryAssignmentService = categoryAssignmentService;
             _serviceProvider = serviceProvider;
             _modOrderFileManager = modOrderFileManager;
+            _allowWorkshopModActions = _settings.AllowWorkshopModActions;
 
             // Auf Sprachänderungen reagieren
             _localizationService.LanguageChanged += (s, e) => UpdateLocalizedStrings();
+            KCD2_mod_manager.Settings.Default.PropertyChanged += (_, args) =>
+            {
+                if (args.PropertyName == nameof(KCD2_mod_manager.Settings.Default.AllowWorkshopModActions))
+                {
+                    AllowWorkshopModActions = _settings.AllowWorkshopModActions;
+                }
+            };
+
+            _categoryService.CategoriesChanged += (s, e) => SyncCategoriesFromService();
 
             InitializeCommands();
             InitializeAsync();
@@ -147,6 +200,9 @@ namespace KCD2_mod_manager.ViewModels
             OpenModPageCommand = new RelayCommand<Mod>(mod => OpenModPage(mod), mod => mod != null);
             ChangeModNameCommand = new RelayCommand<Mod>(mod => ChangeModNameAsync(mod), mod => mod != null);
             ChangeModNoteCommand = new RelayCommand<Mod>(mod => ChangeModNoteAsync(mod), mod => mod != null);
+            AssignCategoryCommand = new RelayCommand<Mod>(mod => AssignCategoryAsync(mod), mod => mod != null);
+            ClearCategoryCommand = new RelayCommand<Mod>(mod => ClearCategoryAsync(mod), mod => mod != null);
+            ToggleSeparatorCommand = new RelayCommand<Mod>(mod => ToggleSeparatorAsync(mod), mod => mod != null);
             EndorseModCommand = new RelayCommand<Mod>(mod => EndorseModAsync(mod), mod => mod != null);
             ChangeModNumberCommand = new RelayCommand<Mod>(mod => ChangeModNumberAsync(mod), mod => mod != null);
             ToggleUpdateCheckCommand = new RelayCommand<Mod>(mod => ToggleUpdateCheckAsync(mod), mod => mod != null);
@@ -163,6 +219,8 @@ namespace KCD2_mod_manager.ViewModels
             UpdateManifestCommand = new RelayCommand<Mod>(mod => UpdateManifestAsync(mod), mod => mod != null);
             UpdateAllManifestsCommand = new RelayCommand(_ => UpdateAllManifestsAsync());
             DuplicateProfileCommand = new RelayCommand<string>(profileName => DuplicateProfileAsync(profileName));
+            OpenConflictCheckerCommand = new RelayCommand(_ => OpenConflictChecker(), _ => HasConflicts);
+            OpenCategoryManagerCommand = new RelayCommand(_ => OpenCategoryManager());
         }
 
         /// <summary>
@@ -241,6 +299,8 @@ namespace KCD2_mod_manager.ViewModels
                 {
                     await _modInstallerService.CreateModsBackupAsync(ModFolder);
                 }
+
+                await LoadCategoriesAsync();
 
                 // Mods laden (verwendet jetzt korrekten ModFolder aus SelectedGameInstall)
                 await LoadModsAsync();
@@ -322,6 +382,24 @@ namespace KCD2_mod_manager.ViewModels
             set => SetProperty(ref _conflictCount, value);
         }
 
+        public int ConflictFileCount
+        {
+            get => _conflictFileCount;
+            set => SetProperty(ref _conflictFileCount, value);
+        }
+
+        public bool HasConflicts
+        {
+            get => _hasConflicts;
+            set => SetProperty(ref _hasConflicts, value);
+        }
+
+        public ObservableCollection<ModConflictGroup> ConflictGroups
+        {
+            get => _conflictGroups;
+            set => SetProperty(ref _conflictGroups, value);
+        }
+
         public bool IsUserLoggedIn
         {
             get => _isUserLoggedIn;
@@ -342,8 +420,8 @@ namespace KCD2_mod_manager.ViewModels
 
         public bool SortByLoadOrder
         {
-            get => _sortByLoadOrder;
-            set => SetProperty(ref _sortByLoadOrder, value);
+            get => _sortMode == SortMode.LoadOrder;
+            private set => SetProperty(ref _sortByLoadOrder, value);
         }
 
         public string SortButtonText
@@ -420,6 +498,30 @@ namespace KCD2_mod_manager.ViewModels
             set => SetProperty(ref _buttonReloadModsText, value);
         }
 
+        public bool AllowWorkshopModActions
+        {
+            get => _allowWorkshopModActions;
+            private set => SetProperty(ref _allowWorkshopModActions, value);
+        }
+
+        public string WorkshopBadgeText
+        {
+            get => _workshopBadgeText;
+            set => SetProperty(ref _workshopBadgeText, value);
+        }
+
+        public string WorkshopBadgeTooltip
+        {
+            get => _workshopBadgeTooltip;
+            set => SetProperty(ref _workshopBadgeTooltip, value);
+        }
+
+        public string WorkshopConflictNote
+        {
+            get => _workshopConflictNote;
+            set => SetProperty(ref _workshopConflictNote, value);
+        }
+
         public string ContextMenuVisitWebsiteText
         {
             get => _contextMenuVisitWebsiteText;
@@ -436,6 +538,24 @@ namespace KCD2_mod_manager.ViewModels
         {
             get => _contextMenuChangeNoteText;
             set => SetProperty(ref _contextMenuChangeNoteText, value);
+        }
+
+        public string ContextMenuAssignCategoryText
+        {
+            get => _contextMenuAssignCategoryText;
+            set => SetProperty(ref _contextMenuAssignCategoryText, value);
+        }
+
+        public string ContextMenuClearCategoryText
+        {
+            get => _contextMenuClearCategoryText;
+            set => SetProperty(ref _contextMenuClearCategoryText, value);
+        }
+
+        public string ContextMenuToggleSeparatorText
+        {
+            get => _contextMenuToggleSeparatorText;
+            set => SetProperty(ref _contextMenuToggleSeparatorText, value);
         }
 
         public string ContextMenuEndorseModText
@@ -501,6 +621,12 @@ namespace KCD2_mod_manager.ViewModels
             set => SetProperty(ref _saveProfileText, value);
         }
 
+        public string ManageCategoriesText
+        {
+            get => _manageCategoriesText;
+            set => SetProperty(ref _manageCategoriesText, value);
+        }
+
         public string EnableAllModsText
         {
             get => _enableAllModsText;
@@ -537,10 +663,70 @@ namespace KCD2_mod_manager.ViewModels
             set => SetProperty(ref _gameText, value);
         }
 
+        public string ConflictsButtonText
+        {
+            get => _conflictsButtonText;
+            set => SetProperty(ref _conflictsButtonText, value);
+        }
+
         public string LoadingModsText
         {
             get => _loadingModsText;
             set => SetProperty(ref _loadingModsText, value);
+        }
+
+        public ObservableCollection<ModCategory> Categories
+        {
+            get => _categories;
+            private set => SetProperty(ref _categories, value);
+        }
+
+        public ObservableCollection<CategoryFilterOption> CategoryFilterOptions
+        {
+            get => _categoryFilterOptions;
+            private set => SetProperty(ref _categoryFilterOptions, value);
+        }
+
+        public string? SelectedCategoryFilterId
+        {
+            get => _selectedCategoryFilterId;
+            set
+            {
+                if (SetProperty(ref _selectedCategoryFilterId, value))
+                {
+                    ApplySearchFilter();
+                }
+            }
+        }
+
+        public bool HasCategories
+        {
+            get => _hasCategories;
+            private set => SetProperty(ref _hasCategories, value);
+        }
+
+        public string UncategorizedText
+        {
+            get => _uncategorizedText;
+            set => SetProperty(ref _uncategorizedText, value);
+        }
+
+        public string FilterCategoryText
+        {
+            get => _filterCategoryText;
+            set => SetProperty(ref _filterCategoryText, value);
+        }
+
+        public string FilterAllText
+        {
+            get => _filterAllText;
+            set => SetProperty(ref _filterAllText, value);
+        }
+
+        public string FilterUncategorizedText
+        {
+            get => _filterUncategorizedText;
+            set => SetProperty(ref _filterUncategorizedText, value);
         }
 
         public string ContextMenuOverrideVersionText
@@ -574,6 +760,9 @@ namespace KCD2_mod_manager.ViewModels
         public ICommand OpenModPageCommand { get; private set; } = null!;
         public ICommand ChangeModNameCommand { get; private set; } = null!;
         public ICommand ChangeModNoteCommand { get; private set; } = null!;
+        public ICommand AssignCategoryCommand { get; private set; } = null!;
+        public ICommand ClearCategoryCommand { get; private set; } = null!;
+        public ICommand ToggleSeparatorCommand { get; private set; } = null!;
         public ICommand EndorseModCommand { get; private set; } = null!;
         public ICommand ChangeModNumberCommand { get; private set; } = null!;
         public ICommand ToggleUpdateCheckCommand { get; private set; } = null!;
@@ -590,6 +779,8 @@ namespace KCD2_mod_manager.ViewModels
         public ICommand UpdateManifestCommand { get; private set; } = null!;
         public ICommand UpdateAllManifestsCommand { get; private set; } = null!;
         public ICommand DuplicateProfileCommand { get; private set; } = null!;
+        public ICommand OpenConflictCheckerCommand { get; private set; } = null!;
+        public ICommand OpenCategoryManagerCommand { get; private set; } = null!;
 
         public void SetModsView(ICollectionView view)
         {
@@ -704,6 +895,12 @@ namespace KCD2_mod_manager.ViewModels
                         {
                             mod.Note = userData.CustomNote;
                         }
+
+                        // Benutzerdefinierte Anzeigenamen nur verwenden, wenn kein File-Renaming aktiv ist
+                        if (!_settings.EnableFileRenaming && !string.IsNullOrEmpty(userData.CustomName))
+                        {
+                            mod.Name = userData.CustomName;
+                        }
                     }
                     else
                     {
@@ -731,6 +928,9 @@ namespace KCD2_mod_manager.ViewModels
                 
                 _logger.Info($"Mod Notes geladen: {_modNotes.Count} Notizen für {Mods.Count} Mods");
 
+                await ApplyCategoryAssignmentsAsync();
+
+                await RefreshConflictsAsync();
                 UpdateModsEnabledCount();
                 ApplySearchFilter();
                 
@@ -751,6 +951,136 @@ namespace KCD2_mod_manager.ViewModels
             }
         }
 
+        private async Task LoadCategoriesAsync()
+        {
+            await _categoryService.LoadAsync();
+            SyncCategoriesFromService();
+        }
+
+        private void SyncCategoriesFromService()
+        {
+            Categories = new ObservableCollection<ModCategory>(
+                _categoryService.Categories.OrderBy(c => c.Order));
+            HasCategories = Categories.Any();
+            UpdateCategoryNames();
+            if (_sortMode == SortMode.Category && !HasCategories)
+            {
+                SetSortMode(SortMode.Title);
+            }
+
+            UpdateCategoryFilterOptions();
+
+            _ = ClearMissingCategoryAssignmentsAsync();
+        }
+
+        private async Task ApplyCategoryAssignmentsAsync()
+        {
+            var assignments = await _categoryAssignmentService.LoadCategoryAssignmentsAsync(Mods.ToList());
+            var validIds = new HashSet<string>(Categories.Select(c => c.Id));
+            foreach (var mod in Mods)
+            {
+                if (assignments.TryGetValue(mod.Id, out var categoryId) && !string.IsNullOrWhiteSpace(categoryId))
+                {
+                    if (validIds.Contains(categoryId))
+                    {
+                        mod.CategoryId = categoryId;
+                        mod.CategoryName = GetCategoryNameById(categoryId) ?? string.Empty;
+                    }
+                    else
+                    {
+                        await _categoryAssignmentService.ClearCategoryAsync(mod);
+                        mod.CategoryId = string.Empty;
+                        mod.CategoryName = string.Empty;
+                    }
+                }
+                else
+                {
+                    mod.CategoryId = string.Empty;
+                    mod.CategoryName = string.Empty;
+                }
+
+                if (!mod.IsWorkshopMod)
+                {
+                    bool isWorkshop = await _categoryAssignmentService.GetWorkshopFlagAsync(mod);
+                    if (isWorkshop)
+                    {
+                        mod.IsWorkshopMod = true;
+                        _logger.Info($"Workshop-Mod erkannt (Meta): {mod.Name}");
+                    }
+                }
+            }
+        }
+
+        private void UpdateCategoryNames()
+        {
+            if (!Mods.Any())
+            {
+                return;
+            }
+
+            var lookup = Categories.ToDictionary(c => c.Id, c => c.Name);
+            foreach (var mod in Mods)
+            {
+                mod.CategoryName = lookup.TryGetValue(mod.CategoryId, out var name) ? name : string.Empty;
+            }
+
+            if (_sortMode == SortMode.Category)
+            {
+                ApplySort();
+            }
+        }
+
+        private void UpdateCategoryFilterOptions()
+        {
+            var options = new List<CategoryFilterOption>
+            {
+                new CategoryFilterOption { Id = null, Name = FilterAllText },
+                new CategoryFilterOption { Id = string.Empty, Name = FilterUncategorizedText }
+            };
+
+            options.AddRange(Categories.Select(c => new CategoryFilterOption
+            {
+                Id = c.Id,
+                Name = c.Name
+            }));
+
+            CategoryFilterOptions = new ObservableCollection<CategoryFilterOption>(options);
+
+            if (!HasCategories)
+            {
+                SelectedCategoryFilterId = null;
+            }
+        }
+
+        private async Task ClearMissingCategoryAssignmentsAsync()
+        {
+            if (!Mods.Any())
+            {
+                return;
+            }
+
+            var validIds = new HashSet<string>(Categories.Select(c => c.Id));
+            foreach (var mod in Mods)
+            {
+                if (!string.IsNullOrWhiteSpace(mod.CategoryId) && !validIds.Contains(mod.CategoryId))
+                {
+                    await _categoryAssignmentService.ClearCategoryAsync(mod);
+                    mod.CategoryId = string.Empty;
+                    mod.CategoryName = string.Empty;
+                }
+            }
+        }
+
+        private string? GetCategoryNameById(string? categoryId)
+        {
+            if (string.IsNullOrWhiteSpace(categoryId))
+            {
+                return null;
+            }
+
+            return Categories.FirstOrDefault(c => c.Id == categoryId)?.Name;
+        }
+
         private void UpdateModsEnabledCount()
         {
             int enabledCount = Mods.Count(mod => mod.IsEnabled);
@@ -764,20 +1094,19 @@ namespace KCD2_mod_manager.ViewModels
             string filter = SearchText.ToLowerInvariant();
             if (!string.IsNullOrWhiteSpace(filter))
             {
-                if (_savedSortByLoadOrder == null)
+                if (_savedSortMode == null)
                 {
-                    _savedSortByLoadOrder = SortByLoadOrder;
+                    _savedSortMode = _sortMode;
                 }
                 SortByLoadOrder = false;
                 SortButtonText = Resources.Strings.ButtonSortDisabled;
             }
             else
             {
-                if (_savedSortByLoadOrder != null)
+                if (_savedSortMode != null)
                 {
-                    SortByLoadOrder = _savedSortByLoadOrder.Value;
-                    _savedSortByLoadOrder = null;
-                    SortButtonText = SortByLoadOrder ? Resources.Strings.ButtonSortLoadOrder : Resources.Strings.ButtonSortTitle;
+                    SetSortMode(_savedSortMode.Value);
+                    _savedSortMode = null;
                 }
             }
 
@@ -785,8 +1114,25 @@ namespace KCD2_mod_manager.ViewModels
             {
                 if (item is Mod mod)
                 {
-                    return mod.Name.ToLowerInvariant().Contains(filter) ||
-                           mod.Version.ToLowerInvariant().Contains(filter);
+                    bool matchesText = mod.Name.ToLowerInvariant().Contains(filter) ||
+                                       mod.Version.ToLowerInvariant().Contains(filter);
+
+                    if (!matchesText)
+                    {
+                        return false;
+                    }
+
+                    if (SelectedCategoryFilterId == null)
+                    {
+                        return true;
+                    }
+
+                    if (SelectedCategoryFilterId == string.Empty)
+                    {
+                        return string.IsNullOrWhiteSpace(mod.CategoryId);
+                    }
+
+                    return string.Equals(mod.CategoryId, SelectedCategoryFilterId, StringComparison.OrdinalIgnoreCase);
                 }
                 return false;
             };
@@ -839,6 +1185,7 @@ namespace KCD2_mod_manager.ViewModels
                 Mods.Add(mod);
                 await _modInstallerService.SaveModOrderAsync(Mods.ToList(), _modFolder);
                 StatusText = string.Format(Resources.Messages.StatusModAdded, mod.Name, mod.Version);
+                await RefreshConflictsAsync();
                 await CheckForModUpdatesAsync();
             }
             else
@@ -849,6 +1196,7 @@ namespace KCD2_mod_manager.ViewModels
 
         private async Task ReloadModsAsync()
         {
+            await LoadCategoriesAsync();
             await LoadModsAsync();
         }
 
@@ -909,20 +1257,85 @@ namespace KCD2_mod_manager.ViewModels
                 return;
             }
 
-            SortByLoadOrder = !SortByLoadOrder;
-            if (!SortByLoadOrder)
+            SortMode nextMode = _sortMode switch
+            {
+                SortMode.LoadOrder => SortMode.Title,
+                SortMode.Title => HasCategories ? SortMode.Category : SortMode.LoadOrder,
+                SortMode.Category => SortMode.LoadOrder,
+                _ => SortMode.LoadOrder
+            };
+
+            SetSortMode(nextMode);
+        }
+
+        private void SetSortMode(SortMode mode)
+        {
+            if (mode == SortMode.Category && !HasCategories)
+            {
+                mode = SortMode.Title;
+            }
+
+            _sortMode = mode;
+            if (mode != SortMode.Category)
+            {
+                _secondarySortMode = mode;
+            }
+
+            SortByLoadOrder = mode == SortMode.LoadOrder;
+            UpdateSortButtonText();
+
+            if (mode == SortMode.LoadOrder)
+            {
+                _ = LoadModsAsync();
+                return;
+            }
+
+            ApplySort();
+        }
+
+        private void ApplySort()
+        {
+            if (_sortMode == SortMode.Title)
             {
                 var sorted = Mods.OrderBy(m => m.Name).ToList();
                 Mods.Clear();
                 foreach (var mod in sorted)
+                {
                     Mods.Add(mod);
-                SortButtonText = Resources.Strings.ButtonSortTitle;
+                }
+                return;
             }
-            else
+
+            if (_sortMode == SortMode.Category)
             {
-                LoadModsAsync();
-                SortButtonText = Resources.Strings.ButtonSortLoadOrder;
+                var categoryOrder = Categories
+                    .OrderBy(c => c.Order)
+                    .Select((c, index) => new { c.Id, Order = index })
+                    .ToDictionary(x => x.Id, x => x.Order);
+
+                var sorted = Mods
+                    .OrderBy(m => categoryOrder.TryGetValue(m.CategoryId, out var order) ? order : int.MaxValue)
+                    .ThenBy(m => _secondarySortMode == SortMode.LoadOrder ? m.Number : int.MaxValue)
+                    .ThenBy(m => _secondarySortMode == SortMode.Title ? m.Name : string.Empty)
+                    .ToList();
+
+                Mods.Clear();
+                foreach (var mod in sorted)
+                {
+                    Mods.Add(mod);
+                }
             }
+        }
+
+        private void UpdateSortButtonText()
+        {
+            SortButtonText = _sortMode switch
+            {
+                SortMode.LoadOrder => Resources.Strings.ButtonSortLoadOrder,
+                SortMode.Title => Resources.Strings.ButtonSortTitle,
+                SortMode.Category => Resources.Strings.ResourceManager.GetString("ButtonSortCategory") ?? "Sort: Category",
+                _ => Resources.Strings.ButtonSortLoadOrder
+            };
         }
 
         private void ClearSearch()
@@ -942,9 +1355,15 @@ namespace KCD2_mod_manager.ViewModels
             ButtonStartGameText = Resources.Strings.ButtonStartGame;
             ButtonAddModText = Resources.Strings.ButtonAddMod;
             ButtonReloadModsText = Resources.Strings.ButtonReloadMods;
+            WorkshopBadgeText = Resources.Strings.ResourceManager.GetString("WorkshopBadgeText") ?? "Workshop";
+            WorkshopBadgeTooltip = Resources.Strings.ResourceManager.GetString("WorkshopBadgeTooltip") ?? "Installed from Steam Workshop";
+            WorkshopConflictNote = Resources.Strings.ResourceManager.GetString("WorkshopConflictNote") ?? "Workshop files may be managed by Steam.";
             ContextMenuVisitWebsiteText = Resources.Strings.ContextMenuVisitWebsite;
             ContextMenuChangeModNameText = Resources.Strings.ContextMenuChangeModName;
             ContextMenuChangeNoteText = Resources.Strings.ContextMenuChangeNote;
+            ContextMenuAssignCategoryText = Resources.Strings.ResourceManager.GetString("ContextMenuAssignCategory") ?? "Assign category...";
+            ContextMenuClearCategoryText = Resources.Strings.ResourceManager.GetString("ContextMenuClearCategory") ?? "Clear category";
+            ContextMenuToggleSeparatorText = Resources.Strings.ResourceManager.GetString("ContextMenuToggleSeparator") ?? "Toggle Separator";
             ContextMenuEndorseModText = Resources.Strings.ContextMenuEndorseMod;
             ContextMenuChangeModNumberText = Resources.Strings.ContextMenuChangeModNumber;
             ContextMenuToggleUpdateCheckText = Resources.Strings.ContextMenuToggleUpdateCheck;
@@ -954,16 +1373,23 @@ namespace KCD2_mod_manager.ViewModels
             // WICHTIG: Game-Switch-Buttons aktualisieren (ohne App-Neustart)
             SwitchGameText = Resources.Strings.ResourceManager.GetString("SwitchGameText") ?? "Switch Game";
             GameText = Resources.Strings.ResourceManager.GetString("GameText") ?? "Game:";
+            ConflictsButtonText = Resources.Strings.ResourceManager.GetString("ConflictsButtonText") ?? "Conflicts";
             ProfilesText = Resources.Strings.ResourceManager.GetString("ProfilesText") ?? "Profile:";
             CreateProfileText = Resources.Strings.ResourceManager.GetString("CreateProfileText") ?? "Create";
             DuplicateProfileText = Resources.Strings.ResourceManager.GetString("DuplicateProfileText") ?? "Duplicate";
             DeleteProfileText = Resources.Strings.ResourceManager.GetString("DeleteProfileText") ?? "Delete";
             SaveProfileText = Resources.Strings.ResourceManager.GetString("SaveProfileText") ?? "Save";
+            ManageCategoriesText = Resources.Strings.ResourceManager.GetString("ManageCategoriesText") ?? "Manage Categories";
             EnableAllModsText = Resources.Strings.ResourceManager.GetString("EnableAllModsText") ?? "Enable All";
             DisableAllModsText = Resources.Strings.ResourceManager.GetString("DisableAllModsText") ?? "Disable All";
             UpdateManifestText = Resources.Strings.ResourceManager.GetString("UpdateManifestText") ?? "Update Manifest (Selected)";
             UpdateAllManifestsText = Resources.Strings.ResourceManager.GetString("UpdateAllManifestsText") ?? "Update All Manifests";
             LoadingModsText = Resources.Strings.ResourceManager.GetString("LoadingModsText") ?? "Loading Mods...";
+            UncategorizedText = Resources.Strings.ResourceManager.GetString("UncategorizedText") ?? "Uncategorized";
+            FilterCategoryText = Resources.Strings.ResourceManager.GetString("FilterCategoryText") ?? "Category:";
+            FilterAllText = Resources.Strings.ResourceManager.GetString("FilterCategoryAll") ?? "All";
+            FilterUncategorizedText = Resources.Strings.ResourceManager.GetString("FilterCategoryUncategorized") ?? "Uncategorized";
+            UpdateCategoryFilterOptions();
             
             // Status-Texts aktualisieren (nur wenn noch auf Standard)
             if (StatusText == Resources.Strings.StatusReady || string.IsNullOrEmpty(StatusText))
@@ -972,7 +1398,7 @@ namespace KCD2_mod_manager.ViewModels
             }
             
             // Sort-Button-Text aktualisieren
-            SortButtonText = SortByLoadOrder ? Resources.Strings.ButtonSortLoadOrder : Resources.Strings.ButtonSortTitle;
+            UpdateSortButtonText();
             
             // Counts aktualisieren
             UpdateModsEnabledCount();
@@ -981,8 +1407,67 @@ namespace KCD2_mod_manager.ViewModels
 
         private void UpdateConflictCount()
         {
-            // TODO: Konflikt-Logik implementieren, wenn vorhanden
-            ConflictCount = string.Format(Resources.Strings.ConflictsDetected, 0);
+            ConflictCount = string.Format(Resources.Strings.ConflictsDetected, ConflictFileCount);
+        }
+
+        private bool IsWorkshopActionAllowed(Mod mod, string actionName)
+        {
+            if (mod.IsWorkshopMod && !_settings.AllowWorkshopModActions)
+            {
+                _logger.Info($"Workshop action blocked: {actionName} for {mod.Name}");
+                return false;
+            }
+
+            return true;
+        }
+
+        private async Task RefreshConflictsAsync()
+        {
+            try
+            {
+                var conflicts = await _conflictCheckerService.AnalyzeConflictsAsync(Mods.ToList());
+                ConflictGroups = new ObservableCollection<ModConflictGroup>(conflicts);
+                ConflictFileCount = conflicts.Count;
+                HasConflicts = conflicts.Count > 0;
+                UpdateConflictCount();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Fehler beim Konflikt-Check: {ex.Message}", ex);
+            }
+        }
+
+        private void OpenConflictChecker()
+        {
+            if (!HasConflicts)
+            {
+                return;
+            }
+
+            var window = _serviceProvider.GetRequiredService<Views.ConflictCheckerWindow>();
+            if (window.DataContext is ConflictCheckerViewModel viewModel)
+            {
+                viewModel.SetConflicts(ConflictGroups);
+            }
+
+            window.Owner = Application.Current.MainWindow;
+            window.ShowDialog();
+        }
+
+        private void OpenCategoryManager()
+        {
+            var window = _serviceProvider.GetRequiredService<Views.CategoryManagerWindow>();
+            if (window.DataContext is ViewModels.CategoryManagerViewModel viewModel)
+            {
+                viewModel.Initialize(Categories.ToList(), Mods.ToList());
+            }
+
+            window.Owner = Application.Current.MainWindow;
+            bool? result = window.ShowDialog();
+            if (result == true)
+            {
+                SyncCategoriesFromService();
+            }
         }
 
         public async Task ProcessModFileAsync(string filePath)
@@ -1011,6 +1496,7 @@ namespace KCD2_mod_manager.ViewModels
                 Mods.Add(mod);
                 await _modInstallerService.SaveModOrderAsync(Mods.ToList(), _modFolder);
                 StatusText = string.Format(Resources.Messages.StatusModAdded, mod.Name, mod.Version);
+                await RefreshConflictsAsync();
             }
             else
             {
@@ -1340,6 +1826,11 @@ namespace KCD2_mod_manager.ViewModels
                 return;
             }
 
+            if (!IsWorkshopActionAllowed(mod, "VisitWebsite"))
+            {
+                return;
+            }
+
             // WICHTIG: Verwende korrekte Game Domain basierend auf ausgewähltem Spiel
             string gameDomain = SelectedGame == Services.GameType.KCD1 
                 ? "kingdomcomedeliverance" 
@@ -1355,16 +1846,123 @@ namespace KCD2_mod_manager.ViewModels
                 Resources.Strings.ResourceManager.GetString("EnterModName") ?? "Enter mod name:",
                 Resources.Strings.ResourceManager.GetString("ChangeModNameTitle") ?? "Change Mod Name",
                 mod.Name);
-            if (string.IsNullOrEmpty(newName)) return;
+            if (string.IsNullOrWhiteSpace(newName)) return;
+
+            newName = newName.Trim();
+            if (string.Equals(newName, mod.Name, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            if (!_settings.EnableFileRenaming)
+            {
+                mod.Name = newName;
+                await _userModDataService.SaveModDataAsync(mod.Id, customName: newName);
+                StatusText = string.Format(Resources.Strings.ResourceManager.GetString("ModNameUpdated") ?? "Mod name updated: {0}", newName);
+                return;
+            }
+
+            string oldModId = mod.Id;
+            string newModId = _manifestService.GenerateModId(newName);
+            string manifestPath = _fileService.Combine(mod.Path, "mod.manifest");
+
+            bool updated = await _manifestService.UpdateManifestNameAndIdAsync(manifestPath, newName, newModId);
+            if (!updated)
+            {
+                _dialogService.ShowMessageBox(Resources.Messages.ErrorFailedToUpdateManifest, Resources.Messages.DialogTitleError, MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            string newPath = _fileService.Combine(_modFolder, newModId);
+            string finalPath = mod.Path;
+            if (!mod.Path.Equals(newPath, StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    if (_fileService.DirectoryExists(newPath))
+                    {
+                        _dialogService.ShowMessageBox(Resources.Messages.ErrorModFolderExists, Resources.Messages.DialogTitleError, MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    _fileService.MoveDirectory(mod.Path, newPath);
+                    finalPath = newPath;
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Fehler beim Umbenennen des Mod-Ordners: {ex.Message}", ex);
+                    _dialogService.ShowMessageBox(string.Format(Resources.Messages.ErrorRenamingModFolder, ex.Message), Resources.Messages.DialogTitleError, MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+            }
 
             mod.Name = newName;
-            string newModId = _manifestService.GenerateModId(newName);
+            mod.Id = newModId;
+            mod.Path = finalPath;
 
-            string manifestPath = _fileService.Combine(mod.Path, "mod.manifest");
-            if (_fileService.FileExists(manifestPath))
+            await UpdateModIdReferencesAsync(oldModId, newModId);
+
+            if (SelectedProfile != null)
             {
-                // Manifest aktualisieren...
-                _logger.Info($"Mod-Name geändert: {mod.Name}");
+                await SaveCurrentProfileAsync();
+            }
+            else
+            {
+                await _modInstallerService.SaveModOrderAsync(Mods.ToList(), _modFolder);
+            }
+
+            StatusText = string.Format(Resources.Strings.ResourceManager.GetString("ModNameUpdated") ?? "Mod name updated: {0}", newName);
+        }
+
+        private async Task UpdateModIdReferencesAsync(string oldModId, string newModId)
+        {
+            if (string.Equals(oldModId, newModId, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            if (_modNotes.TryGetValue(oldModId, out var note))
+            {
+                _modNotes.Remove(oldModId);
+                _modNotes[newModId] = note;
+                await _modInstallerService.SaveModNotesAsync(_modNotes, _modFolder);
+            }
+
+            if (_modVersions.TryGetValue(oldModId, out var versionInfo))
+            {
+                _modVersions.Remove(oldModId);
+                _modVersions[newModId] = versionInfo;
+                await SaveModVersionsDictionaryAsync();
+            }
+
+            var userData = await _userModDataService.LoadUserModDataAsync();
+            if (userData.TryGetValue(oldModId, out var modData))
+            {
+                userData.Remove(oldModId);
+                modData.ModId = newModId;
+                userData[newModId] = modData;
+                await _userModDataService.SaveUserModDataAsync(userData);
+            }
+
+            foreach (var profile in Profiles)
+            {
+                bool changed = false;
+                if (profile.ActiveMods.Remove(oldModId))
+                {
+                    profile.ActiveMods.Add(newModId);
+                    changed = true;
+                }
+
+                if (profile.LoadOrder.Remove(oldModId))
+                {
+                    profile.LoadOrder.Add(newModId);
+                    changed = true;
+                }
+
+                if (changed)
+                {
+                    await _profilesService.SaveProfileAsync(SelectedGame, profile);
+                }
             }
         }
 
@@ -1395,12 +1993,71 @@ namespace KCD2_mod_manager.ViewModels
             _logger.Info($"Mod Note gespeichert: Mod={mod.Name}, Note length={newNote.Length}");
         }
 
+        private async Task AssignCategoryAsync(Mod? mod)
+        {
+            if (mod == null) return;
+            if (!Categories.Any())
+            {
+                await _categoryService.LoadAsync();
+                SyncCategoriesFromService();
+            }
+
+            var dialog = _serviceProvider.GetRequiredService<Views.CategoryAssignDialog>();
+            if (dialog.DataContext is ViewModels.CategoryAssignDialogViewModel viewModel)
+            {
+                string? selectedId = string.IsNullOrWhiteSpace(mod.CategoryId) ? null : mod.CategoryId;
+                viewModel.Initialize(mod, Categories.ToList(), selectedId);
+            }
+
+            dialog.Owner = Application.Current.MainWindow;
+            bool? result = dialog.ShowDialog();
+            if (result != true)
+            {
+                return;
+            }
+
+            if (dialog.DataContext is ViewModels.CategoryAssignDialogViewModel assignViewModel)
+            {
+                string? selectedCategoryId = assignViewModel.SelectedCategoryId;
+                await _categoryAssignmentService.SetCategoryIdAsync(mod, selectedCategoryId);
+                mod.CategoryId = selectedCategoryId ?? string.Empty;
+                mod.CategoryName = GetCategoryNameById(selectedCategoryId) ?? string.Empty;
+                if (_sortMode == SortMode.Category)
+                {
+                    ApplySort();
+                }
+            }
+        }
+
+        private async Task ClearCategoryAsync(Mod? mod)
+        {
+            if (mod == null) return;
+            await _categoryAssignmentService.ClearCategoryAsync(mod);
+            mod.CategoryId = string.Empty;
+            mod.CategoryName = string.Empty;
+            if (_sortMode == SortMode.Category)
+            {
+                ApplySort();
+            }
+        }
+
+        private async Task ToggleSeparatorAsync(Mod? mod)
+        {
+            if (mod == null || mod.IsWorkshopMod) return;
+            mod.HasSeparatorAfter = !mod.HasSeparatorAfter;
+            await SaveCurrentProfileAsync();
+        }
+
         /// <summary>
         /// Feature 3: Manuelle Versionsüberschreibung für einen Mod
         /// </summary>
         private async Task SetModVersionAsync(Mod? mod)
         {
             if (mod == null) return;
+            if (!IsWorkshopActionAllowed(mod, "OverrideVersion"))
+            {
+                return;
+            }
 
             // Dialog mit aktueller Version vorausgefüllt
             string? customVersion = _dialogService.ShowInputDialog(
@@ -1429,6 +2086,10 @@ namespace KCD2_mod_manager.ViewModels
         private async Task EndorseModAsync(Mod? mod)
         {
             if (mod == null || mod.ModNumber <= 0) return;
+            if (!IsWorkshopActionAllowed(mod, "EndorseMod"))
+            {
+                return;
+            }
             // WICHTIG: Verwende korrekte Game Domain basierend auf ausgewähltem Spiel
             string gameDomain = SelectedGame == Services.GameType.KCD1 
                 ? "kingdomcomedeliverance" 
@@ -1445,6 +2106,10 @@ namespace KCD2_mod_manager.ViewModels
         private async Task ChangeModNumberAsync(Mod? mod)
         {
             if (mod == null) return;
+            if (!IsWorkshopActionAllowed(mod, "ChangeModNumber"))
+            {
+                return;
+            }
             string? input = _dialogService.ShowInputDialog(Resources.Messages.PromptChangeModNumber, Resources.Messages.TitleChangeModNumber, mod.ModNumber > 0 ? mod.ModNumber.ToString() : "");
             if (string.IsNullOrEmpty(input) || !int.TryParse(input, out int newModNumber)) return;
 
@@ -1460,6 +2125,10 @@ namespace KCD2_mod_manager.ViewModels
         private async Task ToggleUpdateCheckAsync(Mod? mod)
         {
             if (mod == null) return;
+            if (!IsWorkshopActionAllowed(mod, "ToggleUpdateCheck"))
+            {
+                return;
+            }
             
             try
             {
@@ -1708,6 +2377,11 @@ namespace KCD2_mod_manager.ViewModels
                 return;
             }
 
+            if (!IsWorkshopActionAllowed(mod, "CheckForUpdate"))
+            {
+                return;
+            }
+
             try
             {
                 StatusText = Resources.Strings.ResourceManager.GetString("UpdateCheckInProgress") ?? "Checking for updates...";
@@ -1922,7 +2596,9 @@ namespace KCD2_mod_manager.ViewModels
                 
                 if (updateCount > 0)
                 {
-                    StatusText = $"{updateCount} Mod-Update(s) verfügbar";
+                    StatusText = string.Format(
+                        Resources.Strings.ResourceManager.GetString("ModUpdatesAvailable") ?? "{0} mod update(s) available",
+                        updateCount);
                 }
             }
             catch (Exception ex)
@@ -2064,6 +2740,7 @@ namespace KCD2_mod_manager.ViewModels
                     var defaultProfile = await _profilesService.EnsureDefaultProfileAsync(SelectedGame, Mods.ToList());
                     Profiles.Add(defaultProfile);
                     SelectedProfile = defaultProfile;
+                    ApplyProfileLayout(defaultProfile);
                     
                     // Speichere als letztes verwendetes Profil
                     if (SelectedGame == GameType.KCD1)
@@ -2193,6 +2870,8 @@ namespace KCD2_mod_manager.ViewModels
                 
                 // Wende Profil auf Mods an (Enabled/Disabled, Load Order)
                 await _profilesService.ApplyProfileAsync(profile, Mods.ToList());
+
+                ApplyProfileLayout(profile);
                 
                 // WICHTIG: Schreibe mod_order.txt in das Spiel-Mods-Verzeichnis
                 // Dies ist die Datei, die das Spiel tatsächlich liest
@@ -2239,6 +2918,24 @@ namespace KCD2_mod_manager.ViewModels
             finally
             {
                 _isLoadingProfile = false;
+            }
+        }
+
+        private void ApplyProfileLayout(ModProfile profile)
+        {
+            var separators = profile.SeparatorsAfterModIds != null
+                ? new HashSet<string>(profile.SeparatorsAfterModIds)
+                : new HashSet<string>();
+
+            foreach (var mod in Mods)
+            {
+                if (mod.IsWorkshopMod)
+                {
+                    mod.HasSeparatorAfter = false;
+                    continue;
+                }
+
+                mod.HasSeparatorAfter = separators.Contains(mod.Id);
             }
         }
 

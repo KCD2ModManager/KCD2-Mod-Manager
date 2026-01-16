@@ -11,6 +11,7 @@ namespace KCD2_mod_manager.Services
         Task<(string modId, string name, string version, string? gameVersion)?> ParseManifestWithGameVersionAsync(string manifestPath, CancellationToken cancellationToken = default);
         Task<string> GenerateManifestAsync(string folderPath, CancellationToken cancellationToken = default);
         Task<string> CorrectXmlVersionInFileAsync(string manifestPath, CancellationToken cancellationToken = default);
+        Task<bool> UpdateManifestNameAndIdAsync(string manifestPath, string newName, string newModId, CancellationToken cancellationToken = default);
         string GenerateModId(string name);
     }
 }

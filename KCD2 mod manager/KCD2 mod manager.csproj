@@ -15,6 +15,7 @@
     <Content Include="logo.ico" />
   </ItemGroup>
 
+
   <ItemGroup>
     <!-- Game Selection Dialog Bilder -->
     <Resource Include="Images\kcd1.jpg" />

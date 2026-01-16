@@ -27,6 +27,8 @@ namespace KCD2_mod_manager.ViewModels
         private bool _askOnDelete;
         private bool _enableUpdateNotifications;
         private bool _modOrderEnabled;
+        private bool _enableFileRenaming;
+        private bool _allowWorkshopModActions;
         private bool _createBackup;
         private bool _backupOnStartup;
         private int _backupMaxCount;
@@ -48,6 +50,10 @@ namespace KCD2_mod_manager.ViewModels
         private string _setMaxBackupsText = string.Empty;
         private string _setButtonText = string.Empty;
         private string _enableDeleteConfirmationText = string.Empty;
+        private string _enableFileRenamingText = string.Empty;
+        private string _enableFileRenamingTooltip = string.Empty;
+        private string _allowWorkshopModActionsText = string.Empty;
+        private string _allowWorkshopModActionsTooltip = string.Empty;
 
         public SettingsWindowViewModel(
             IAppSettings settings, 
@@ -82,6 +88,8 @@ namespace KCD2_mod_manager.ViewModels
             ToggleDeleteConfirmationCommand = new RelayCommand<bool?>(isChecked => ToggleDeleteConfirmation(isChecked ?? false));
             ToggleUpdateNotificationsCommand = new RelayCommand<bool?>(isChecked => ToggleUpdateNotifications(isChecked ?? false));
             ToggleModOrderCreationCommand = new RelayCommand<bool?>(isChecked => ToggleModOrderCreation(isChecked ?? false));
+            ToggleFileRenamingCommand = new RelayCommand<bool?>(isChecked => ToggleFileRenaming(isChecked ?? false));
+            ToggleWorkshopActionsCommand = new RelayCommand<bool?>(isChecked => ToggleWorkshopActions(isChecked ?? false));
             ToggleBackupCreationCommand = new RelayCommand<bool?>(isChecked => ToggleBackupCreation(isChecked ?? false));
             ToggleBackupOnStartupCommand = new RelayCommand<bool?>(isChecked => ToggleBackupOnStartup(isChecked ?? false));
             ChangeLanguageCommand = new RelayCommand<string>(language => ChangeLanguage(language));
@@ -94,6 +102,8 @@ namespace KCD2_mod_manager.ViewModels
             AskOnDelete = _settings.AskOnDelete;
             EnableUpdateNotifications = _settings.EnableUpdateNotifications;
             ModOrderEnabled = _settings.ModOrderEnabled;
+            EnableFileRenaming = _settings.EnableFileRenaming;
+            AllowWorkshopModActions = _settings.AllowWorkshopModActions;
             CreateBackup = _settings.CreateBackup;
             BackupOnStartup = _settings.BackupOnStartup;
             BackupMaxCount = _settings.BackupMaxCount;
@@ -128,6 +138,18 @@ namespace KCD2_mod_manager.ViewModels
         {
             get => _modOrderEnabled;
             set => SetProperty(ref _modOrderEnabled, value);
+        }
+
+        public bool EnableFileRenaming
+        {
+            get => _enableFileRenaming;
+            set => SetProperty(ref _enableFileRenaming, value);
+        }
+
+        public bool AllowWorkshopModActions
+        {
+            get => _allowWorkshopModActions;
+            set => SetProperty(ref _allowWorkshopModActions, value);
         }
 
         public bool CreateBackup
@@ -240,6 +262,30 @@ namespace KCD2_mod_manager.ViewModels
             set => SetProperty(ref _toggleDeleteConfirmationText, value);
         }
 
+        public string EnableFileRenamingText
+        {
+            get => _enableFileRenamingText;
+            set => SetProperty(ref _enableFileRenamingText, value);
+        }
+
+        public string EnableFileRenamingTooltip
+        {
+            get => _enableFileRenamingTooltip;
+            set => SetProperty(ref _enableFileRenamingTooltip, value);
+        }
+
+        public string AllowWorkshopModActionsText
+        {
+            get => _allowWorkshopModActionsText;
+            set => SetProperty(ref _allowWorkshopModActionsText, value);
+        }
+
+        public string AllowWorkshopModActionsTooltip
+        {
+            get => _allowWorkshopModActionsTooltip;
+            set => SetProperty(ref _allowWorkshopModActionsTooltip, value);
+        }
+
         public string SelectLanguageText
         {
             get => _selectLanguageText;
@@ -255,6 +301,8 @@ namespace KCD2_mod_manager.ViewModels
         public ICommand ToggleDeleteConfirmationCommand { get; private set; } = null!;
         public ICommand ToggleUpdateNotificationsCommand { get; private set; } = null!;
         public ICommand ToggleModOrderCreationCommand { get; private set; } = null!;
+        public ICommand ToggleFileRenamingCommand { get; private set; } = null!;
+        public ICommand ToggleWorkshopActionsCommand { get; private set; } = null!;
         public ICommand ToggleBackupCreationCommand { get; private set; } = null!;
         public ICommand ToggleBackupOnStartupCommand { get; private set; } = null!;
         public ICommand ChangeLanguageCommand { get; private set; } = null!;
@@ -364,6 +412,32 @@ namespace KCD2_mod_manager.ViewModels
             }
         }
 
+        private void ToggleFileRenaming(bool isChecked)
+        {
+            EnableFileRenaming = isChecked;
+            _settings.EnableFileRenaming = isChecked;
+            _settings.Save();
+        }
+
+        private void ToggleWorkshopActions(bool isChecked)
+        {
+            AllowWorkshopModActions = isChecked;
+            _settings.AllowWorkshopModActions = isChecked;
+
+            if (isChecked && !_settings.AllowWorkshopActionsWarningShown)
+            {
+                _settings.AllowWorkshopActionsWarningShown = true;
+                _dialogService.ShowMessageBox(
+                    Resources.Messages.WorkshopActionsWarning,
+                    Resources.Messages.DialogTitleWarning,
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+
+            _settings.Save();
+            _logger.Info($"AllowWorkshopModActions toggled: {isChecked}");
+        }
+
         private void ToggleBackupCreation(bool isChecked)
         {
             CreateBackup = isChecked;
@@ -429,6 +503,10 @@ namespace KCD2_mod_manager.ViewModels
             ToggleDeleteConfirmationText = Resources.Strings.ResourceManager.GetString("ToggleDeleteConfirmation", culture) ?? Resources.Strings.ToggleDeleteConfirmation;
             ToggleUpdateNotificationsText = Resources.Strings.ResourceManager.GetString("ToggleUpdateNotifications", culture) ?? Resources.Strings.ToggleUpdateNotifications;
             ToggleModOrderCreationText = Resources.Strings.ResourceManager.GetString("ToggleModOrderCreation", culture) ?? Resources.Strings.ToggleModOrderCreation;
+            EnableFileRenamingText = Resources.Strings.ResourceManager.GetString("EnableFileRenaming", culture) ?? Resources.Strings.EnableFileRenaming;
+            EnableFileRenamingTooltip = Resources.Strings.ResourceManager.GetString("EnableFileRenamingTooltip", culture) ?? Resources.Strings.EnableFileRenamingTooltip;
+            AllowWorkshopModActionsText = Resources.Strings.ResourceManager.GetString("AllowWorkshopActionsText", culture) ?? "Enable extra actions for Workshop mods";
+            AllowWorkshopModActionsTooltip = Resources.Strings.ResourceManager.GetString("AllowWorkshopActionsTooltip", culture) ?? "Enabling this will allow actions such as visiting the mod webpage or forcing update checks on mods installed from the Steam Workshop. Not recommended as Workshop files are typically managed by Steam.";
             LanguageSettingsText = Resources.Strings.ResourceManager.GetString("LanguageSettings", culture) ?? Resources.Strings.LanguageSettings;
             SelectLanguageText = Resources.Strings.ResourceManager.GetString("SelectLanguage", culture) ?? Resources.Strings.SelectLanguage;
             LanguageText = Resources.Strings.ResourceManager.GetString("Language", culture) ?? Resources.Strings.Language;

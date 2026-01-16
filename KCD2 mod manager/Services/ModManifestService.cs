@@ -12,11 +12,15 @@ namespace KCD2_mod_manager.Services
     {
         private readonly IFileService _fileService;
         private readonly ILog _logger;
+        private readonly IRenameService _renameService;
+        private readonly IAppSettings _settings;
 
-        public ModManifestService(IFileService fileService, ILog logger)
+        public ModManifestService(IFileService fileService, ILog logger, IRenameService renameService, IAppSettings settings)
         {
             _fileService = fileService;
             _logger = logger;
+            _renameService = renameService;
+            _settings = settings;
         }
 
         public async Task<(string modId, string name, string version)?> ParseManifestAsync(string manifestPath, CancellationToken cancellationToken = default)
@@ -37,6 +41,7 @@ namespace KCD2_mod_manager.Services
 
                 var modidElement = infoElement.Element("modid");
                 string id;
+                bool shouldWrite = false;
                 if (modidElement != null && !string.IsNullOrWhiteSpace(modidElement.Value))
                 {
                     id = modidElement.Value.Trim();
@@ -44,17 +49,24 @@ namespace KCD2_mod_manager.Services
                 else
                 {
                     id = GenerateModId(name);
-                    if (modidElement == null)
+                    if (_settings.EnableFileRenaming)
                     {
-                        infoElement.Add(new XElement("modid", id));
-                    }
-                    else
-                    {
-                        modidElement.Value = id;
+                        if (modidElement == null)
+                        {
+                            infoElement.Add(new XElement("modid", id));
+                        }
+                        else
+                        {
+                            modidElement.Value = id;
+                        }
+                        shouldWrite = true;
                     }
                 }
 
-                await _fileService.WriteAllTextAsync(manifestPath, doc.ToString(), cancellationToken);
+                if (shouldWrite)
+                {
+                    await _fileService.WriteAllTextAsync(manifestPath, doc.ToString(), cancellationToken);
+                }
 
                 return (id, name, version);
             }
@@ -83,6 +95,7 @@ namespace KCD2_mod_manager.Services
 
                 var modidElement = infoElement.Element("modid");
                 string id;
+                bool shouldWrite = false;
                 if (modidElement != null && !string.IsNullOrWhiteSpace(modidElement.Value))
                 {
                     id = modidElement.Value.Trim();
@@ -90,13 +103,17 @@ namespace KCD2_mod_manager.Services
                 else
                 {
                     id = GenerateModId(name);
-                    if (modidElement == null)
+                    if (_settings.EnableFileRenaming)
                     {
-                        infoElement.Add(new XElement("modid", id));
-                    }
-                    else
-                    {
-                        modidElement.Value = id;
+                        if (modidElement == null)
+                        {
+                            infoElement.Add(new XElement("modid", id));
+                        }
+                        else
+                        {
+                            modidElement.Value = id;
+                        }
+                        shouldWrite = true;
                     }
                 }
 
@@ -104,7 +121,10 @@ namespace KCD2_mod_manager.Services
                 var gameVersionElement = infoElement.Element("gameVersion");
                 string? gameVersion = gameVersionElement?.Value?.Trim();
 
-                await _fileService.WriteAllTextAsync(manifestPath, doc.ToString(), cancellationToken);
+                if (shouldWrite)
+                {
+                    await _fileService.WriteAllTextAsync(manifestPath, doc.ToString(), cancellationToken);
+                }
 
                 return (id, name, version, gameVersion);
             }
@@ -120,18 +140,13 @@ namespace KCD2_mod_manager.Services
             var folderInfo = new DirectoryInfo(folderPath);
             string originalName = folderInfo.Name;
 
-            string modNameSuggestion = originalName;
+            string modNameSuggestion = originalName.Trim();
             string versionSuggestion = "N/A";
             Regex regex = new Regex(@"^(.*?)-\d+-(\d+)-(\d+)-.*$");
             Match match = regex.Match(originalName);
             if (match.Success)
             {
-                modNameSuggestion = match.Groups[1].Value.Trim();
                 versionSuggestion = $"{match.Groups[2].Value}.{match.Groups[3].Value}";
-            }
-            else
-            {
-                modNameSuggestion = Regex.Replace(originalName, @"[-\s\d\(\)]+$", "").Trim();
             }
 
             string modId = GenerateModId(modNameSuggestion);
@@ -165,26 +180,70 @@ namespace KCD2_mod_manager.Services
             return xmlContent;
         }
 
+        public async Task<bool> UpdateManifestNameAndIdAsync(string manifestPath, string newName, string newModId, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                if (!_fileService.FileExists(manifestPath))
+                {
+                    _logger.Warning($"Manifest-Datei nicht gefunden: {manifestPath}");
+                    return false;
+                }
+
+                string xmlContent = await CorrectXmlVersionInFileAsync(manifestPath, cancellationToken);
+                var doc = XDocument.Parse(xmlContent);
+
+                var infoElement = doc.Descendants("info").FirstOrDefault();
+                if (infoElement == null)
+                {
+                    _logger.Warning($"Manifest enthält kein 'info'-Element: {manifestPath}");
+                    return false;
+                }
+
+                var nameElement = infoElement.Element("name");
+                if (nameElement == null)
+                {
+                    infoElement.Add(new XElement("name", newName));
+                }
+                else
+                {
+                    nameElement.Value = newName;
+                }
+
+                if (_settings.EnableFileRenaming)
+                {
+                    var modidElement = infoElement.Element("modid");
+                    if (modidElement == null)
+                    {
+                        infoElement.Add(new XElement("modid", newModId));
+                    }
+                    else
+                    {
+                        modidElement.Value = newModId;
+                    }
+                }
+
+                string tempPath = manifestPath + ".tmp";
+                await _fileService.WriteAllTextAsync(tempPath, doc.ToString(), cancellationToken);
+
+                if (_fileService.FileExists(manifestPath))
+                {
+                    _fileService.DeleteFile(manifestPath);
+                }
+
+                _fileService.MoveFile(tempPath, manifestPath);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Fehler beim Aktualisieren des Manifests: {ex.Message}", ex);
+                return false;
+            }
+        }
+
         public string GenerateModId(string name)
         {
-            string id = Regex.Replace(name.ToLowerInvariant(), @"[^a-z]", "");
-            if (string.IsNullOrEmpty(id))
-            {
-                using (var md5 = System.Security.Cryptography.MD5.Create())
-                {
-                    byte[] inputBytes = System.Text.Encoding.UTF8.GetBytes(name);
-                    byte[] hashBytes = md5.ComputeHash(inputBytes);
-                    string fallback = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
-                    fallback = Regex.Replace(fallback, @"[^a-z]", "");
-                    if (fallback.Length > 8)
-                        id = fallback.Substring(0, 8);
-                    else if (fallback.Length > 0)
-                        id = fallback;
-                    else
-                        id = "moddefault";
-                }
-            }
-            return id;
+            return _renameService.GenerateModId(name);
         }
     }
 }

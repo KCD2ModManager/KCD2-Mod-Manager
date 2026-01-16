@@ -108,6 +108,8 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <!-- General Settings Section -->
@@ -214,14 +216,56 @@
                           Checked="ToggleModOrderCreation_Checked"
                           Unchecked="ToggleModOrderCreation_Unchecked"/>
 
+            <!-- Enable File Renaming -->
+            <TextBlock Grid.Row="6"
+                       Grid.Column="0"
+                       Text="{Binding EnableFileRenamingText}"
+                       Width="220"
+                       VerticalAlignment="Center"
+                       Margin="0,8,16,8"
+                       Foreground="{DynamicResource TextForegroundBrush}"
+                       ToolTip="{Binding EnableFileRenamingTooltip}"/>
+            <ToggleButton Grid.Row="6"
+                          Grid.Column="1"
+                          x:Name="ToggleFileRenaming"
+                          Style="{StaticResource SwitchToggleStyle}"
+                          Width="50"
+                          Height="25"
+                          HorizontalAlignment="Center"
+                          IsChecked="{Binding EnableFileRenaming}"
+                          ToolTip="{Binding EnableFileRenamingTooltip}"
+                          Checked="ToggleFileRenaming_Checked"
+                          Unchecked="ToggleFileRenaming_Unchecked"/>
+
+            <!-- Allow Workshop Actions -->
+            <TextBlock Grid.Row="7"
+                       Grid.Column="0"
+                       Text="{Binding AllowWorkshopModActionsText}"
+                       Width="220"
+                       VerticalAlignment="Center"
+                       Margin="0,8,16,8"
+                       Foreground="{DynamicResource TextForegroundBrush}"
+                       ToolTip="{Binding AllowWorkshopModActionsTooltip}"/>
+            <ToggleButton Grid.Row="7"
+                          Grid.Column="1"
+                          x:Name="ToggleWorkshopActions"
+                          Style="{StaticResource SwitchToggleStyle}"
+                          Width="50"
+                          Height="25"
+                          HorizontalAlignment="Center"
+                          IsChecked="{Binding AllowWorkshopModActions}"
+                          ToolTip="{Binding AllowWorkshopModActionsTooltip}"
+                          Checked="ToggleWorkshopActions_Checked"
+                          Unchecked="ToggleWorkshopActions_Unchecked"/>
+
             <!-- Separator -->
-            <Separator Grid.Row="6"
+            <Separator Grid.Row="8"
                       Grid.ColumnSpan="2"
                       Margin="0,20,0,16"
                       Background="{DynamicResource SeparatorBrush}"/>
 
             <!-- Language Settings Section -->
-            <TextBlock Grid.Row="7"
+            <TextBlock Grid.Row="9"
                        Grid.ColumnSpan="2"
                        Text="{Binding LanguageSettingsText}"
                        FontSize="18"
@@ -230,14 +274,14 @@
                        Foreground="{DynamicResource TextForegroundBrush}"/>
 
             <!-- Language Selection -->
-            <TextBlock Grid.Row="8"
+            <TextBlock Grid.Row="10"
                        Grid.Column="0"
                        Text="{Binding LanguageText}"
                        Width="220"
                        VerticalAlignment="Center"
                        Margin="0,8,16,8"
                        Foreground="{DynamicResource TextForegroundBrush}"/>
-            <ComboBox Grid.Row="8"
+            <ComboBox Grid.Row="10"
                      Grid.Column="1"
                      x:Name="LanguageComboBox"
                      Width="150"
@@ -253,13 +297,13 @@
                      SelectionChanged="LanguageComboBox_SelectionChanged"/>
 
             <!-- Separator -->
-            <Separator Grid.Row="9"
+            <Separator Grid.Row="11"
                       Grid.ColumnSpan="2"
                       Margin="0,20,0,16"
                       Background="{DynamicResource SeparatorBrush}"/>
 
             <!-- Backup Settings Section -->
-            <TextBlock Grid.Row="10"
+            <TextBlock Grid.Row="12"
                        Grid.ColumnSpan="2"
                        Text="{Binding BackupSettingsText}"
                        FontSize="18"
@@ -268,14 +312,14 @@
                        Foreground="{DynamicResource TextForegroundBrush}"/>
 
             <!-- Toggle Backup Creation -->
-            <TextBlock Grid.Row="11"
+            <TextBlock Grid.Row="13"
                        Grid.Column="0"
                        Text="{Binding ToggleBackupCreationText}"
                        Width="220"
                        VerticalAlignment="Center"
                        Margin="0,8,16,8"
                        Foreground="{DynamicResource TextForegroundBrush}"/>
-            <ToggleButton Grid.Row="11"
+            <ToggleButton Grid.Row="13"
                           Grid.Column="1"
                           x:Name="ToggleBackupCreation"
                           Style="{StaticResource SwitchToggleStyle}"
@@ -287,14 +331,14 @@
                           Unchecked="ToggleBackupCreation_Unchecked"/>
 
             <!-- Backup on Startup -->
-            <TextBlock Grid.Row="12"
+            <TextBlock Grid.Row="14"
                        Grid.Column="0"
                        Text="{Binding BackupOnStartupText}"
                        Width="220"
                        VerticalAlignment="Center"
                        Margin="0,8,16,8"
                        Foreground="{DynamicResource TextForegroundBrush}"/>
-            <ToggleButton Grid.Row="12"
+            <ToggleButton Grid.Row="14"
                           Grid.Column="1"
                           x:Name="ToggleBackupOnStartup"
                           Style="{StaticResource SwitchToggleStyle}"
@@ -306,14 +350,14 @@
                           Unchecked="ToggleBackupOnStartup_Unchecked"/>
 
             <!-- Set Max Backups -->
-            <TextBlock Grid.Row="13"
+            <TextBlock Grid.Row="15"
                        Grid.Column="0"
                        Text="{Binding SetMaxBackupsText}"
                        Width="220"
                        VerticalAlignment="Center"
                        Margin="0,8,16,8"
                        Foreground="{DynamicResource TextForegroundBrush}"/>
-            <Button Grid.Row="13"
+            <Button Grid.Row="15"
                     Grid.Column="1"
                     Content="{Binding SetButtonText}" 
                     Click="SetMaxBackups_Click" 

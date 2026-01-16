@@ -343,20 +343,31 @@ namespace KCD2_mod_manager
             services.AddSingleton<IThemeService, ThemeService>();
             services.AddSingleton<IDialogService, DialogService>();
             services.AddSingleton<IFileService, FileService>();
+            services.AddSingleton<IRenameService, RenameService>();
             services.AddSingleton<IModManifestService, ModManifestService>();
             services.AddHttpClient(); // Für HttpClientFactory
             services.AddSingleton<INexusService, NexusService>();
+            services.AddSingleton<INexusAuthService, NexusService>();
+            services.AddSingleton<INexusDownloadService, NexusService>();
+            services.AddSingleton<INexusModActionsService, NexusService>();
             services.AddSingleton<IModInstallerService, ModInstallerService>();
             services.AddSingleton<IUserModDataService, UserModDataService>();
+            services.AddSingleton<IModCategoryAssignmentService, ModCategoryAssignmentService>();
+            services.AddSingleton<ICategoryService, CategoryService>();
             services.AddSingleton<IProfilesService, ProfilesService>();
             services.AddSingleton<IModOrderFileManager, ModOrderFileManager>();
             services.AddSingleton<IGameInstallService, GameInstallService>();
             services.AddSingleton<IManifestUpdateService, ManifestUpdateService>();
+            services.AddSingleton<IConflictCheckerService, ConflictCheckerService>();
 
             // ViewModels registrieren (MUSS vor Views registriert werden)
             services.AddTransient<MainWindowViewModel>();
             services.AddTransient<SettingsWindowViewModel>();
             services.AddTransient<GameSelectionDialogViewModel>();
+            services.AddTransient<ViewModels.ConflictCheckerViewModel>();
+            services.AddTransient<ViewModels.CategoryAssignDialogViewModel>();
+            services.AddTransient<ViewModels.CategoryManagerViewModel>();
+            services.AddTransient<ViewModels.CategoryDeleteDialogViewModel>();
             services.AddTransient<ViewModels.NameInputDialogViewModel>();
             services.AddTransient<ViewModels.DeleteConfirmationDialogViewModel>();
             services.AddTransient<ViewModels.CustomMessageBoxViewModel>();
@@ -365,6 +376,10 @@ namespace KCD2_mod_manager
             services.AddTransient<MainWindow>();
             services.AddTransient<SettingsWindow>();
             services.AddTransient<Views.Dialogs.GameSelectionDialog>();
+            services.AddTransient<Views.ConflictCheckerWindow>();
+            services.AddTransient<Views.CategoryAssignDialog>();
+            services.AddTransient<Views.CategoryManagerWindow>();
+            services.AddTransient<Views.CategoryDeleteDialog>();
             services.AddTransient<NameInputDialog>();
             services.AddTransient<DeleteConfirmationWindow>();
             services.AddTransient<CustomMessageBoxWindow>();

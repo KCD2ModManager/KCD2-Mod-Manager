@@ -1,0 +1,80 @@
+<Window x:Class="KCD2_mod_manager.Views.CategoryAssignDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:KCD2_mod_manager"
+        Title="{Binding Title}" Height="260" Width="460"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{DynamicResource WindowBackgroundBrush}">
+    <Window.Resources>
+        <local:IsNotNullConverter x:Key="IsNotNullConverter"/>
+    </Window.Resources>
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="{Binding CategoryLabel}"
+                   Margin="0,0,0,6"
+                   Foreground="{DynamicResource TextForegroundBrush}"/>
+
+        <ComboBox Grid.Row="1"
+                  ItemsSource="{Binding Categories}"
+                  SelectedValue="{Binding SelectedCategoryId}"
+                  SelectedValuePath="Id"
+                  DisplayMemberPath="Name"
+                  Height="28"
+                  Width="320"
+                  HorizontalAlignment="Left"
+                  IsEditable="False"
+                  IsHitTestVisible="True"
+                  Focusable="True"/>
+
+        <StackPanel Grid.Row="2" Margin="0,16,0,0">
+            <TextBlock Text="{Binding CreateLabel}"
+                       Margin="0,0,0,6"
+                       Foreground="{DynamicResource TextForegroundBrush}"/>
+            <DockPanel>
+                <TextBox Text="{Binding NewCategoryName, UpdateSourceTrigger=PropertyChanged}"
+                         MinHeight="28"
+                         Width="260"
+                         Background="{DynamicResource SearchBackgroundBrush}"
+                         Foreground="{DynamicResource SearchForegroundBrush}"
+                         CaretBrush="{DynamicResource SearchForegroundBrush}"
+                         BorderBrush="{DynamicResource SearchBorderBrush}"
+                         BorderThickness="1"
+                         Padding="5"
+                         DockPanel.Dock="Left"/>
+                <Button Content="{Binding CreateButtonText}"
+                        Margin="8,0,0,0"
+                        Width="80"
+                        Height="28"
+                        Command="{Binding CreateCategoryCommand}"
+                        IsEnabled="{Binding CanCreateCategory}"
+                        Style="{StaticResource SecondaryButtonStyle}"/>
+            </DockPanel>
+        </StackPanel>
+
+        <StackPanel Grid.Row="3"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,20,0,0">
+            <Button Content="{Binding SaveButtonText}"
+                    Width="80"
+                    Height="30"
+                    Margin="0,0,8,0"
+                    IsEnabled="{Binding SelectedCategoryId, Converter={StaticResource IsNotNullConverter}}"
+                    Click="Save_Click"
+                    Style="{StaticResource PrimaryButtonStyle}"/>
+            <Button Content="{Binding CancelButtonText}"
+                    Width="80"
+                    Height="30"
+                    Click="Cancel_Click"
+                    Style="{StaticResource SecondaryButtonStyle}"/>
+        </StackPanel>
+    </Grid>
+</Window>

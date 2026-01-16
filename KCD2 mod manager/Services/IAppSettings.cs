@@ -12,6 +12,9 @@ namespace KCD2_mod_manager.Services
         bool AskOnDelete { get; set; }
         bool EnableUpdateNotifications { get; set; }
         bool ModOrderEnabled { get; set; }
+        bool EnableFileRenaming { get; set; }
+        bool AllowWorkshopModActions { get; set; }
+        bool AllowWorkshopActionsWarningShown { get; set; }
         bool CreateBackup { get; set; }
         bool BackupOnStartup { get; set; }
         int BackupMaxCount { get; set; }

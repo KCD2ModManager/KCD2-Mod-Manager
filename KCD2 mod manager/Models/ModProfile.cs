@@ -23,6 +23,16 @@ namespace KCD2_mod_manager.Models
         public List<string> LoadOrder { get; set; } = new();
 
         /// <summary>
+        /// UI-Kategorien pro Mod (profilbasiert)
+        /// </summary>
+        public Dictionary<string, string> ModCategories { get; set; } = new();
+
+        /// <summary>
+        /// Separatoren in der Mod-Liste (IDs, nach denen ein Separator angezeigt wird)
+        /// </summary>
+        public List<string> SeparatorsAfterModIds { get; set; } = new();
+
+        /// <summary>
         /// Zeitstempel der letzten Änderung
         /// </summary>
         public string LastModified { get; set; } = System.DateTime.UtcNow.ToString("O");

@@ -322,6 +322,42 @@ namespace KCD2_mod_manager {
                 this["ModOrderEnabled"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool EnableFileRenaming {
+            get {
+                return ((bool)(this["EnableFileRenaming"]));
+            }
+            set {
+                this["EnableFileRenaming"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool AllowWorkshopModActions {
+            get {
+                return ((bool)(this["AllowWorkshopModActions"]));
+            }
+            set {
+                this["AllowWorkshopModActions"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool AllowWorkshopActionsWarningShown {
+            get {
+                return ((bool)(this["AllowWorkshopActionsWarningShown"]));
+            }
+            set {
+                this["AllowWorkshopActionsWarningShown"] = value;
+            }
+        }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]

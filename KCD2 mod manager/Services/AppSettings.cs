@@ -47,6 +47,24 @@ namespace KCD2_mod_manager.Services
             set => Settings.Default.ModOrderEnabled = value;
         }
 
+        public bool EnableFileRenaming
+        {
+            get => Settings.Default.EnableFileRenaming;
+            set => Settings.Default.EnableFileRenaming = value;
+        }
+
+        public bool AllowWorkshopModActions
+        {
+            get => Settings.Default.AllowWorkshopModActions;
+            set => Settings.Default.AllowWorkshopModActions = value;
+        }
+
+        public bool AllowWorkshopActionsWarningShown
+        {
+            get => Settings.Default.AllowWorkshopActionsWarningShown;
+            set => Settings.Default.AllowWorkshopActionsWarningShown = value;
+        }
+
         public bool CreateBackup
         {
             get => Settings.Default.CreateBackup;

@@ -23,7 +23,14 @@ namespace KCD2_mod_manager.Services
         /// <summary>
         /// Aktualisiert oder erstellt Metadaten für einen Mod
         /// </summary>
-        Task SaveModDataAsync(string modId, string? customVersion = null, string? detectedVersion = null, string? customNote = null, CancellationToken cancellationToken = default);
+        Task SaveModDataAsync(
+            string modId,
+            string? customVersion = null,
+            string? detectedVersion = null,
+            string? customNote = null,
+            string? customName = null,
+            string? categoryId = null,
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Ruft Metadaten für einen spezifischen Mod ab
@@ -34,6 +41,11 @@ namespace KCD2_mod_manager.Services
         /// Merged Benutzerdaten mit erkannten Manifest-Daten
         /// </summary>
         Task<string> MergeVersionAsync(string modId, string detectedVersion, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Gibt an, ob die Benutzer-Metadaten-Datei existiert
+        /// </summary>
+        bool UserDataFileExists();
     }
 }
 

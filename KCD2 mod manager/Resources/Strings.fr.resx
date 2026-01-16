@@ -1,0 +1,568 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="WindowTitle" xml:space="preserve">
+    <value>Gestionnaire de mods KCD2</value>
+  </data>
+  <data name="MenuSettings" xml:space="preserve">
+    <value>Paramètres</value>
+  </data>
+  <data name="MenuLogin" xml:space="preserve">
+    <value>Connexion</value>
+  </data>
+  <data name="MenuLogout" xml:space="preserve">
+    <value>Déconnexion</value>
+  </data>
+  <data name="ButtonStartGame" xml:space="preserve">
+    <value>Démarrer le jeu</value>
+  </data>
+  <data name="ButtonAddMod" xml:space="preserve">
+    <value>Ajouter un mod</value>
+  </data>
+  <data name="ButtonReloadMods" xml:space="preserve">
+    <value>Recharger les mods</value>
+  </data>
+  <data name="ButtonSortLoadOrder" xml:space="preserve">
+    <value>Tri : ordre de chargement</value>
+  </data>
+  <data name="ButtonSortTitle" xml:space="preserve">
+    <value>Tri : titre</value>
+  </data>
+  <data name="ButtonSortDisabled" xml:space="preserve">
+    <value>Tri : désactivé</value>
+  </data>
+  <data name="ButtonSortCategory" xml:space="preserve">
+    <value>Tri : catégorie</value>
+  </data>
+  <data name="UncategorizedText" xml:space="preserve">
+    <value>Sans catégorie</value>
+  </data>
+  <data name="StatusReady" xml:space="preserve">
+    <value>Statut : prêt</value>
+  </data>
+  <data name="ModNameUpdated" xml:space="preserve">
+    <value>Nom du mod mis à jour : {0}</value>
+  </data>
+  <data name="ModUpdatesAvailable" xml:space="preserve">
+    <value>{0} mise(s) à jour de mod disponible(s)</value>
+  </data>
+  <data name="StatusStartingGame" xml:space="preserve">
+    <value>Démarrage du jeu avec les mods…</value>
+  </data>
+  <data name="StatusGameStarted" xml:space="preserve">
+    <value>Jeu démarré.</value>
+  </data>
+  <data name="StatusFailedToStartGame" xml:space="preserve">
+    <value>Échec du démarrage du jeu.</value>
+  </data>
+  <data name="ModsEnabled" xml:space="preserve">
+    <value>Mods activés : {0}</value>
+  </data>
+  <data name="ConflictsDetected" xml:space="preserve">
+    <value>Conflits détectés : {0}</value>
+  </data>
+  <data name="ConflictsButtonText" xml:space="preserve">
+    <value>Conflits</value>
+  </data>
+  <data name="ConflictCheckerTitle" xml:space="preserve">
+    <value>Conflits de mods</value>
+  </data>
+  <data name="ConflictCheckerEmpty" xml:space="preserve">
+    <value>Aucun conflit détecté.</value>
+  </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>Rechercher des mods…</value>
+  </data>
+  <data name="ToolTipClearSearch" xml:space="preserve">
+    <value>Effacer la recherche</value>
+  </data>
+  <data name="ToolTipUpdateAvailable" xml:space="preserve">
+    <value>Mise à jour disponible</value>
+  </data>
+  <data name="ToolTipMoveUp" xml:space="preserve">
+    <value>Monter</value>
+  </data>
+  <data name="ToolTipMoveDown" xml:space="preserve">
+    <value>Descendre</value>
+  </data>
+  <data name="ToolTipDeleteMod" xml:space="preserve">
+    <value>Supprimer le mod</value>
+  </data>
+  <data name="ToolTipOpenFolder" xml:space="preserve">
+    <value>Ouvrir le dossier</value>
+  </data>
+  <data name="ToolTipMoreOptions" xml:space="preserve">
+    <value>Plus d’options</value>
+  </data>
+  <data name="WorkshopBadgeText" xml:space="preserve">
+    <value>Workshop</value>
+  </data>
+  <data name="WorkshopBadgeTooltip" xml:space="preserve">
+    <value>Installé depuis le Steam Workshop</value>
+  </data>
+  <data name="WorkshopConflictNote" xml:space="preserve">
+    <value>Les fichiers Workshop peuvent être gérés par Steam.</value>
+  </data>
+  <data name="FilterCategoryText" xml:space="preserve">
+    <value>Catégorie :</value>
+  </data>
+  <data name="FilterCategoryAll" xml:space="preserve">
+    <value>Toutes</value>
+  </data>
+  <data name="FilterCategoryUncategorized" xml:space="preserve">
+    <value>Sans catégorie</value>
+  </data>
+  <data name="ContextMenuVisitWebsite" xml:space="preserve">
+    <value>Visiter le site</value>
+  </data>
+  <data name="ContextMenuChangeModName" xml:space="preserve">
+    <value>Renommer le mod</value>
+  </data>
+  <data name="ContextMenuChangeNote" xml:space="preserve">
+    <value>Modifier la note</value>
+  </data>
+  <data name="ContextMenuAssignCategory" xml:space="preserve">
+    <value>Attribuer une catégorie...</value>
+  </data>
+  <data name="ContextMenuSetCategory" xml:space="preserve">
+    <value>Définir une catégorie</value>
+  </data>
+  <data name="ContextMenuClearCategory" xml:space="preserve">
+    <value>Effacer la catégorie</value>
+  </data>
+  <data name="ContextMenuToggleSeparator" xml:space="preserve">
+    <value>Basculer le séparateur</value>
+  </data>
+  <data name="ContextMenuEndorseMod" xml:space="preserve">
+    <value>Approuver le mod</value>
+  </data>
+  <data name="ContextMenuChangeModNumber" xml:space="preserve">
+    <value>Modifier le numéro du mod</value>
+  </data>
+  <data name="ContextMenuToggleUpdateCheck" xml:space="preserve">
+    <value>Basculer la vérification des mises à jour</value>
+  </data>
+  <data name="ContextMenuOverrideVersion" xml:space="preserve">
+    <value>Remplacer la version</value>
+  </data>
+  <data name="ContextMenuCheckForUpdate" xml:space="preserve">
+    <value>Vérifier les mises à jour</value>
+  </data>
+  <data name="UpdateCheckInProgress" xml:space="preserve">
+    <value>Vérification des mises à jour…</value>
+  </data>
+  <data name="UpdateCheckNoUpdate" xml:space="preserve">
+    <value>Aucune mise à jour disponible. Version actuelle : {0}</value>
+  </data>
+  <data name="UpdateCheckError" xml:space="preserve">
+    <value>Erreur lors de la vérification des mises à jour : {0}</value>
+  </data>
+  <data name="UpdateCheckNoModNumber" xml:space="preserve">
+    <value>Numéro de mod non défini. Impossible de vérifier les mises à jour.</value>
+  </data>
+  <data name="GeneralSettings" xml:space="preserve">
+    <value>Paramètres généraux</value>
+  </data>
+  <data name="SetGamePath" xml:space="preserve">
+    <value>Définir le chemin du jeu :</value>
+  </data>
+  <data name="ToggleDarkMode" xml:space="preserve">
+    <value>Activer le mode sombre :</value>
+  </data>
+  <data name="ToggleDevMode" xml:space="preserve">
+    <value>Activer le mode développeur :</value>
+  </data>
+  <data name="ToggleDeleteConfirmation" xml:space="preserve">
+    <value>Demander avant la suppression des mods :</value>
+  </data>
+  <data name="ToggleUpdateNotifications" xml:space="preserve">
+    <value>Activer les notifications de mise à jour :</value>
+  </data>
+  <data name="ToggleModOrderCreation" xml:space="preserve">
+    <value>Créer le fichier d’ordre des mods :</value>
+  </data>
+  <data name="EnableFileRenaming" xml:space="preserve">
+    <value>Activer le renommage des fichiers et dossiers</value>
+  </data>
+  <data name="EnableFileRenamingTooltip" xml:space="preserve">
+    <value>Lorsque désactivé, le Mod Manager conserve les noms de fichiers et de dossiers d’origine fournis par l’auteur du mod.</value>
+  </data>
+  <data name="AllowWorkshopActionsText" xml:space="preserve">
+    <value>Activer des actions supplémentaires pour les mods Workshop</value>
+  </data>
+  <data name="AllowWorkshopActionsTooltip" xml:space="preserve">
+    <value>Cette option permet des actions comme visiter la page du mod ou forcer des vérifications de mise à jour pour les mods installés depuis le Steam Workshop. Non recommandé, car les fichiers Workshop sont généralement gérés par Steam.</value>
+  </data>
+  <data name="LanguageSettings" xml:space="preserve">
+    <value>Paramètres de langue</value>
+  </data>
+  <data name="SelectLanguage" xml:space="preserve">
+    <value>Sélectionner la langue :</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Langue</value>
+  </data>
+  <data name="BackupSettings" xml:space="preserve">
+    <value>Paramètres de sauvegarde</value>
+  </data>
+  <data name="ToggleBackupCreation" xml:space="preserve">
+    <value>Créer des sauvegardes :</value>
+  </data>
+  <data name="BackupOnStartup" xml:space="preserve">
+    <value>Sauvegarde au démarrage :</value>
+  </data>
+  <data name="SetMaxBackups" xml:space="preserve">
+    <value>Définir le nombre max de sauvegardes :</value>
+  </data>
+  <data name="Set" xml:space="preserve">
+    <value>Définir</value>
+  </data>
+  <data name="EnableDeleteConfirmation" xml:space="preserve">
+    <value>Activer la confirmation de suppression</value>
+  </data>
+  <data name="ProfilesText" xml:space="preserve">
+    <value>Profil :</value>
+  </data>
+  <data name="CreateProfileText" xml:space="preserve">
+    <value>Créer</value>
+  </data>
+  <data name="DuplicateProfileText" xml:space="preserve">
+    <value>Dupliquer</value>
+  </data>
+  <data name="DeleteProfileText" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="SaveProfileText" xml:space="preserve">
+    <value>Enregistrer</value>
+  </data>
+  <data name="ManageCategoriesText" xml:space="preserve">
+    <value>Gérer les catégories</value>
+  </data>
+  <data name="LoadProfileText" xml:space="preserve">
+    <value>Charger</value>
+  </data>
+  <data name="EnableAllModsText" xml:space="preserve">
+    <value>Tout activer</value>
+  </data>
+  <data name="DisableAllModsText" xml:space="preserve">
+    <value>Tout désactiver</value>
+  </data>
+  <data name="UpdateManifestText" xml:space="preserve">
+    <value>Mettre à jour le manifeste (sélectionné)</value>
+  </data>
+  <data name="UpdateAllManifestsText" xml:space="preserve">
+    <value>Mettre à jour tous les manifestes</value>
+  </data>
+  <data name="SwitchGameText" xml:space="preserve">
+    <value>Changer de jeu</value>
+  </data>
+  <data name="GameText" xml:space="preserve">
+    <value>Jeu :</value>
+  </data>
+  <data name="LoadingModsText" xml:space="preserve">
+    <value>Chargement des mods…</value>
+  </data>
+  <data name="SelectGameTitle" xml:space="preserve">
+    <value>Sélectionner le jeu</value>
+  </data>
+  <data name="SelectGameMessage" xml:space="preserve">
+    <value>Sélectionnez le jeu installé :</value>
+  </data>
+  <data name="KCD1DisplayName" xml:space="preserve">
+    <value>Kingdom Come: Deliverance</value>
+  </data>
+  <data name="KCD2DisplayName" xml:space="preserve">
+    <value>Kingdom Come: Deliverance II</value>
+  </data>
+  <data name="OkButton" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="CancelButton" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="DeleteModTitle" xml:space="preserve">
+    <value>Supprimer le mod</value>
+  </data>
+  <data name="DeleteModMessage" xml:space="preserve">
+    <value>Voulez-vous vraiment supprimer ce mod ?</value>
+  </data>
+  <data name="DontAskAgain" xml:space="preserve">
+    <value>Ne plus demander</value>
+  </data>
+  <data name="YesButton" xml:space="preserve">
+    <value>Oui</value>
+  </data>
+  <data name="NoButton" xml:space="preserve">
+    <value>Non</value>
+  </data>
+  <data name="OKButton" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="NameInputDialogTitle" xml:space="preserve">
+    <value>Saisie</value>
+  </data>
+  <data name="ButtonSortLoadOrder" xml:space="preserve">
+    <value>Tri : ordre de chargement</value>
+  </data>
+  <data name="ButtonSortTitle" xml:space="preserve">
+    <value>Tri : titre</value>
+  </data>
+  <data name="ButtonSortDisabled" xml:space="preserve">
+    <value>Tri : désactivé</value>
+  </data>
+  <data name="EnterProfileName" xml:space="preserve">
+    <value>Entrez le nom du profil :</value>
+  </data>
+  <data name="EnterModName" xml:space="preserve">
+    <value>Entrez le nom du mod :</value>
+  </data>
+  <data name="EnterCategoryName" xml:space="preserve">
+    <value>Entrez le nom de la catégorie :</value>
+  </data>
+  <data name="SetCategoryTitle" xml:space="preserve">
+    <value>Définir la catégorie</value>
+  </data>
+  <data name="AssignCategoryTitle" xml:space="preserve">
+    <value>Attribuer une catégorie</value>
+  </data>
+  <data name="AssignCategoryLabel" xml:space="preserve">
+    <value>Catégorie :</value>
+  </data>
+  <data name="AssignCategoryCreateLabel" xml:space="preserve">
+    <value>Créer une nouvelle catégorie :</value>
+  </data>
+  <data name="AssignCategoryCreateButton" xml:space="preserve">
+    <value>Créer</value>
+  </data>
+  <data name="AssignCategorySaveButton" xml:space="preserve">
+    <value>Enregistrer</value>
+  </data>
+  <data name="AssignCategoryCancelButton" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="CategoryManagerTitle" xml:space="preserve">
+    <value>Gérer les catégories</value>
+  </data>
+  <data name="CategoryManagerCreate" xml:space="preserve">
+    <value>Créer</value>
+  </data>
+  <data name="CategoryManagerRename" xml:space="preserve">
+    <value>Renommer</value>
+  </data>
+  <data name="CategoryManagerDelete" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="CategoryManagerSave" xml:space="preserve">
+    <value>Enregistrer</value>
+  </data>
+  <data name="CategoryManagerCancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="CategoryManagerEmpty" xml:space="preserve">
+    <value>Aucune catégorie pour le moment.</value>
+  </data>
+  <data name="CategoryManagerOrderHeader" xml:space="preserve">
+    <value>Ordre</value>
+  </data>
+  <data name="CategoryManagerNameHeader" xml:space="preserve">
+    <value>Nom</value>
+  </data>
+  <data name="CategoryCreatePrompt" xml:space="preserve">
+    <value>Entrez le nom de la catégorie :</value>
+  </data>
+  <data name="CategoryCreateTitle" xml:space="preserve">
+    <value>Créer une catégorie</value>
+  </data>
+  <data name="CategoryRenamePrompt" xml:space="preserve">
+    <value>Entrez le nouveau nom de la catégorie :</value>
+  </data>
+  <data name="CategoryRenameTitle" xml:space="preserve">
+    <value>Renommer la catégorie</value>
+  </data>
+  <data name="CategoryNameDuplicate" xml:space="preserve">
+    <value>Le nom de la catégorie existe déjà.</value>
+  </data>
+  <data name="CategoryDeleteTitle" xml:space="preserve">
+    <value>Supprimer la catégorie</value>
+  </data>
+  <data name="CategoryDeleteMessage" xml:space="preserve">
+    <value>Comment gérer les mods assignés ?</value>
+  </data>
+  <data name="CategoryDeleteUnassign" xml:space="preserve">
+    <value>Désassigner les mods</value>
+  </data>
+  <data name="CategoryDeleteMoveTo" xml:space="preserve">
+    <value>Déplacer les mods vers :</value>
+  </data>
+  <data name="CategoryDeleteConfirm" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="CategoryDeleteCancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="EnterModVersion" xml:space="preserve">
+    <value>Entrez la version personnalisée (laisser vide pour utiliser la version détectée) :</value>
+  </data>
+  <data name="SetModVersionTitle" xml:space="preserve">
+    <value>Définir la version du mod</value>
+  </data>
+  <data name="ChangeModNameTitle" xml:space="preserve">
+    <value>Renommer le mod</value>
+  </data>
+  <data name="DuplicateProfileTitle" xml:space="preserve">
+    <value>Dupliquer le profil</value>
+  </data>
+  <data name="EnterDuplicateProfileName" xml:space="preserve">
+    <value>Entrez le nom du profil dupliqué :</value>
+  </data>
+  <data name="DeleteProfileConfirm" xml:space="preserve">
+    <value>Supprimer le profil « {0} » ?</value>
+  </data>
+  <data name="ConfirmDeleteTitle" xml:space="preserve">
+    <value>Confirmer la suppression</value>
+  </data>
+  <data name="ErrorTitle" xml:space="preserve">
+    <value>Erreur</value>
+  </data>
+  <data name="SuccessTitle" xml:space="preserve">
+    <value>Succès</value>
+  </data>
+  <data name="ErrorCreatingProfile" xml:space="preserve">
+    <value>Erreur lors de la création du profil : {0}</value>
+  </data>
+  <data name="ErrorLoadingProfile" xml:space="preserve">
+    <value>Erreur lors du chargement du profil : {0}</value>
+  </data>
+  <data name="ErrorDeletingProfile" xml:space="preserve">
+    <value>Erreur lors de la suppression du profil : {0}</value>
+  </data>
+  <data name="ErrorSavingProfile" xml:space="preserve">
+    <value>Erreur lors de l’enregistrement du profil : {0}</value>
+  </data>
+  <data name="ErrorDuplicatingProfile" xml:space="preserve">
+    <value>Erreur lors de la duplication du profil : {0}</value>
+  </data>
+  <data name="ProfileNotFound" xml:space="preserve">
+    <value>Profil « {0} » introuvable</value>
+  </data>
+  <data name="UpdateAllManifestsMessage" xml:space="preserve">
+    <value>Mettre à jour tous les manifestes vers la version du jeu {0} ?</value>
+  </data>
+  <data name="ConfirmUpdateTitle" xml:space="preserve">
+    <value>Confirmer la mise à jour</value>
+  </data>
+  <data name="UpdateAvailableTitle" xml:space="preserve">
+    <value>Mise à jour disponible</value>
+  </data>
+  <data name="UpdateAvailableMessage" xml:space="preserve">
+    <value>Une nouvelle version ({0}) est disponible. Voulez-vous mettre à jour ?</value>
+  </data>
+  <data name="UpdatedManifestsCount" xml:space="preserve">
+    <value>{0} manifestes mis à jour</value>
+  </data>
+  <data name="FailedToUpdateManifest" xml:space="preserve">
+    <value>Échec de la mise à jour du manifeste pour {0}</value>
+  </data>
+  <data name="CouldNotDetectGameVersion" xml:space="preserve">
+    <value>Impossible de détecter la version du jeu</value>
+  </data>
+  <data name="FailedToStartGame" xml:space="preserve">
+    <value>Échec du démarrage du jeu : {0}</value>
+  </data>
+  <data name="FailedToDeleteMod" xml:space="preserve">
+    <value>Échec de la suppression du mod : {0}</value>
+  </data>
+  <data name="UpdateInstalling" xml:space="preserve">
+    <value>Installation de la mise à jour…</value>
+  </data>
+  <data name="UpdateDownloadLinkFailed" xml:space="preserve">
+    <value>Échec du téléchargement de la mise à jour. Vous devrez peut-être la télécharger manuellement.</value>
+  </data>
+  <data name="UpdateInstalledSuccess" xml:space="preserve">
+    <value>Mise à jour installée avec succès pour {0}.</value>
+  </data>
+  <data name="UpdateInstallFailed" xml:space="preserve">
+    <value>Échec de l’installation de la mise à jour. Veuillez réessayer ou télécharger manuellement.</value>
+  </data>
+  <data name="ErrorNexusApiKeyMissing" xml:space="preserve">
+    <value>Clé API Nexus non configurée. Veuillez d’abord vous connecter à Nexus Mods.</value>
+  </data>
+  <data name="GameFolderFound" xml:space="preserve">
+    <value>Dossier du jeu trouvé</value>
+  </data>
+  <data name="GameFolderNotFound" xml:space="preserve">
+    <value>Dossier du jeu introuvable</value>
+  </data>
+  <data name="SelectGameFolderPrompt" xml:space="preserve">
+    <value>Veuillez sélectionner le dossier d’installation pour {0}.\n\nLe dossier doit contenir le fichier « KingdomCome.exe ».</value>
+  </data>
+  <data name="GameFolderSaved" xml:space="preserve">
+    <value>Chemin enregistré : {0}</value>
+  </data>
+  <data name="SelectFolderButton" xml:space="preserve">
+    <value>Sélectionner un dossier</value>
+  </data>
+  <data name="SelectFolderTooltip" xml:space="preserve">
+    <value>Sélectionner ou modifier manuellement le dossier d’installation du jeu</value>
+  </data>
+  <data name="ClickCardToSelect" xml:space="preserve">
+    <value>Cliquez sur une carte pour sélectionner le jeu</value>
+  </data>
+</root>

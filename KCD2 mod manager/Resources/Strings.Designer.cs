@@ -158,6 +158,24 @@ namespace KCD2_mod_manager.Resources {
                 return ResourceManager.GetString("StatusReady", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Mod name updated: {0} ähnelt.
+        /// </summary>
+        internal static string ModNameUpdated {
+            get {
+                return ResourceManager.GetString("ModNameUpdated", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die {0} mod update(s) available ähnelt.
+        /// </summary>
+        internal static string ModUpdatesAvailable {
+            get {
+                return ResourceManager.GetString("ModUpdatesAvailable", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Starting game with mods... ähnelt.
@@ -201,6 +219,33 @@ namespace KCD2_mod_manager.Resources {
         internal static string ConflictsDetected {
             get {
                 return ResourceManager.GetString("ConflictsDetected", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Conflicts ähnelt.
+        /// </summary>
+        internal static string ConflictsButtonText {
+            get {
+                return ResourceManager.GetString("ConflictsButtonText", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Mod Conflicts ähnelt.
+        /// </summary>
+        internal static string ConflictCheckerTitle {
+            get {
+                return ResourceManager.GetString("ConflictCheckerTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die No conflicts detected. ähnelt.
+        /// </summary>
+        internal static string ConflictCheckerEmpty {
+            get {
+                return ResourceManager.GetString("ConflictCheckerEmpty", resourceCulture);
             }
         }
         
@@ -302,6 +347,33 @@ namespace KCD2_mod_manager.Resources {
                 return ResourceManager.GetString("ContextMenuChangeNote", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Set category ähnelt.
+        /// </summary>
+        internal static string ContextMenuSetCategory {
+            get {
+                return ResourceManager.GetString("ContextMenuSetCategory", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Clear category ähnelt.
+        /// </summary>
+        internal static string ContextMenuClearCategory {
+            get {
+                return ResourceManager.GetString("ContextMenuClearCategory", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Toggle separator ähnelt.
+        /// </summary>
+        internal static string ContextMenuToggleSeparator {
+            get {
+                return ResourceManager.GetString("ContextMenuToggleSeparator", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Endorse mod ähnelt.
@@ -399,6 +471,24 @@ namespace KCD2_mod_manager.Resources {
         internal static string ToggleModOrderCreation {
             get {
                 return ResourceManager.GetString("ToggleModOrderCreation", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Enable file &amp; folder renaming ähnelt.
+        /// </summary>
+        internal static string EnableFileRenaming {
+            get {
+                return ResourceManager.GetString("EnableFileRenaming", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die When disabled, the Mod Manager will keep original file and folder names exactly as provided by the mod author. ähnelt.
+        /// </summary>
+        internal static string EnableFileRenamingTooltip {
+            get {
+                return ResourceManager.GetString("EnableFileRenamingTooltip", resourceCulture);
             }
         }
         

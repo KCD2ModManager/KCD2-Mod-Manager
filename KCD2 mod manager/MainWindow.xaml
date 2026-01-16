@@ -14,6 +14,7 @@
         <local:IsNotNullConverter x:Key="IsNotNullConverter"/>
         <!-- ScrollBar Corner Visibility Converter -->
         <local:ScrollBarCornerVisibilityConverter x:Key="ScrollBarCornerVisibilityConverter"/>
+        <local:WorkshopActionVisibilityConverter x:Key="WorkshopActionVisibilityConverter"/>
 
         <!-- Modern Mod List Item Style mit verbessertem Kontrast -->
         <Style x:Key="ModListStyle" TargetType="ListBoxItem">
@@ -300,6 +301,9 @@
                     <Button Content="{Binding SaveProfileText}" 
                            Command="{Binding SaveCurrentProfileCommand}" 
                            Style="{StaticResource SecondaryButtonStyle}"/>
+                    <Button Content="{Binding ManageCategoriesText}"
+                           Command="{Binding OpenCategoryManagerCommand}"
+                           Style="{StaticResource SecondaryButtonStyle}"/>
                 </StackPanel>
                 
                 <!-- Feature 11: Game Selection and Switch -->
@@ -322,6 +326,25 @@
                     <Button Content="{Binding SwitchGameText}" 
                            Command="{Binding SwitchGameCommand}" 
                            Style="{StaticResource SecondaryButtonStyle}"/>
+                    <Button Command="{Binding OpenConflictCheckerCommand}"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Margin="8,0,0,0"
+                            Visibility="{Binding HasConflicts, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Grid>
+                            <TextBlock Text="{Binding ConflictsButtonText}"
+                                       Margin="0,0,20,0"/>
+                            <Border Background="{DynamicResource WarningBrush}"
+                                    CornerRadius="10"
+                                    Padding="6,2"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center">
+                                <TextBlock Text="{Binding ConflictFileCount}"
+                                           Foreground="White"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"/>
+                            </Border>
+                        </Grid>
+                    </Button>
                 </StackPanel>
             </Grid>
             
@@ -392,41 +415,68 @@
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition MinWidth="200" />
-                                            <ColumnDefinition Width="60" />
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <!-- Checkbox -->
-                                        <CheckBox Click="ModCheckBox_Click" IsChecked="{Binding IsEnabled}" Grid.Column="0" Margin="5,0,0,0" VerticalAlignment="Center" />
-                                        
-                                        <!-- Feature 9: Compatibility Warning Icon -->
-                                        <TextBlock Text="⚠" 
-                                                  Grid.Column="1" 
-                                                  Margin="5,0,0,0" 
-                                                  VerticalAlignment="Center" 
-                                                  FontSize="16" 
-                                                  Foreground="{DynamicResource WarningBrush}" 
-                                                  Visibility="{Binding CompatibilityWarningVisibility}"
-                                                  ToolTip="{Binding GameVersion, StringFormat='Mod was built for version {0}, but installed game may have a different version'}"/>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid Grid.Row="0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition MinWidth="200" />
+                                                <ColumnDefinition Width="60" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <!-- Checkbox -->
+                                            <CheckBox Click="ModCheckBox_Click" IsChecked="{Binding IsEnabled}" Grid.Column="0" Margin="5,0,0,0" VerticalAlignment="Center" />
+                                            
+                                            <!-- Feature 9: Compatibility Warning Icon -->
+                                            <TextBlock Text="⚠" 
+                                                      Grid.Column="1" 
+                                                      Margin="5,0,0,0" 
+                                                      VerticalAlignment="Center" 
+                                                      FontSize="16" 
+                                                      Foreground="{DynamicResource WarningBrush}" 
+                                                      Visibility="{Binding CompatibilityWarningVisibility}"
+                                                      ToolTip="{Binding GameVersion, StringFormat='Mod was built for version {0}, but installed game may have a different version'}"/>
 
-                                        <!-- Name with Context Menu for Notes -->
-                                        <TextBlock Text="{Binding Name}" Grid.Column="1" Margin="25,0,5,0" VerticalAlignment="Center"
-                                                   Background="Transparent" ContextMenuOpening="ModContextMenu_Opening" />
+                                            <!-- Name + Category -->
+                                            <StackPanel Grid.Column="1" Margin="25,0,5,0" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding Name}" 
+                                                               Background="Transparent" 
+                                                               ContextMenuOpening="ModContextMenu_Opening" />
+                                                    <Border Background="{DynamicResource PanelBackgroundBrush}"
+                                                            BorderBrush="{DynamicResource SeparatorBrush}"
+                                                            BorderThickness="1"
+                                                            CornerRadius="10"
+                                                            Padding="6,2"
+                                                            Margin="8,0,0,0"
+                                                            Visibility="{Binding IsWorkshopMod, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                            ToolTip="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.WorkshopBadgeTooltip}"
+                                                            AutomationProperties.Name="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.WorkshopBadgeTooltip}">
+                                                        <TextBlock Text="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.WorkshopBadgeText}"
+                                                                   FontSize="10"
+                                                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                    </Border>
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding CategoryName}"
+                                                           FontSize="11"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                                           Visibility="{Binding HasCategory, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                            </StackPanel>
+                                               
+                                            <!-- Version -->
+                                            <TextBlock Text="{Binding Version}" 
+                                                      Grid.Column="2" 
+                                                      VerticalAlignment="Center" 
+                                                      Margin="5,0"
+                                                      Foreground="{DynamicResource TextSecondaryBrush}" 
+                                                      FontStyle="Italic" 
+                                                      FontSize="12"/>
                                            
-                                        <!-- Version -->
-                                        <TextBlock Text="{Binding Version}" 
-                                                  Grid.Column="2" 
-                                                  VerticalAlignment="Center" 
-                                                  Margin="5,0"
-                                                  Foreground="{DynamicResource TextSecondaryBrush}" 
-                                                  FontStyle="Italic" 
-                                                  FontSize="12"/>
-                                       
-                                        <!-- Action Buttons - Modernisiert mit Theme-Brushes -->
-                                        <StackPanel Orientation="Horizontal" Grid.Column="3" VerticalAlignment="Center" Margin="5,0,0,0">
+                                            <!-- Action Buttons - Modernisiert mit Theme-Brushes -->
+                                            <StackPanel Orientation="Horizontal" Grid.Column="3" VerticalAlignment="Center" Margin="5,0,0,0">
                                             <Button ToolTip="Update Available" 
                                                     Click="UpdateMod_Click" 
                                                     Style="{StaticResource ModActionButtonStyle}"
@@ -456,6 +506,12 @@
                                             <Button ToolTip="Delete Mod" 
                                                     Click="DeleteMod_Click" 
                                                     Style="{StaticResource ModActionButtonStyle}">
+                                                <Button.Visibility>
+                                                    <MultiBinding Converter="{StaticResource WorkshopActionVisibilityConverter}">
+                                                        <Binding Path="IsWorkshopMod"/>
+                                                        <Binding Source="{x:Static Application.Current}" Path="MainWindow.DataContext.AllowWorkshopModActions"/>
+                                                    </MultiBinding>
+                                                </Button.Visibility>
                                                 <TextBlock Text="&#xE74D;" 
                                                           FontFamily="Segoe Fluent Icons" 
                                                           FontSize="16" 
@@ -491,19 +547,50 @@
                                                         <!-- Static (localized) headers aus MainViewModel via Application.Current.MainWindow.DataContext -->
                                                         <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuVisitWebsiteText}"
                                                                   Click="OpenModPage_Click"
-                                                                  Style="{StaticResource ContextMenuItemStyle}"/>
+                                                                  Style="{StaticResource ContextMenuItemStyle}">
+                                                            <MenuItem.Visibility>
+                                                                <MultiBinding Converter="{StaticResource WorkshopActionVisibilityConverter}">
+                                                                    <Binding Path="IsWorkshopMod"/>
+                                                                    <Binding Source="{x:Static Application.Current}" Path="MainWindow.DataContext.AllowWorkshopModActions"/>
+                                                                </MultiBinding>
+                                                            </MenuItem.Visibility>
+                                                        </MenuItem>
                                                         <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuChangeModNameText}"
                                                                   Click="ChangeModName_Click"
                                                                   Style="{StaticResource ContextMenuItemStyle}"/>
                                                         <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuChangeNoteText}"
                                                                   Click="ChangeModNote_Click"
                                                                   Style="{StaticResource ContextMenuItemStyle}"/>
+                                                        <Separator />
+                                                        <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuAssignCategoryText}"
+                                                                  Click="SetCategory_Click"
+                                                                  Style="{StaticResource ContextMenuItemStyle}"/>
+                                                        <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuClearCategoryText}"
+                                                                  Click="ClearCategory_Click"
+                                                                  Style="{StaticResource ContextMenuItemStyle}"/>
+                                                        <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuToggleSeparatorText}"
+                                                                  Click="ToggleSeparator_Click"
+                                                                  Style="{StaticResource ContextMenuItemStyle}"/>
                                                         <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuEndorseModText}"
                                                                   Click="EndorseMod_Click"
-                                                                  Style="{StaticResource ContextMenuItemStyle}"/>
+                                                                  Style="{StaticResource ContextMenuItemStyle}">
+                                                            <MenuItem.Visibility>
+                                                                <MultiBinding Converter="{StaticResource WorkshopActionVisibilityConverter}">
+                                                                    <Binding Path="IsWorkshopMod"/>
+                                                                    <Binding Source="{x:Static Application.Current}" Path="MainWindow.DataContext.AllowWorkshopModActions"/>
+                                                                </MultiBinding>
+                                                            </MenuItem.Visibility>
+                                                        </MenuItem>
                                                         <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuChangeModNumberText}"
                                                                   Click="ChangeModNumber_Click"
-                                                                  Style="{StaticResource ContextMenuItemStyle}"/>
+                                                                  Style="{StaticResource ContextMenuItemStyle}">
+                                                            <MenuItem.Visibility>
+                                                                <MultiBinding Converter="{StaticResource WorkshopActionVisibilityConverter}">
+                                                                    <Binding Path="IsWorkshopMod"/>
+                                                                    <Binding Source="{x:Static Application.Current}" Path="MainWindow.DataContext.AllowWorkshopModActions"/>
+                                                                </MultiBinding>
+                                                            </MenuItem.Visibility>
+                                                        </MenuItem>
                                                         <!-- Separator -->
                                                         <Separator />
                                                         <!-- Toggle: bindet an das Mod-Objekt (ContextMenu.DataContext ist placement target DataContext = Mod) -->
@@ -512,17 +599,44 @@
                                                                   IsCheckable="True"
                                                                   IsChecked="{Binding UpdateChecksEnabled, Mode=TwoWay}"
                                                                   Click="ToggleUpdateCheck_Click"
-                                                                  Style="{StaticResource ToggleMenuItemStyle}"/>
+                                                                  Style="{StaticResource ToggleMenuItemStyle}">
+                                                            <MenuItem.Visibility>
+                                                                <MultiBinding Converter="{StaticResource WorkshopActionVisibilityConverter}">
+                                                                    <Binding Path="IsWorkshopMod"/>
+                                                                    <Binding Source="{x:Static Application.Current}" Path="MainWindow.DataContext.AllowWorkshopModActions"/>
+                                                                </MultiBinding>
+                                                            </MenuItem.Visibility>
+                                                        </MenuItem>
                                                         <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuCheckForUpdateText}"
                                                                   Click="CheckForUpdate_Click"
-                                                                  Style="{StaticResource ContextMenuItemStyle}"/>
+                                                                  Style="{StaticResource ContextMenuItemStyle}">
+                                                            <MenuItem.Visibility>
+                                                                <MultiBinding Converter="{StaticResource WorkshopActionVisibilityConverter}">
+                                                                    <Binding Path="IsWorkshopMod"/>
+                                                                    <Binding Source="{x:Static Application.Current}" Path="MainWindow.DataContext.AllowWorkshopModActions"/>
+                                                                </MultiBinding>
+                                                            </MenuItem.Visibility>
+                                                        </MenuItem>
                                                         <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuOverrideVersionText}"
                                                                   Click="SetModVersion_Click"
-                                                                  Style="{StaticResource ContextMenuItemStyle}"/>
+                                                                  Style="{StaticResource ContextMenuItemStyle}">
+                                                            <MenuItem.Visibility>
+                                                                <MultiBinding Converter="{StaticResource WorkshopActionVisibilityConverter}">
+                                                                    <Binding Path="IsWorkshopMod"/>
+                                                                    <Binding Source="{x:Static Application.Current}" Path="MainWindow.DataContext.AllowWorkshopModActions"/>
+                                                                </MultiBinding>
+                                                            </MenuItem.Visibility>
+                                                        </MenuItem>
                                                     </ContextMenu>
                                                 </Button.ContextMenu>
                                             </Button>
-                                        </StackPanel>
+                                            </StackPanel>
+                                        </Grid>
+                                        <Border Grid.Row="1"
+                                                Height="1"
+                                                Margin="0,6,0,0"
+                                                Background="{DynamicResource SeparatorBrush}"
+                                                Visibility="{Binding HasSeparatorAfter, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                     </Grid>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
@@ -575,10 +689,15 @@
                 </Border>
                 <!-- Button zum Hinzufügen von Mods -->
 
-                 <!-- Modern Search Bar -->
-                 <!-- === SEARCH BAR (responsive, no overflow, no clipping) === -->
-                <Grid x:Name="SearchBarContainer" Margin="0,0,0,12" VerticalAlignment="Top" HorizontalAlignment="Stretch">
-                    <Border Background="{DynamicResource TextBoxBackgroundBrush}"
+                <!-- Modern Search Bar -->
+                <!-- === SEARCH BAR (responsive, no overflow, no clipping) === -->
+               <Grid x:Name="SearchBarContainer" Margin="0,0,0,12" VerticalAlignment="Top" HorizontalAlignment="Stretch">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0"
+                            Background="{DynamicResource TextBoxBackgroundBrush}"
                             BorderBrush="{DynamicResource TextBoxBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="4"
@@ -631,6 +750,25 @@
                             </Button>
                         </Grid>
                     </Border>
+                    <StackPanel Grid.Row="1"
+                                Orientation="Horizontal"
+                                Margin="0,8,0,0"
+                                VerticalAlignment="Center"
+                                Visibility="{Binding HasCategories, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock Text="{Binding FilterCategoryText}"
+                                   Margin="0,0,8,0"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextForegroundBrush}"/>
+                        <ComboBox ItemsSource="{Binding CategoryFilterOptions}"
+                                  SelectedValue="{Binding SelectedCategoryFilterId}"
+                                  SelectedValuePath="Id"
+                                  DisplayMemberPath="Name"
+                                  Width="180"
+                                  Height="28"
+                                  IsEditable="False"
+                                  IsHitTestVisible="True"
+                                  Focusable="True"/>
+                    </StackPanel>
                 </Grid>
 
 

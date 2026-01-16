@@ -172,7 +172,8 @@
                                 ToolTip="{Binding SelectFolderTooltipText}"
                                 HorizontalAlignment="Stretch"
                                 Height="35"
-                                Style="{StaticResource SecondaryButtonStyle}">
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                PreviewMouseLeftButtonDown="SelectFolderButton_PreviewMouseLeftButtonDown">
                             <Button.InputBindings>
                                 <MouseBinding Gesture="LeftClick" Command="{Binding SelectKCD1FolderCommand}"/>
                             </Button.InputBindings>
@@ -260,7 +261,8 @@
                                 ToolTip="{Binding SelectFolderTooltipText}"
                                 HorizontalAlignment="Stretch"
                                 Height="35"
-                                Style="{StaticResource SecondaryButtonStyle}"/>
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                PreviewMouseLeftButtonDown="SelectFolderButton_PreviewMouseLeftButtonDown"/>
                     </StackPanel>
                 </Grid>
             </Border>

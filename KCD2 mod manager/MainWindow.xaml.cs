@@ -302,6 +302,42 @@ namespace KCD2_mod_manager
             }
         }
 
+        private void SetCategory_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem mi)
+            {
+                var mod = GetModFromContextMenu(mi);
+                if (mod != null && _viewModel != null)
+                {
+                    _viewModel.AssignCategoryCommand.Execute(mod);
+                }
+            }
+        }
+
+        private void ClearCategory_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem mi)
+            {
+                var mod = GetModFromContextMenu(mi);
+                if (mod != null && _viewModel != null)
+                {
+                    _viewModel.ClearCategoryCommand.Execute(mod);
+                }
+            }
+        }
+
+        private void ToggleSeparator_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem mi)
+            {
+                var mod = GetModFromContextMenu(mi);
+                if (mod != null && _viewModel != null)
+                {
+                    _viewModel.ToggleSeparatorCommand.Execute(mod);
+                }
+            }
+        }
+
         private void EndorseMod_Click(object sender, RoutedEventArgs e)
         {
             if (sender is MenuItem mi)

@@ -214,6 +214,20 @@ namespace KCD2_mod_manager.Services
 
             for (int attempt = 1; attempt <= maxRetries; attempt++)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (!_fileService.FileExists(sourcePath))
+                {
+                    string missingMsg = string.Format(Resources.Messages.FileMoveSourceMissing, sourcePath);
+                    _logger.Error(missingMsg);
+                    _dialogService?.ShowMessageBox(
+                        missingMsg,
+                        Resources.Messages.DialogTitleError,
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                    throw new FileNotFoundException(missingMsg, sourcePath);
+                }
+
                 try
                 {
                     // Verwende File.Move für atomare Operation
@@ -230,17 +244,64 @@ namespace KCD2_mod_manager.Services
                 }
                 catch (IOException ex) when (attempt < maxRetries)
                 {
+                    if (!_fileService.FileExists(sourcePath))
+                    {
+                        string missingMsg = string.Format(Resources.Messages.FileMoveSourceMissing, sourcePath);
+                        _logger.Error(missingMsg, ex);
+                        _dialogService?.ShowMessageBox(
+                            missingMsg,
+                            Resources.Messages.DialogTitleError,
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
+                        throw new FileNotFoundException(missingMsg, sourcePath, ex);
+                    }
+
                     _logger.Warning($"Versuch {attempt}/{maxRetries} fehlgeschlagen beim Verschieben {sourcePath} -> {destPath}: {ex.Message}");
+                    if (_dialogService != null)
+                    {
+                        bool? retry = _dialogService.ShowMessageBox(
+                            string.Format(Resources.Messages.FileMoveFailedRetryPrompt, sourcePath, destPath, ex.Message),
+                            Resources.Messages.DialogTitleError,
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Error);
+                        if (retry != true)
+                        {
+                            throw;
+                        }
+                    }
                     await Task.Delay(delayMs * attempt, cancellationToken);
                 }
                 catch (UnauthorizedAccessException ex) when (attempt < maxRetries)
                 {
                     _logger.Warning($"Versuch {attempt}/{maxRetries} fehlgeschlagen (Berechtigung): {ex.Message}");
+                    if (_dialogService != null)
+                    {
+                        bool? retry = _dialogService.ShowMessageBox(
+                            string.Format(Resources.Messages.FileMoveFailedRetryPrompt, sourcePath, destPath, ex.Message),
+                            Resources.Messages.DialogTitleError,
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Error);
+                        if (retry != true)
+                        {
+                            throw;
+                        }
+                    }
                     await Task.Delay(delayMs * attempt, cancellationToken);
                 }
             }
 
             // Letzter Versuch ohne Retry
+            if (!_fileService.FileExists(sourcePath))
+            {
+                string missingMsg = string.Format(Resources.Messages.FileMoveSourceMissing, sourcePath);
+                _logger.Error(missingMsg);
+                _dialogService?.ShowMessageBox(
+                    missingMsg,
+                    Resources.Messages.DialogTitleError,
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                throw new FileNotFoundException(missingMsg, sourcePath);
+            }
             if (_fileService.FileExists(destPath))
             {
                 _fileService.DeleteFile(destPath);

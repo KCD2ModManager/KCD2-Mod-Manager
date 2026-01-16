@@ -397,6 +397,15 @@ namespace KCD2_mod_manager.Resources {
                 return ResourceManager.GetString("DialogTitleWarning", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Warning: Mod files installed from the Steam Workshop may be overwritten by Steam. Use these actions at your own risk. ähnelt.
+        /// </summary>
+        internal static string WorkshopActionsWarning {
+            get {
+                return ResourceManager.GetString("WorkshopActionsWarning", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Information ähnelt.
@@ -476,6 +485,60 @@ namespace KCD2_mod_manager.Resources {
         internal static string ErrorInvalidNumber {
             get {
                 return ResourceManager.GetString("ErrorInvalidNumber", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Failed to update the mod manifest. The changes were not applied. ähnelt.
+        /// </summary>
+        internal static string ErrorFailedToUpdateManifest {
+            get {
+                return ResourceManager.GetString("ErrorFailedToUpdateManifest", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die A mod folder with the new ID already exists. Please choose a different name. ähnelt.
+        /// </summary>
+        internal static string ErrorModFolderExists {
+            get {
+                return ResourceManager.GetString("ErrorModFolderExists", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Failed to rename the mod folder: {0} ähnelt.
+        /// </summary>
+        internal static string ErrorRenamingModFolder {
+            get {
+                return ResourceManager.GetString("ErrorRenamingModFolder", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Game folder not found. Please set the folder path first. ähnelt.
+        /// </summary>
+        internal static string ErrorGameFolderNotFound {
+            get {
+                return ResourceManager.GetString("ErrorGameFolderNotFound", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Failed to move file from {0} to {1}.\n\nError: {2}\n\nRetry? ähnelt.
+        /// </summary>
+        internal static string FileMoveFailedRetryPrompt {
+            get {
+                return ResourceManager.GetString("FileMoveFailedRetryPrompt", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Source file not found: {0} ähnelt.
+        /// </summary>
+        internal static string FileMoveSourceMissing {
+            get {
+                return ResourceManager.GetString("FileMoveSourceMissing", resourceCulture);
             }
         }
         

@@ -1,0 +1,70 @@
+<Window x:Class="KCD2_mod_manager.Views.CategoryDeleteDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{Binding Title}" Height="260" Width="460"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{DynamicResource WindowBackgroundBrush}">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </Window.Resources>
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="{Binding Message}"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,12"
+                   Foreground="{DynamicResource TextForegroundBrush}"/>
+
+        <StackPanel Grid.Row="1" Orientation="Vertical" Margin="0,0,0,8">
+            <RadioButton Content="{Binding UnassignText}"
+                         GroupName="DeleteCategoryAction"
+                         IsChecked="{Binding UnassignSelected}"
+                         Margin="0,0,0,6"/>
+            <RadioButton Content="{Binding MoveToText}"
+                         GroupName="DeleteCategoryAction"
+                         IsChecked="{Binding MoveSelected}"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal"
+                    Visibility="{Binding MoveSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <TextBlock Text="{Binding MoveToText}"
+                       VerticalAlignment="Center"
+                       Margin="0,0,8,0"
+                       Foreground="{DynamicResource TextForegroundBrush}"/>
+            <ComboBox ItemsSource="{Binding Categories}"
+                      SelectedValue="{Binding SelectedCategoryId}"
+                      SelectedValuePath="Id"
+                      DisplayMemberPath="Name"
+                      Width="240"
+                      Height="28"
+                      IsEditable="False"
+                      IsHitTestVisible="True"
+                      Focusable="True"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="3"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,20,0,0">
+            <Button Content="{Binding ConfirmText}"
+                    Width="80"
+                    Height="30"
+                    Margin="0,0,8,0"
+                    IsEnabled="{Binding CanConfirm}"
+                    Click="Confirm_Click"
+                    Style="{StaticResource PrimaryButtonStyle}"/>
+            <Button Content="{Binding CancelText}"
+                    Width="80"
+                    Height="30"
+                    Click="Cancel_Click"
+                    Style="{StaticResource SecondaryButtonStyle}"/>
+        </StackPanel>
+    </Grid>
+</Window>

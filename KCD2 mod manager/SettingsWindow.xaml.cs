@@ -178,6 +178,38 @@ namespace KCD2_mod_manager
             }
         }
 
+        private void ToggleFileRenaming_Checked(object sender, RoutedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.Primitives.ToggleButton toggle && _viewModel != null)
+            {
+                _viewModel.ToggleFileRenamingCommand.Execute(true);
+            }
+        }
+
+        private void ToggleFileRenaming_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.Primitives.ToggleButton toggle && _viewModel != null)
+            {
+                _viewModel.ToggleFileRenamingCommand.Execute(false);
+            }
+        }
+
+        private void ToggleWorkshopActions_Checked(object sender, RoutedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.Primitives.ToggleButton toggle && _viewModel != null)
+            {
+                _viewModel.ToggleWorkshopActionsCommand.Execute(true);
+            }
+        }
+
+        private void ToggleWorkshopActions_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.Primitives.ToggleButton toggle && _viewModel != null)
+            {
+                _viewModel.ToggleWorkshopActionsCommand.Execute(false);
+            }
+        }
+
         private void ToggleBackupCreation_Checked(object sender, RoutedEventArgs e)
         {
             if (sender is System.Windows.Controls.Primitives.ToggleButton toggle && _viewModel != null)

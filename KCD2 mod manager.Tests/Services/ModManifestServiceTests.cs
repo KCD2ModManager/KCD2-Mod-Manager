@@ -14,20 +14,25 @@ namespace KCD2_mod_manager.Tests.Services
     {
         private readonly Mock<IFileService> _fileServiceMock;
         private readonly Mock<ILog> _loggerMock;
+        private readonly Mock<IAppSettings> _settingsMock;
+        private readonly RenameService _renameService;
         private readonly ModManifestService _service;
 
         public ModManifestServiceTests()
         {
             _fileServiceMock = new Mock<IFileService>();
             _loggerMock = new Mock<ILog>();
-            _service = new ModManifestService(_fileServiceMock.Object, _loggerMock.Object);
+            _settingsMock = new Mock<IAppSettings>();
+            _settingsMock.SetupGet(s => s.EnableFileRenaming).Returns(true);
+            _renameService = new RenameService(_settingsMock.Object);
+            _service = new ModManifestService(_fileServiceMock.Object, _loggerMock.Object, _renameService, _settingsMock.Object);
         }
 
         [Fact]
-        public void GenerateModId_ValidName_ReturnsLowercaseAlphabetic()
+        public void GenerateModId_RemovesOnlyInvalidCharacters()
         {
             // Arrange
-            string name = "Test Mod Name 123";
+            string name = "Test_Mod-Name<>:\"/\\|?*";
 
             // Act
             string result = _service.GenerateModId(name);
@@ -35,14 +40,14 @@ namespace KCD2_mod_manager.Tests.Services
             // Assert
             Assert.NotNull(result);
             Assert.NotEmpty(result);
-            Assert.All(result, c => Assert.True(char.IsLower(c) && char.IsLetter(c)));
+            Assert.Equal("Test_Mod-Name", result);
         }
 
         [Fact]
-        public void GenerateModId_SpecialCharactersOnly_ReturnsFallback()
+        public void GenerateModId_InvalidCharactersOnly_ReturnsFallback()
         {
             // Arrange
-            string name = "123!@#$%";
+            string name = "<>:\"/\\|?*";
 
             // Act
             string result = _service.GenerateModId(name);
@@ -50,7 +55,6 @@ namespace KCD2_mod_manager.Tests.Services
             // Assert
             Assert.NotNull(result);
             Assert.NotEmpty(result);
-            // Sollte einen Fallback-Wert zurückgeben
             Assert.True(result.Length > 0);
         }
 

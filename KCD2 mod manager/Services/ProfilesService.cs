@@ -255,8 +255,12 @@ namespace KCD2_mod_manager.Services
             var profile = new ModProfile
             {
                 ProfileName = profileName,
-                ActiveMods = mods.Where(m => m.IsEnabled).Select(m => m.Id).ToList(),
-                LoadOrder = mods.OrderBy(m => m.Number).Select(m => m.Id).ToList()
+                ActiveMods = mods.Where(m => !m.IsWorkshopMod && m.IsEnabled).Select(m => m.Id).ToList(),
+                LoadOrder = mods.Where(m => !m.IsWorkshopMod).OrderBy(m => m.Number).Select(m => m.Id).ToList(),
+                SeparatorsAfterModIds = mods
+                    .Where(m => !m.IsWorkshopMod && m.HasSeparatorAfter)
+                    .Select(m => m.Id)
+                    .ToList()
             };
 
             await SaveProfileAsync(gameType, profile, cancellationToken);
@@ -408,7 +412,7 @@ namespace KCD2_mod_manager.Services
                 string modOrderMainPath = Path.Combine(modFolder, "mod_order.txt");
 
                 var lines = new List<string>();
-                foreach (var mod in mods.OrderBy(m => m.Number))
+                foreach (var mod in mods.Where(m => !m.IsWorkshopMod).OrderBy(m => m.Number))
                 {
                     // Format: # für deaktiviert, kein Prefix für aktiviert
                     string line = mod.IsEnabled ? mod.Id : $"# {mod.Id}";

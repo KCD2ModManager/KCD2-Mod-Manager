@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Input;
 using KCD2_mod_manager.Services;
 using KCD2_mod_manager.ViewModels;
 using KCD2_mod_manager.Resources;
@@ -175,6 +176,11 @@ namespace KCD2_mod_manager.Views.Dialogs
                 this.Closing -= GameSelectionDialog_Closing;
                 Close();
             }
+        }
+
+        private void SelectFolderButton_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            e.Handled = true;
         }
 
         /// <summary>

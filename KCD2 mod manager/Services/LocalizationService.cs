@@ -55,7 +55,8 @@ namespace KCD2_mod_manager.Services
             return new Dictionary<string, string>
             {
                 { "en", "English" },
-                { "de", "Deutsch" }
+                { "de", "Deutsch" },
+                { "fr", "Français" }
             };
         }
     }

@@ -13,7 +13,7 @@ namespace KCD2_mod_manager.Services
     /// <summary>
     /// Implementierung von INexusService für Nexus Mods API-Operationen
     /// </summary>
-    public class NexusService : INexusService
+    public class NexusService : INexusService, INexusAuthService, INexusDownloadService, INexusModActionsService
     {
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IAppSettings _settings;

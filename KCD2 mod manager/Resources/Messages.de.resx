@@ -172,6 +172,9 @@
   <data name="DialogTitleWarning" xml:space="preserve">
     <value>Warnung</value>
   </data>
+  <data name="WorkshopActionsWarning" xml:space="preserve">
+    <value>Warnung: Mods aus dem Steam Workshop können von Steam überschrieben werden. Verwenden Sie diese Aktionen auf eigenes Risiko.</value>
+  </data>
   <data name="DialogTitleInformation" xml:space="preserve">
     <value>Information</value>
   </data>
@@ -198,6 +201,24 @@
   </data>
   <data name="ErrorInvalidNumber" xml:space="preserve">
     <value>Ungültige Zahl. Bitte geben Sie eine positive Ganzzahl ein.</value>
+  </data>
+  <data name="ErrorFailedToUpdateManifest" xml:space="preserve">
+    <value>Das Mod-Manifest konnte nicht aktualisiert werden. Die Änderungen wurden nicht übernommen.</value>
+  </data>
+  <data name="ErrorModFolderExists" xml:space="preserve">
+    <value>Ein Mod-Ordner mit der neuen ID existiert bereits. Bitte wählen Sie einen anderen Namen.</value>
+  </data>
+  <data name="ErrorRenamingModFolder" xml:space="preserve">
+    <value>Fehler beim Umbenennen des Mod-Ordners: {0}</value>
+  </data>
+  <data name="ErrorGameFolderNotFound" xml:space="preserve">
+    <value>Spielordner nicht gefunden. Bitte legen Sie zuerst den Ordnerpfad fest.</value>
+  </data>
+  <data name="FileMoveFailedRetryPrompt" xml:space="preserve">
+    <value>Datei konnte nicht von {0} nach {1} verschoben werden.\n\nFehler: {2}\n\nErneut versuchen?</value>
+  </data>
+  <data name="FileMoveSourceMissing" xml:space="preserve">
+    <value>Quelldatei nicht gefunden: {0}</value>
   </data>
   <data name="ErrorGameInstallationNotFound" xml:space="preserve">
     <value>Spiel-Installation nicht gefunden</value>

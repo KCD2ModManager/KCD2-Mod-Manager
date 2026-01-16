@@ -85,11 +85,23 @@
   <data name="ButtonSortDisabled" xml:space="preserve">
     <value>Sort: Disabled</value>
   </data>
+  <data name="ButtonSortCategory" xml:space="preserve">
+    <value>Sort: Category</value>
+  </data>
+  <data name="UncategorizedText" xml:space="preserve">
+    <value>Uncategorized</value>
+  </data>
   <data name="ButtonReloadMods" xml:space="preserve">
     <value>Reload Mods</value>
   </data>
   <data name="StatusReady" xml:space="preserve">
     <value>Status: Ready</value>
+  </data>
+  <data name="ModNameUpdated" xml:space="preserve">
+    <value>Mod name updated: {0}</value>
+  </data>
+  <data name="ModUpdatesAvailable" xml:space="preserve">
+    <value>{0} mod update(s) available</value>
   </data>
   <data name="StatusStartingGame" xml:space="preserve">
     <value>Starting game with mods...</value>
@@ -105,6 +117,15 @@
   </data>
   <data name="ConflictsDetected" xml:space="preserve">
     <value>Conflicts detected: {0}</value>
+  </data>
+  <data name="ConflictsButtonText" xml:space="preserve">
+    <value>Conflicts</value>
+  </data>
+  <data name="ConflictCheckerTitle" xml:space="preserve">
+    <value>Mod Conflicts</value>
+  </data>
+  <data name="ConflictCheckerEmpty" xml:space="preserve">
+    <value>No conflicts detected.</value>
   </data>
   <data name="SearchPlaceholder" xml:space="preserve">
     <value>Search mods...</value>
@@ -130,6 +151,24 @@
   <data name="ToolTipMoreOptions" xml:space="preserve">
     <value>More options</value>
   </data>
+  <data name="WorkshopBadgeText" xml:space="preserve">
+    <value>Workshop</value>
+  </data>
+  <data name="WorkshopBadgeTooltip" xml:space="preserve">
+    <value>Installed from Steam Workshop</value>
+  </data>
+  <data name="WorkshopConflictNote" xml:space="preserve">
+    <value>Workshop files may be managed by Steam.</value>
+  </data>
+  <data name="FilterCategoryText" xml:space="preserve">
+    <value>Category:</value>
+  </data>
+  <data name="FilterCategoryAll" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="FilterCategoryUncategorized" xml:space="preserve">
+    <value>Uncategorized</value>
+  </data>
   <data name="ContextMenuVisitWebsite" xml:space="preserve">
     <value>Visit website</value>
   </data>
@@ -138,6 +177,18 @@
   </data>
   <data name="ContextMenuChangeNote" xml:space="preserve">
     <value>Change note</value>
+  </data>
+  <data name="ContextMenuAssignCategory" xml:space="preserve">
+    <value>Assign category...</value>
+  </data>
+  <data name="ContextMenuSetCategory" xml:space="preserve">
+    <value>Set category</value>
+  </data>
+  <data name="ContextMenuClearCategory" xml:space="preserve">
+    <value>Clear category</value>
+  </data>
+  <data name="ContextMenuToggleSeparator" xml:space="preserve">
+    <value>Toggle separator</value>
   </data>
   <data name="ContextMenuEndorseMod" xml:space="preserve">
     <value>Endorse mod</value>
@@ -168,6 +219,18 @@
   </data>
   <data name="ToggleModOrderCreation" xml:space="preserve">
     <value>Create mod order file:</value>
+  </data>
+  <data name="EnableFileRenaming" xml:space="preserve">
+    <value>Enable file &amp; folder renaming</value>
+  </data>
+  <data name="EnableFileRenamingTooltip" xml:space="preserve">
+    <value>When disabled, the Mod Manager will keep original file and folder names exactly as provided by the mod author.</value>
+  </data>
+  <data name="AllowWorkshopActionsText" xml:space="preserve">
+    <value>Enable extra actions for Workshop mods</value>
+  </data>
+  <data name="AllowWorkshopActionsTooltip" xml:space="preserve">
+    <value>Enabling this will allow actions such as visiting the mod webpage or forcing update checks on mods installed from the Steam Workshop. Not recommended as Workshop files are typically managed by Steam.</value>
   </data>
   <data name="LanguageSettings" xml:space="preserve">
     <value>Language Settings</value>
@@ -210,6 +273,9 @@
   </data>
   <data name="SaveProfileText" xml:space="preserve">
     <value>Save</value>
+  </data>
+  <data name="ManageCategoriesText" xml:space="preserve">
+    <value>Manage Categories</value>
   </data>
   <data name="LoadProfileText" xml:space="preserve">
     <value>Load</value>
@@ -297,6 +363,90 @@
   </data>
   <data name="EnterModName" xml:space="preserve">
     <value>Enter mod name:</value>
+  </data>
+  <data name="EnterCategoryName" xml:space="preserve">
+    <value>Enter category name:</value>
+  </data>
+  <data name="SetCategoryTitle" xml:space="preserve">
+    <value>Set Category</value>
+  </data>
+  <data name="AssignCategoryTitle" xml:space="preserve">
+    <value>Assign Category</value>
+  </data>
+  <data name="AssignCategoryLabel" xml:space="preserve">
+    <value>Category:</value>
+  </data>
+  <data name="AssignCategoryCreateLabel" xml:space="preserve">
+    <value>Create new category:</value>
+  </data>
+  <data name="AssignCategoryCreateButton" xml:space="preserve">
+    <value>Create</value>
+  </data>
+  <data name="AssignCategorySaveButton" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="AssignCategoryCancelButton" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="CategoryManagerTitle" xml:space="preserve">
+    <value>Manage Categories</value>
+  </data>
+  <data name="CategoryManagerCreate" xml:space="preserve">
+    <value>Create</value>
+  </data>
+  <data name="CategoryManagerRename" xml:space="preserve">
+    <value>Rename</value>
+  </data>
+  <data name="CategoryManagerDelete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="CategoryManagerSave" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="CategoryManagerCancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="CategoryManagerEmpty" xml:space="preserve">
+    <value>No categories yet.</value>
+  </data>
+  <data name="CategoryManagerOrderHeader" xml:space="preserve">
+    <value>Order</value>
+  </data>
+  <data name="CategoryManagerNameHeader" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="CategoryCreatePrompt" xml:space="preserve">
+    <value>Enter category name:</value>
+  </data>
+  <data name="CategoryCreateTitle" xml:space="preserve">
+    <value>Create Category</value>
+  </data>
+  <data name="CategoryRenamePrompt" xml:space="preserve">
+    <value>Enter new category name:</value>
+  </data>
+  <data name="CategoryRenameTitle" xml:space="preserve">
+    <value>Rename Category</value>
+  </data>
+  <data name="CategoryNameDuplicate" xml:space="preserve">
+    <value>Category name already exists.</value>
+  </data>
+  <data name="CategoryDeleteTitle" xml:space="preserve">
+    <value>Delete Category</value>
+  </data>
+  <data name="CategoryDeleteMessage" xml:space="preserve">
+    <value>How do you want to handle assigned mods?</value>
+  </data>
+  <data name="CategoryDeleteUnassign" xml:space="preserve">
+    <value>Unassign mods</value>
+  </data>
+  <data name="CategoryDeleteMoveTo" xml:space="preserve">
+    <value>Move mods to:</value>
+  </data>
+  <data name="CategoryDeleteConfirm" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="CategoryDeleteCancel" xml:space="preserve">
+    <value>Cancel</value>
   </data>
   <data name="EnterModVersion" xml:space="preserve">
     <value>Enter custom version (leave empty to use detected version):</value>

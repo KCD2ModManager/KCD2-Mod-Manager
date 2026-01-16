@@ -1,6 +1,5 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
 using System.IO;
 using System.Windows;
 using KCD2_mod_manager.Models;
@@ -16,7 +15,9 @@ namespace KCD2_mod_manager.Services
         private readonly IModManifestService _manifestService;
         private readonly IAppSettings _settings;
         private readonly IDialogService _dialogService;
+        private readonly IGameInstallService _gameInstallService;
         private readonly ILog _logger;
+        private readonly IModCategoryAssignmentService _categoryAssignmentService;
         private const string ModNotesFileName = "mod_versions.json";
         private const string ModNotesJsonFileName = "mod_notes.json";
 
@@ -25,13 +26,17 @@ namespace KCD2_mod_manager.Services
             IModManifestService manifestService,
             IAppSettings settings,
             IDialogService dialogService,
-            ILog logger)
+            IGameInstallService gameInstallService,
+            ILog logger,
+            IModCategoryAssignmentService categoryAssignmentService)
         {
             _fileService = fileService;
             _manifestService = manifestService;
             _settings = settings;
             _dialogService = dialogService;
+            _gameInstallService = gameInstallService;
             _logger = logger;
+            _categoryAssignmentService = categoryAssignmentService;
         }
 
         public async Task<Mod?> ProcessModFileAsync(string filePath, string modFolder, CancellationToken cancellationToken = default)
@@ -104,7 +109,9 @@ namespace KCD2_mod_manager.Services
                 var modId = manifestData.Value.modId;
                 var modName = manifestData.Value.name;
                 var modVersion = manifestData.Value.version;
-                var modTargetPath = _fileService.Combine(modFolder, modId);
+                var modTargetPath = _settings.EnableFileRenaming
+                    ? _fileService.Combine(modFolder, modId)
+                    : GetOriginalModTargetPath(tempDir, manifestPath, filePath, modFolder);
 
                 if (_fileService.DirectoryExists(modTargetPath))
                 {
@@ -153,6 +160,7 @@ namespace KCD2_mod_manager.Services
         {
             try
             {
+                bool isWorkshopSource = IsWorkshopPath(folderPath);
                 var manifestPath = _fileService.EnumerateFiles(folderPath, "mod.manifest", SearchOption.AllDirectories).FirstOrDefault();
                 if (manifestPath == null)
                 {
@@ -170,28 +178,6 @@ namespace KCD2_mod_manager.Services
 
                 await _manifestService.CorrectXmlVersionInFileAsync(manifestPath, cancellationToken);
 
-                string xmlContent = await _fileService.ReadAllTextAsync(manifestPath, cancellationToken);
-                XDocument manifestDoc = XDocument.Parse(xmlContent);
-                var infoElement = manifestDoc.Descendants("info").FirstOrDefault();
-                if (infoElement != null)
-                {
-                    var modidElement = infoElement.Element("modid");
-                    var nameElement = infoElement.Element("name")?.Value?.Trim();
-                    if (!string.IsNullOrEmpty(nameElement))
-                    {
-                        var generatedId = _manifestService.GenerateModId(nameElement);
-                        if (modidElement == null)
-                        {
-                            infoElement.Add(new XElement("modid", generatedId));
-                        }
-                        else
-                        {
-                            modidElement.Value = generatedId;
-                        }
-                        await _fileService.WriteAllTextAsync(manifestPath, manifestDoc.ToString(), cancellationToken);
-                    }
-                }
-
                 var manifestData = await _manifestService.ParseManifestAsync(manifestPath, cancellationToken);
                 if (manifestData == null || string.IsNullOrEmpty(manifestData.Value.version))
                 {
@@ -202,7 +188,9 @@ namespace KCD2_mod_manager.Services
                 var modId = manifestData.Value.modId;
                 var modName = manifestData.Value.name;
                 var modVersion = manifestData.Value.version;
-                var modTargetPath = _fileService.Combine(modFolder, modId);
+                var modTargetPath = _settings.EnableFileRenaming
+                    ? _fileService.Combine(modFolder, modId)
+                    : _fileService.Combine(modFolder, _fileService.GetFileName(folderPath));
 
                 if (_fileService.DirectoryExists(modTargetPath))
                 {
@@ -212,14 +200,23 @@ namespace KCD2_mod_manager.Services
                 _fileService.CreateDirectory(modTargetPath);
                 await _fileService.CopyDirectoryAsync(folderPath, modTargetPath, cancellationToken);
 
-                return new Mod
+                var mod = new Mod
                 {
                     Id = modId,
                     Name = modName,
                     Version = modVersion,
                     Path = modTargetPath,
-                    IsEnabled = false
+                    IsEnabled = false,
+                    IsWorkshopMod = isWorkshopSource
                 };
+
+                if (isWorkshopSource)
+                {
+                    _logger.Info($"Workshop-Mod-Import erkannt: {modName} ({folderPath})");
+                    await _categoryAssignmentService.MarkWorkshopAsync(mod, cancellationToken);
+                }
+
+                return mod;
             }
             catch (Exception ex)
             {
@@ -361,9 +358,10 @@ namespace KCD2_mod_manager.Services
                     var modId = modInfo.Value.modId;
                     var modName = modInfo.Value.name;
                     var modVersion = modInfo.Value.version;
+                    bool isWorkshop = IsWorkshopPath(dir);
 
                     var expectedPath = _fileService.Combine(modFolder, modId);
-                    if (!dir.Equals(expectedPath, StringComparison.OrdinalIgnoreCase))
+                    if (_settings.EnableFileRenaming && !dir.Equals(expectedPath, StringComparison.OrdinalIgnoreCase))
                     {
                         try
                         {
@@ -379,6 +377,10 @@ namespace KCD2_mod_manager.Services
                             expectedPath = dir;
                         }
                     }
+                    else if (!_settings.EnableFileRenaming)
+                    {
+                        expectedPath = dir;
+                    }
 
                     var mod = new Mod
                     {
@@ -386,13 +388,18 @@ namespace KCD2_mod_manager.Services
                         Name = modName,
                         Version = modVersion,
                         Path = expectedPath,
-                        IsEnabled = true
+                        IsEnabled = true,
+                        IsWorkshopMod = isWorkshop
                     };
                     
                     // WICHTIG: Lade Metadaten aus mod_versions.json und mod_notes.json pro Mod
                     // Jeder Mod-Ordner kann eigene Dateien haben, aber wir laden aus dem globalen File
                     // Das wird später in LoadModsAsync aufgerufen, nachdem alle Mods geladen sind
                     modDictionary[modId] = mod;
+                    if (isWorkshop)
+                    {
+                        _logger.Info($"Workshop-Mod erkannt: {modName} ({dir})");
+                    }
                 }
             }
 
@@ -413,6 +420,22 @@ namespace KCD2_mod_manager.Services
             {
                 remainingMod.Number = 0;
                 mods.Add(remainingMod);
+            }
+
+            var selectedInstall = _gameInstallService.SelectedInstall;
+            if (selectedInstall != null)
+            {
+                var workshopMods = await LoadWorkshopModsAsync(selectedInstall, cancellationToken);
+                foreach (var workshopMod in workshopMods)
+                {
+                    if (mods.Any(m => m.Id.Equals(workshopMod.Id, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        continue;
+                    }
+
+                    workshopMod.Number = 0;
+                    mods.Add(workshopMod);
+                }
             }
 
             // WICHTIG: Lade Metadaten aus mod_versions.json und mod_notes.json und mappe sie auf Mods
@@ -478,7 +501,11 @@ namespace KCD2_mod_manager.Services
             string modOrderPath = _fileService.Combine(modFolder, modOrderFileName);
 
             // Format: # für deaktiviert, kein Prefix für aktiviert
-            var modOrder = mods.OrderBy(m => m.Number).Select(mod => mod.IsEnabled ? mod.Id : $"# {mod.Id}").ToList();
+            var modOrder = mods
+                .Where(m => !m.IsWorkshopMod)
+                .OrderBy(m => m.Number)
+                .Select(mod => mod.IsEnabled ? mod.Id : $"# {mod.Id}")
+                .ToList();
             
             // Atomisches Schreiben
             string tempPath = modOrderPath + ".tmp";
@@ -597,6 +624,157 @@ namespace KCD2_mod_manager.Services
                 _logger.Error($"Fehler beim Laden der Mod-Notizen: {ex.Message}", ex);
                 return new Dictionary<string, string>();
             }
+        }
+
+        private string GetOriginalModTargetPath(string tempDir, string manifestPath, string filePath, string modFolder)
+        {
+            string manifestDir = _fileService.GetDirectoryName(manifestPath);
+            if (!string.IsNullOrEmpty(manifestDir) && !manifestDir.Equals(tempDir, StringComparison.OrdinalIgnoreCase))
+            {
+                return _fileService.Combine(modFolder, _fileService.GetFileName(manifestDir));
+            }
+
+            string fallbackName = _fileService.GetFileName(tempDir);
+            if (string.IsNullOrWhiteSpace(fallbackName))
+            {
+                fallbackName = _fileService.GetFileNameWithoutExtension(filePath);
+            }
+
+            return _fileService.Combine(modFolder, fallbackName);
+        }
+
+        private bool IsWorkshopPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return false;
+            }
+
+            string normalized = path.Replace('/', '\\');
+            return normalized.IndexOf("\\steamapps\\workshop\\content\\", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private async Task<List<Mod>> LoadWorkshopModsAsync(GameInstallDescriptor install, CancellationToken cancellationToken)
+        {
+            var mods = new List<Mod>();
+
+            string? workshopPath = await GetWorkshopContentPathAsync(install, cancellationToken);
+            if (string.IsNullOrEmpty(workshopPath) || !_fileService.DirectoryExists(workshopPath))
+            {
+                return mods;
+            }
+
+            foreach (var dir in _fileService.GetDirectories(workshopPath))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                string manifestPath = _fileService.Combine(dir, "mod.manifest");
+                if (!_fileService.FileExists(manifestPath))
+                {
+                    bool hasPakFiles = _fileService.EnumerateFiles(dir, "*.pak", SearchOption.AllDirectories).Any();
+                    if (hasPakFiles)
+                    {
+                        manifestPath = await _manifestService.GenerateManifestAsync(dir, cancellationToken);
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+
+                var modInfo = await _manifestService.ParseManifestAsync(manifestPath, cancellationToken);
+                if (modInfo != null)
+                {
+                    mods.Add(new Mod
+                    {
+                        Id = modInfo.Value.modId,
+                        Name = modInfo.Value.name,
+                        Version = modInfo.Value.version,
+                        Path = dir,
+                        IsEnabled = true,
+                        IsWorkshopMod = true,
+                        WorkshopId = _fileService.GetFileName(dir)
+                    });
+                }
+            }
+
+            return mods;
+        }
+
+        private async Task<string?> GetWorkshopContentPathAsync(GameInstallDescriptor install, CancellationToken cancellationToken)
+        {
+            string? steamAppsPath = GetSteamAppsPath(install.RootPath);
+            if (string.IsNullOrEmpty(steamAppsPath) || !_fileService.DirectoryExists(steamAppsPath))
+            {
+                return null;
+            }
+
+            string? appId = await FindSteamAppIdAsync(steamAppsPath, install.RootPath, cancellationToken);
+            if (string.IsNullOrEmpty(appId))
+            {
+                return null;
+            }
+
+            return _fileService.Combine(steamAppsPath, "workshop", "content", appId);
+        }
+
+        private string? GetSteamAppsPath(string rootPath)
+        {
+            string normalized = rootPath.Replace('/', '\\');
+            string marker = "\\steamapps\\common";
+            int index = normalized.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+            if (index >= 0)
+            {
+                return normalized.Substring(0, index + "\\steamapps".Length);
+            }
+
+            string? current = rootPath;
+            while (!string.IsNullOrEmpty(current) && current != Path.GetPathRoot(current))
+            {
+                string candidate = _fileService.Combine(current, "steamapps");
+                if (_fileService.DirectoryExists(candidate))
+                {
+                    return candidate;
+                }
+                current = Path.GetDirectoryName(current);
+            }
+
+            return null;
+        }
+
+        private async Task<string?> FindSteamAppIdAsync(string steamAppsPath, string rootPath, CancellationToken cancellationToken)
+        {
+            string installDir = Path.GetFileName(rootPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            if (string.IsNullOrEmpty(installDir))
+            {
+                return null;
+            }
+
+            var manifestFiles = _fileService.EnumerateFiles(steamAppsPath, "appmanifest_*.acf", SearchOption.TopDirectoryOnly);
+            Regex regex = new Regex("\"installdir\"\\s+\"(?<dir>.+)\"", RegexOptions.IgnoreCase);
+
+            foreach (var manifestPath in manifestFiles)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                string[] lines = await _fileService.ReadAllLinesAsync(manifestPath, cancellationToken);
+                foreach (var line in lines)
+                {
+                    var match = regex.Match(line);
+                    if (match.Success)
+                    {
+                        string dir = match.Groups["dir"].Value.Trim();
+                        if (dir.Equals(installDir, StringComparison.OrdinalIgnoreCase))
+                        {
+                            string fileName = _fileService.GetFileName(manifestPath);
+                            string appId = fileName.Replace("appmanifest_", "").Replace(".acf", "");
+                            return appId;
+                        }
+                    }
+                }
+            }
+
+            return null;
         }
 
         public async Task CreateModsBackupAsync(string modFolder, CancellationToken cancellationToken = default)

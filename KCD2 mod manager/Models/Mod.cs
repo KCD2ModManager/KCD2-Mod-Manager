@@ -17,6 +17,11 @@ namespace KCD2_mod_manager.Models
         private bool _hasUpdate;
         private string _latestVersion = string.Empty;
         private int _modNumber;
+        private bool _isWorkshopMod;
+        private string _workshopId = string.Empty;
+        private string _categoryId = string.Empty;
+        private string _categoryName = string.Empty;
+        private bool _hasSeparatorAfter;
 
         public string Id
         {
@@ -76,6 +81,59 @@ namespace KCD2_mod_manager.Models
         {
             get => _modNumber;
             set => SetProperty(ref _modNumber, value);
+        }
+
+        /// <summary>
+        /// Gibt an, ob der Mod aus dem Steam Workshop stammt
+        /// </summary>
+        public bool IsWorkshopMod
+        {
+            get => _isWorkshopMod;
+            set => SetProperty(ref _isWorkshopMod, value);
+        }
+
+        /// <summary>
+        /// Steam Workshop Item ID (falls vorhanden)
+        /// </summary>
+        public string WorkshopId
+        {
+            get => _workshopId;
+            set => SetProperty(ref _workshopId, value);
+        }
+
+        /// <summary>
+        /// Globale Kategorie-ID
+        /// </summary>
+        public string CategoryId
+        {
+            get => _categoryId;
+            set
+            {
+                if (SetProperty(ref _categoryId, value))
+                {
+                    OnPropertyChanged(nameof(HasCategory));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Anzeigename der Kategorie (für UI)
+        /// </summary>
+        public string CategoryName
+        {
+            get => _categoryName;
+            set => SetProperty(ref _categoryName, value);
+        }
+
+        public bool HasCategory => !string.IsNullOrWhiteSpace(CategoryId);
+
+        /// <summary>
+        /// Separator nach diesem Mod in der UI (profilbasiert)
+        /// </summary>
+        public bool HasSeparatorAfter
+        {
+            get => _hasSeparatorAfter;
+            set => SetProperty(ref _hasSeparatorAfter, value);
         }
 
         private bool _updateChecksEnabled = true;

@@ -104,6 +104,51 @@ namespace KCD2_mod_manager.Services
             }, cancellationToken);
         }
 
+        public bool ApplyManualInstall(GameType gameType, string rootPath, string executablePath)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(rootPath) || string.IsNullOrWhiteSpace(executablePath) || !_fileService.FileExists(executablePath))
+                {
+                    return false;
+                }
+
+                var descriptor = CreateInstallDescriptor(gameType, rootPath, executablePath);
+                if (gameType == GameType.KCD1)
+                {
+                    KCD1Install = descriptor;
+                }
+                else
+                {
+                    KCD2Install = descriptor;
+                }
+
+                if (KCD1Install != null && KCD2Install != null)
+                {
+                    InstallType = GameInstallType.Both;
+                }
+                else if (KCD1Install != null)
+                {
+                    InstallType = GameInstallType.KCD1;
+                }
+                else if (KCD2Install != null)
+                {
+                    InstallType = GameInstallType.KCD2;
+                }
+                else
+                {
+                    InstallType = GameInstallType.Unknown;
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Fehler beim Anwenden der manuellen Installation: {ex.Message}", ex);
+                return false;
+            }
+        }
+
         /// <summary>
         /// Prüft gespeicherten Pfad oder startet Suche
         /// </summary>

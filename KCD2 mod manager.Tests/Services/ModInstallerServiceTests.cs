@@ -14,7 +14,9 @@ namespace KCD2_mod_manager.Tests.Services
         private readonly Mock<IModManifestService> _manifestServiceMock;
         private readonly Mock<IAppSettings> _settingsMock;
         private readonly Mock<IDialogService> _dialogServiceMock;
+        private readonly Mock<IGameInstallService> _gameInstallServiceMock;
         private readonly Mock<ILog> _loggerMock;
+        private readonly Mock<IModCategoryAssignmentService> _categoryAssignmentServiceMock;
         private readonly ModInstallerService _service;
 
         public ModInstallerServiceTests()
@@ -23,7 +25,9 @@ namespace KCD2_mod_manager.Tests.Services
             _manifestServiceMock = new Mock<IModManifestService>();
             _settingsMock = new Mock<IAppSettings>();
             _dialogServiceMock = new Mock<IDialogService>();
+            _gameInstallServiceMock = new Mock<IGameInstallService>();
             _loggerMock = new Mock<ILog>();
+            _categoryAssignmentServiceMock = new Mock<IModCategoryAssignmentService>();
 
             _settingsMock.Setup(s => s.ModOrderEnabled).Returns(true);
             _settingsMock.Setup(s => s.CreateBackup).Returns(false);
@@ -33,7 +37,9 @@ namespace KCD2_mod_manager.Tests.Services
                 _manifestServiceMock.Object,
                 _settingsMock.Object,
                 _dialogServiceMock.Object,
-                _loggerMock.Object);
+                _gameInstallServiceMock.Object,
+                _loggerMock.Object,
+                _categoryAssignmentServiceMock.Object);
         }
 
         [Fact]

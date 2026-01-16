@@ -93,7 +93,14 @@ namespace KCD2_mod_manager.Services
             }
         }
 
-        public async Task SaveModDataAsync(string modId, string? customVersion = null, string? detectedVersion = null, string? customNote = null, CancellationToken cancellationToken = default)
+        public async Task SaveModDataAsync(
+            string modId,
+            string? customVersion = null,
+            string? detectedVersion = null,
+            string? customNote = null,
+            string? customName = null,
+            string? categoryId = null,
+            CancellationToken cancellationToken = default)
         {
             var allData = await LoadUserModDataAsync(cancellationToken);
 
@@ -116,6 +123,16 @@ namespace KCD2_mod_manager.Services
             if (customNote != null)
             {
                 modData.CustomNote = customNote;
+            }
+
+            if (customName != null)
+            {
+                modData.CustomName = customName;
+            }
+
+            if (categoryId != null)
+            {
+                modData.CategoryId = string.IsNullOrWhiteSpace(categoryId) ? null : categoryId;
             }
 
             modData.LastUpdated = DateTime.UtcNow.ToString("O");
@@ -144,6 +161,11 @@ namespace KCD2_mod_manager.Services
             // Ansonsten die erkannte Version verwenden und speichern
             await SaveModDataAsync(modId, detectedVersion: detectedVersion, cancellationToken: cancellationToken);
             return detectedVersion;
+        }
+
+        public bool UserDataFileExists()
+        {
+            return _fileService.FileExists(_userDataPath);
         }
     }
 }
