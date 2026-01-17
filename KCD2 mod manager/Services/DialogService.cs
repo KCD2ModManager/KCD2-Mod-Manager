@@ -43,20 +43,11 @@ namespace KCD2_mod_manager.Services
                 var themeService = _serviceProvider.GetService<IThemeService>();
                 var window = new CustomMessageBoxWindow(viewModel, themeService);
                 
-                // WICHTIG: Setze Owner für korrekte Anzeige
-                // WICHTIG: Prüfe, ob MainWindow existiert und nicht das gleiche Fenster ist (verhindert Owner-Fehler)
-                if (Application.Current?.MainWindow != null && Application.Current.MainWindow != window)
+                // WICHTIG: Setze Owner für korrektes Zentrieren auf der MainWindow
+                var owner = GetDialogOwner(window);
+                if (owner != null)
                 {
-                    window.Owner = Application.Current.MainWindow;
-                }
-                else
-                {
-                    // Beim App-Start: Verwende das aktive Fenster als Owner (falls vorhanden)
-                    var activeWindow = Application.Current?.Windows.OfType<Window>().FirstOrDefault(w => w.IsActive);
-                    if (activeWindow != null && activeWindow != window)
-                    {
-                        window.Owner = activeWindow;
-                    }
+                    window.Owner = owner;
                 }
                 
                 // WICHTIG: ThemeService wird über DI injiziert
@@ -138,7 +129,11 @@ namespace KCD2_mod_manager.Services
                 // WICHTIG: Erstelle Dialog mit dem konfigurierten ViewModel (nicht über DI, da DI ein neues ViewModel erstellen würde)
                 var dialog = new NameInputDialog(viewModel, themeService);
                 // WICHTIG: Owner setzen für korrektes Zentrieren
-                dialog.Owner = Application.Current.MainWindow;
+                var owner = GetDialogOwner(dialog);
+                if (owner != null)
+                {
+                    dialog.Owner = owner;
+                }
                 
                 if (dialog.ShowDialog() == true)
                 {
@@ -167,6 +162,11 @@ namespace KCD2_mod_manager.Services
                 // WICHTIG: Verwende lokalisierten Dialog über DI
                 var viewModel = _serviceProvider.GetRequiredService<DeleteConfirmationDialogViewModel>();
                 var window = _serviceProvider.GetRequiredService<DeleteConfirmationWindow>();
+                var owner = GetDialogOwner(window);
+                if (owner != null)
+                {
+                    window.Owner = owner;
+                }
                 // WICHTIG: ThemeService wird über DI injiziert
                 
                 var result = window.ShowDialog();
@@ -220,6 +220,19 @@ namespace KCD2_mod_manager.Services
                 }
             }
             return null;
+        }
+
+        private Window? GetDialogOwner(Window dialog)
+        {
+            var mainWindow = Application.Current?.MainWindow;
+            if (mainWindow != null && mainWindow != dialog)
+            {
+                return mainWindow;
+            }
+
+            return Application.Current?.Windows
+                .OfType<Window>()
+                .FirstOrDefault(w => w.IsActive && w != dialog);
         }
 
         /// <summary>

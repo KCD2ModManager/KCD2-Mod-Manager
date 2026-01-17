@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using KCD2_mod_manager.Services;
 using KCD2_mod_manager.ViewModels;
@@ -180,6 +181,15 @@ namespace KCD2_mod_manager.Views.Dialogs
 
         private void SelectFolderButton_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            if (sender is Button button && button.Command != null)
+            {
+                var parameter = button.CommandParameter;
+                if (button.Command.CanExecute(parameter))
+                {
+                    button.Command.Execute(parameter);
+                }
+            }
+
             e.Handled = true;
         }
 
