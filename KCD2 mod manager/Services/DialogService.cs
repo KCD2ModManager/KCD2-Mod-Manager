@@ -2,6 +2,7 @@ using Microsoft.Win32;
 using Microsoft.Extensions.DependencyInjection;
 using System.Windows;
 using KCD2_mod_manager.ViewModels;
+using KCD2_mod_manager.Views.Dialogs;
 using System.Threading;
 using System.IO;
 using System.Linq;
@@ -224,15 +225,23 @@ namespace KCD2_mod_manager.Services
 
         private Window? GetDialogOwner(Window dialog)
         {
+            var activeWindow = Application.Current?.Windows
+                .OfType<Window>()
+                .FirstOrDefault(w => w.IsActive && w != dialog);
+
+            // Ausnahme: Wenn der GameSelectionDialog aktiv ist, soll der Dialog darüber zentriert werden.
+            if (activeWindow is GameSelectionDialog)
+            {
+                return activeWindow;
+            }
+
             var mainWindow = Application.Current?.MainWindow;
             if (mainWindow != null && mainWindow != dialog)
             {
                 return mainWindow;
             }
 
-            return Application.Current?.Windows
-                .OfType<Window>()
-                .FirstOrDefault(w => w.IsActive && w != dialog);
+            return activeWindow;
         }
 
         /// <summary>

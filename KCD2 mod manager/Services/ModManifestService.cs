@@ -1,3 +1,4 @@
+using System;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using System.IO;
@@ -23,7 +24,7 @@ namespace KCD2_mod_manager.Services
             _settings = settings;
         }
 
-        public async Task<(string modId, string name, string version)?> ParseManifestAsync(string manifestPath, CancellationToken cancellationToken = default)
+        public async Task<(string modId, string name, string version)?> ParseManifestAsync(string manifestPath, CancellationToken cancellationToken = default, bool allowWriteModId = true)
         {
             try
             {
@@ -49,7 +50,7 @@ namespace KCD2_mod_manager.Services
                 else
                 {
                     id = GenerateModId(name);
-                    if (_settings.EnableFileRenaming)
+                    if (allowWriteModId)
                     {
                         if (modidElement == null)
                         {
@@ -77,7 +78,62 @@ namespace KCD2_mod_manager.Services
             }
         }
 
-        public async Task<(string modId, string name, string version, string? gameVersion)?> ParseManifestWithGameVersionAsync(string manifestPath, CancellationToken cancellationToken = default)
+        public async Task<(string modId, string name, string version, bool hasExplicitModId)?> ParseManifestWithModIdInfoAsync(string manifestPath, CancellationToken cancellationToken = default, bool allowWriteModId = true)
+        {
+            try
+            {
+                string xmlContent = await CorrectXmlVersionInFileAsync(manifestPath, cancellationToken);
+                var doc = XDocument.Parse(xmlContent);
+
+                var infoElement = doc.Descendants("info").FirstOrDefault();
+                if (infoElement == null)
+                    return null;
+
+                var name = infoElement.Element("name")?.Value?.Trim();
+                var version = infoElement.Element("version")?.Value?.Trim();
+                if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(version))
+                    return null;
+
+                var modidElement = infoElement.Element("modid");
+                string id;
+                bool shouldWrite = false;
+                bool hasExplicitModId = modidElement != null && !string.IsNullOrWhiteSpace(modidElement.Value);
+                if (hasExplicitModId)
+                {
+                    id = modidElement!.Value.Trim();
+                }
+                else
+                {
+                    id = GenerateModId(name);
+                    if (allowWriteModId)
+                    {
+                        if (modidElement == null)
+                        {
+                            infoElement.Add(new XElement("modid", id));
+                        }
+                        else
+                        {
+                            modidElement.Value = id;
+                        }
+                        shouldWrite = true;
+                    }
+                }
+
+                if (shouldWrite)
+                {
+                    await _fileService.WriteAllTextAsync(manifestPath, doc.ToString(), cancellationToken);
+                }
+
+                return (id, name, version, hasExplicitModId);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Fehler beim Parsen des Manifests: {manifestPath}", ex);
+                return null;
+            }
+        }
+
+        public async Task<(string modId, string name, string version, string? gameVersion)?> ParseManifestWithGameVersionAsync(string manifestPath, CancellationToken cancellationToken = default, bool allowWriteModId = true)
         {
             try
             {
@@ -103,7 +159,7 @@ namespace KCD2_mod_manager.Services
                 else
                 {
                     id = GenerateModId(name);
-                    if (_settings.EnableFileRenaming)
+                    if (allowWriteModId)
                     {
                         if (modidElement == null)
                         {
@@ -237,6 +293,59 @@ namespace KCD2_mod_manager.Services
             catch (Exception ex)
             {
                 _logger.Error($"Fehler beim Aktualisieren des Manifests: {ex.Message}", ex);
+                return false;
+            }
+        }
+
+        public async Task<bool> EnsureManifestModIdAsync(string manifestPath, string modId, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                if (!_fileService.FileExists(manifestPath))
+                {
+                    _logger.Warning($"Manifest-Datei nicht gefunden: {manifestPath}");
+                    return false;
+                }
+
+                string xmlContent = await CorrectXmlVersionInFileAsync(manifestPath, cancellationToken);
+                var doc = XDocument.Parse(xmlContent);
+
+                var infoElement = doc.Descendants("info").FirstOrDefault();
+                if (infoElement == null)
+                {
+                    _logger.Warning($"Manifest enthält kein 'info'-Element: {manifestPath}");
+                    return false;
+                }
+
+                var modidElement = infoElement.Element("modid");
+                if (modidElement != null && string.Equals(modidElement.Value?.Trim(), modId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                if (modidElement == null)
+                {
+                    infoElement.Add(new XElement("modid", modId));
+                }
+                else
+                {
+                    modidElement.Value = modId;
+                }
+
+                string tempPath = manifestPath + ".tmp";
+                await _fileService.WriteAllTextAsync(tempPath, doc.ToString(), cancellationToken);
+
+                if (_fileService.FileExists(manifestPath))
+                {
+                    _fileService.DeleteFile(manifestPath);
+                }
+
+                _fileService.MoveFile(tempPath, manifestPath);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Fehler beim Aktualisieren der ModId im Manifest: {ex.Message}", ex);
                 return false;
             }
         }

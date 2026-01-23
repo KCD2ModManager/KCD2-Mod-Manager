@@ -78,7 +78,7 @@ namespace KCD2_mod_manager.Services
 
                 await _manifestService.CorrectXmlVersionInFileAsync(manifestPath, cancellationToken);
 
-                var manifestData = await _manifestService.ParseManifestAsync(manifestPath, cancellationToken);
+                var manifestData = await _manifestService.ParseManifestAsync(manifestPath, cancellationToken, allowWriteModId: _settings.EnableFileRenaming);
                 if (manifestData == null || string.IsNullOrEmpty(manifestData.Value.version))
                 {
                     var result = _dialogService.ShowMessageBox(
@@ -90,7 +90,7 @@ namespace KCD2_mod_manager.Services
                     if (result == true)
                     {
                         manifestPath = await _manifestService.GenerateManifestAsync(tempDir, cancellationToken);
-                        manifestData = await _manifestService.ParseManifestAsync(manifestPath, cancellationToken);
+                        manifestData = await _manifestService.ParseManifestAsync(manifestPath, cancellationToken, allowWriteModId: _settings.EnableFileRenaming);
                         if (manifestData == null || string.IsNullOrEmpty(manifestData.Value.version))
                         {
                             _logger.Error("Fehler beim Generieren eines gültigen Manifests. Installation abgebrochen.");
@@ -116,7 +116,7 @@ namespace KCD2_mod_manager.Services
                 if (_fileService.DirectoryExists(modTargetPath))
                 {
                     var existingManifestPath = _fileService.Combine(modTargetPath, "mod.manifest");
-                    var existingInfo = await _manifestService.ParseManifestAsync(existingManifestPath, cancellationToken);
+                    var existingInfo = await _manifestService.ParseManifestAsync(existingManifestPath, cancellationToken, allowWriteModId: _settings.EnableFileRenaming);
                     if (existingInfo != null && Version.TryParse(existingInfo.Value.version, out var existingVersion) &&
                         Version.TryParse(modVersion, out var newVersion) && newVersion <= existingVersion)
                     {
@@ -178,19 +178,57 @@ namespace KCD2_mod_manager.Services
 
                 await _manifestService.CorrectXmlVersionInFileAsync(manifestPath, cancellationToken);
 
-                var manifestData = await _manifestService.ParseManifestAsync(manifestPath, cancellationToken);
-                if (manifestData == null || string.IsNullOrEmpty(manifestData.Value.version))
+                string modName;
+                string modVersion;
+                string modId;
+                bool hasExplicitModId = true;
+
+                if (isWorkshopSource)
+                {
+                    var manifestData = await _manifestService.ParseManifestWithModIdInfoAsync(manifestPath, cancellationToken, allowWriteModId: false);
+                    if (manifestData == null || string.IsNullOrEmpty(manifestData.Value.version))
+                    {
+                        _logger.Error("Ungültige mod.manifest-Datei. Installation abgebrochen.");
+                        return null;
+                    }
+
+                    modName = manifestData.Value.name;
+                    modVersion = manifestData.Value.version;
+                    modId = manifestData.Value.modId;
+                    hasExplicitModId = manifestData.Value.hasExplicitModId;
+                }
+                else
+                {
+                    var manifestData = await _manifestService.ParseManifestAsync(manifestPath, cancellationToken, allowWriteModId: _settings.EnableFileRenaming);
+                    if (manifestData == null || string.IsNullOrEmpty(manifestData.Value.version))
+                    {
+                        _logger.Error("Ungültige mod.manifest-Datei. Installation abgebrochen.");
+                        return null;
+                    }
+
+                    modName = manifestData.Value.name;
+                    modVersion = manifestData.Value.version;
+                    modId = manifestData.Value.modId;
+                }
+
+                if (string.IsNullOrEmpty(modVersion))
                 {
                     _logger.Error("Ungültige mod.manifest-Datei. Installation abgebrochen.");
                     return null;
                 }
 
-                var modId = manifestData.Value.modId;
-                var modName = manifestData.Value.name;
-                var modVersion = manifestData.Value.version;
-                var modTargetPath = _settings.EnableFileRenaming
-                    ? _fileService.Combine(modFolder, modId)
-                    : _fileService.Combine(modFolder, _fileService.GetFileName(folderPath));
+                if (isWorkshopSource && !hasExplicitModId)
+                {
+                    string workshopId = _fileService.GetFileName(folderPath);
+                    modId = GetWorkshopDerivedModId(workshopId, modName, folderPath);
+                    await _manifestService.EnsureManifestModIdAsync(manifestPath, modId, cancellationToken);
+                }
+
+                var modTargetPath = isWorkshopSource
+                    ? _fileService.Combine(modFolder, _fileService.GetFileName(folderPath))
+                    : (_settings.EnableFileRenaming
+                        ? _fileService.Combine(modFolder, modId)
+                        : _fileService.Combine(modFolder, _fileService.GetFileName(folderPath)));
 
                 if (_fileService.DirectoryExists(modTargetPath))
                 {
@@ -207,7 +245,8 @@ namespace KCD2_mod_manager.Services
                     Version = modVersion,
                     Path = modTargetPath,
                     IsEnabled = false,
-                    IsWorkshopMod = isWorkshopSource
+                    IsWorkshopMod = isWorkshopSource,
+                    WorkshopId = isWorkshopSource ? _fileService.GetFileName(folderPath) : string.Empty
                 };
 
                 if (isWorkshopSource)
@@ -282,7 +321,7 @@ namespace KCD2_mod_manager.Services
                     }
                 }
 
-                var manifestInfo = await _manifestService.ParseManifestAsync(manifestPath, cancellationToken);
+                var manifestInfo = await _manifestService.ParseManifestAsync(manifestPath, cancellationToken, allowWriteModId: _settings.EnableFileRenaming);
                 if (manifestInfo == null)
                 {
                     throw new Exception("Fehler beim Parsen des Manifests nach dem Update.");
@@ -352,53 +391,87 @@ namespace KCD2_mod_manager.Services
                     }
                 }
 
-                var modInfo = await _manifestService.ParseManifestAsync(manifestPath, cancellationToken);
-                if (modInfo != null)
+                bool isWorkshop = IsWorkshopPath(dir);
+                if (isWorkshop)
                 {
-                    var modId = modInfo.Value.modId;
-                    var modName = modInfo.Value.name;
-                    var modVersion = modInfo.Value.version;
-                    bool isWorkshop = IsWorkshopPath(dir);
-
-                    var expectedPath = _fileService.Combine(modFolder, modId);
-                    if (_settings.EnableFileRenaming && !dir.Equals(expectedPath, StringComparison.OrdinalIgnoreCase))
+                    var modInfo = await _manifestService.ParseManifestWithModIdInfoAsync(manifestPath, cancellationToken, allowWriteModId: false);
+                    if (modInfo != null)
                     {
-                        try
+                        var modName = modInfo.Value.name;
+                        var modVersion = modInfo.Value.version;
+                        string workshopId = _fileService.GetFileName(dir);
+                        string modId = modInfo.Value.hasExplicitModId
+                            ? modInfo.Value.modId
+                            : GetWorkshopDerivedModId(workshopId, modName, dir);
+
+                        if (!modInfo.Value.hasExplicitModId)
                         {
-                            if (_fileService.DirectoryExists(expectedPath))
-                            {
-                                _fileService.DeleteDirectory(expectedPath, true);
-                            }
-                            _fileService.MoveDirectory(dir, expectedPath);
+                            await _manifestService.EnsureManifestModIdAsync(manifestPath, modId, cancellationToken);
                         }
-                        catch (Exception ex)
+
+                        var mod = new Mod
                         {
-                            _logger.Error($"Fehler beim Verschieben des Mod-Ordners von {dir} nach {expectedPath}: {ex.Message}", ex);
+                            Id = modId,
+                            Name = modName,
+                            Version = modVersion,
+                            Path = dir,
+                            IsEnabled = true,
+                            IsWorkshopMod = true,
+                            WorkshopId = workshopId
+                        };
+
+                        // WICHTIG: Lade Metadaten aus mod_versions.json und mod_notes.json pro Mod
+                        // Jeder Mod-Ordner kann eigene Dateien haben, aber wir laden aus dem globalen File
+                        // Das wird später in LoadModsAsync aufgerufen, nachdem alle Mods geladen sind
+                        modDictionary[modId] = mod;
+                        _logger.Info($"Workshop-Mod erkannt: {modName} ({dir})");
+                    }
+                }
+                else
+                {
+                    var modInfo = await _manifestService.ParseManifestAsync(manifestPath, cancellationToken, allowWriteModId: _settings.EnableFileRenaming);
+                    if (modInfo != null)
+                    {
+                        var modId = modInfo.Value.modId;
+                        var modName = modInfo.Value.name;
+                        var modVersion = modInfo.Value.version;
+
+                        var expectedPath = _fileService.Combine(modFolder, modId);
+                        if (_settings.EnableFileRenaming && !dir.Equals(expectedPath, StringComparison.OrdinalIgnoreCase))
+                        {
+                            try
+                            {
+                                if (_fileService.DirectoryExists(expectedPath))
+                                {
+                                    _fileService.DeleteDirectory(expectedPath, true);
+                                }
+                                _fileService.MoveDirectory(dir, expectedPath);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.Error($"Fehler beim Verschieben des Mod-Ordners von {dir} nach {expectedPath}: {ex.Message}", ex);
+                                expectedPath = dir;
+                            }
+                        }
+                        else if (!_settings.EnableFileRenaming)
+                        {
                             expectedPath = dir;
                         }
-                    }
-                    else if (!_settings.EnableFileRenaming)
-                    {
-                        expectedPath = dir;
-                    }
 
-                    var mod = new Mod
-                    {
-                        Id = modId,
-                        Name = modName,
-                        Version = modVersion,
-                        Path = expectedPath,
-                        IsEnabled = true,
-                        IsWorkshopMod = isWorkshop
-                    };
-                    
-                    // WICHTIG: Lade Metadaten aus mod_versions.json und mod_notes.json pro Mod
-                    // Jeder Mod-Ordner kann eigene Dateien haben, aber wir laden aus dem globalen File
-                    // Das wird später in LoadModsAsync aufgerufen, nachdem alle Mods geladen sind
-                    modDictionary[modId] = mod;
-                    if (isWorkshop)
-                    {
-                        _logger.Info($"Workshop-Mod erkannt: {modName} ({dir})");
+                        var mod = new Mod
+                        {
+                            Id = modId,
+                            Name = modName,
+                            Version = modVersion,
+                            Path = expectedPath,
+                            IsEnabled = true,
+                            IsWorkshopMod = false
+                        };
+
+                        // WICHTIG: Lade Metadaten aus mod_versions.json und mod_notes.json pro Mod
+                        // Jeder Mod-Ordner kann eigene Dateien haben, aber wir laden aus dem globalen File
+                        // Das wird später in LoadModsAsync aufgerufen, nachdem alle Mods geladen sind
+                        modDictionary[modId] = mod;
                     }
                 }
             }
@@ -502,7 +575,6 @@ namespace KCD2_mod_manager.Services
 
             // Format: # für deaktiviert, kein Prefix für aktiviert
             var modOrder = mods
-                .Where(m => !m.IsWorkshopMod)
                 .OrderBy(m => m.Number)
                 .Select(mod => mod.IsEnabled ? mod.Id : $"# {mod.Id}")
                 .ToList();
@@ -654,6 +726,22 @@ namespace KCD2_mod_manager.Services
             return normalized.IndexOf("\\steamapps\\workshop\\content\\", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
+        private string GetWorkshopDerivedModId(string workshopId, string modName, string folderPath)
+        {
+            string candidateName = modName;
+            if (string.IsNullOrWhiteSpace(candidateName))
+            {
+                candidateName = workshopId;
+            }
+
+            if (string.IsNullOrWhiteSpace(candidateName))
+            {
+                candidateName = _fileService.GetFileName(folderPath);
+            }
+
+            return _manifestService.GenerateModId(candidateName ?? string.Empty);
+        }
+
         private async Task<List<Mod>> LoadWorkshopModsAsync(GameInstallDescriptor install, CancellationToken cancellationToken)
         {
             var mods = new List<Mod>();
@@ -682,18 +770,28 @@ namespace KCD2_mod_manager.Services
                     }
                 }
 
-                var modInfo = await _manifestService.ParseManifestAsync(manifestPath, cancellationToken);
+                var modInfo = await _manifestService.ParseManifestWithModIdInfoAsync(manifestPath, cancellationToken, allowWriteModId: false);
                 if (modInfo != null)
                 {
+                    string workshopId = _fileService.GetFileName(dir);
+                    string modId = modInfo.Value.hasExplicitModId
+                        ? modInfo.Value.modId
+                        : GetWorkshopDerivedModId(workshopId, modInfo.Value.name, dir);
+
+                    if (!modInfo.Value.hasExplicitModId)
+                    {
+                        await _manifestService.EnsureManifestModIdAsync(manifestPath, modId, cancellationToken);
+                    }
+
                     mods.Add(new Mod
                     {
-                        Id = modInfo.Value.modId,
+                        Id = modId,
                         Name = modInfo.Value.name,
                         Version = modInfo.Value.version,
                         Path = dir,
                         IsEnabled = true,
                         IsWorkshopMod = true,
-                        WorkshopId = _fileService.GetFileName(dir)
+                        WorkshopId = workshopId
                     });
                 }
             }
