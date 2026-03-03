@@ -431,7 +431,7 @@
                             </ListBox.Resources>
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid>
+                                    <Grid Background="{Binding HighlightColor, Converter={StaticResource HighlightColorToBrushConverter}}">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="Auto"/>
@@ -460,13 +460,9 @@
                                             <!-- Name + Category -->
                                             <StackPanel Grid.Column="1" Margin="25,0,5,0" VerticalAlignment="Center">
                                                 <StackPanel Orientation="Horizontal">
-                                                    <Border Padding="4,1"
-                                                            CornerRadius="4"
-                                                            Background="{Binding HighlightColor, Converter={StaticResource HighlightColorToBrushConverter}}">
-                                                        <TextBlock Text="{Binding Name}"
-                                                                   Background="Transparent"
-                                                                   ContextMenuOpening="ModContextMenu_Opening" />
-                                                    </Border>
+                                                    <TextBlock Text="{Binding Name}"
+                                                               Background="Transparent"
+                                                               ContextMenuOpening="ModContextMenu_Opening" />
                                                     <Border Background="{DynamicResource PanelBackgroundBrush}"
                                                             BorderBrush="{DynamicResource SeparatorBrush}"
                                                             BorderThickness="1"

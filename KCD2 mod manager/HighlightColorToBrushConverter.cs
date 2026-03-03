@@ -23,7 +23,13 @@ namespace KCD2_mod_manager
 
             try
             {
-                var brush = (SolidColorBrush)new BrushConverter().ConvertFromString(hex)!;
+                var sourceBrush = (SolidColorBrush)new BrushConverter().ConvertFromString(hex)!;
+                var color = sourceBrush.Color;
+                // Keep original light-mode look, but make dark-mode highlights a bit stronger
+                // while still avoiding hard contrast jumps.
+                byte maxAlpha = Settings.Default.IsDarkMode ? (byte)84 : (byte)255;
+                byte alpha = color.A == 255 ? maxAlpha : (byte)Math.Min(color.A, maxAlpha);
+                var brush = new SolidColorBrush(Color.FromArgb(alpha, color.R, color.G, color.B));
                 brush.Freeze();
                 return brush;
             }

@@ -51,7 +51,7 @@ namespace KCD2_mod_manager.ViewModels
         private readonly IModOrderFileManager? _modOrderFileManager;
 
         private const string DefaultGamePath = @"C:\Program Files (x86)\Steam\steamapps\common\KingdomComeDeliverance2\Bin\Win64MasterMasterSteamPGO\KingdomCome.exe";
-        private const string currentManagerVersion = "4.2";
+        private const string currentManagerVersion = "4.3";
 
         private ObservableCollection<Mod> _mods = new();
         private ICollectionView? _modsView;
@@ -2006,7 +2006,8 @@ namespace KCD2_mod_manager.ViewModels
         {
             if (mod == null) return;
 
-            mod.IgnoredInConflictDetector = !mod.IgnoredInConflictDetector;
+            // In the main context menu, IsChecked is already two-way bound to this property.
+            // Do not invert it again here.
             await _userModDataService.SaveModDataAsync(
                 mod.Id,
                 ignoredInConflictDetector: mod.IgnoredInConflictDetector);
@@ -2030,11 +2031,11 @@ namespace KCD2_mod_manager.ViewModels
 
             HighlightColorData? data = colorKey.Trim().ToLowerInvariant() switch
             {
-                "blue" => new HighlightColorData { Light = "#E8F2FF", Dark = "#1F2E45" },
-                "green" => new HighlightColorData { Light = "#E9F6EE", Dark = "#1E3A2E" },
-                "purple" => new HighlightColorData { Light = "#F0ECFF", Dark = "#33284F" },
-                "amber" => new HighlightColorData { Light = "#FFF5E6", Dark = "#4A3A1E" },
-                "red" => new HighlightColorData { Light = "#FDEDEE", Dark = "#4A2327" },
+                "blue" => new HighlightColorData { Light = "#E8F2FF", Dark = "#223246" },
+                "green" => new HighlightColorData { Light = "#E9F6EE", Dark = "#22392E" },
+                "purple" => new HighlightColorData { Light = "#F0ECFF", Dark = "#302A42" },
+                "amber" => new HighlightColorData { Light = "#FFF5E6", Dark = "#423521" },
+                "red" => new HighlightColorData { Light = "#FDEDEE", Dark = "#42262A" },
                 _ => null
             };
 
