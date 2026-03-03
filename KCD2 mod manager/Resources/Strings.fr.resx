@@ -557,10 +557,73 @@
     <value>Chemin enregistré : {0}</value>
   </data>
   <data name="SelectFolderButton" xml:space="preserve">
-    <value>Sélectionner un dossier</value>
+    <value>Sélectionner l'exécutable</value>
   </data>
   <data name="SelectFolderTooltip" xml:space="preserve">
-    <value>Sélectionner ou modifier manuellement le dossier d’installation du jeu</value>
+    <value>Sélectionnez l’exécutable du jeu (par ex. KingdomCome.exe)</value>
+  </data>
+  <data name="SelectGameFolderFallbackPrompt" xml:space="preserve">
+    <value>Option de secours : sélectionnez le dossier du jeu si vous ne pouvez pas choisir directement l’exécutable.</value>
+  </data>
+  <data name="ConflictDetectorOnlyEnabledModsText" xml:space="preserve">
+    <value>Analyser les conflits uniquement pour les mods activés</value>
+  </data>
+  <data name="ConflictDetectorOnlyEnabledModsTooltip" xml:space="preserve">
+    <value>Si activé, les mods désactivés sont ignorés par le détecteur de conflits.</value>
+  </data>
+  <data name="IgnoredConflictsListTitleText" xml:space="preserve">
+    <value>Mods ignorés dans les conflits</value>
+  </data>
+  <data name="RemoveIgnoredConflictText" xml:space="preserve">
+    <value>Retirer</value>
+  </data>
+  <data name="ContextMenuMoveToTop" xml:space="preserve">
+    <value>Déplacer en haut</value>
+  </data>
+  <data name="ContextMenuMoveToBottom" xml:space="preserve">
+    <value>Déplacer en bas</value>
+  </data>
+  <data name="ContextMenuMoveToPosition" xml:space="preserve">
+    <value>Déplacer à la position...</value>
+  </data>
+  <data name="ContextMenuIgnoreConflicts" xml:space="preserve">
+    <value>Ignorer les conflits pour ce mod</value>
+  </data>
+  <data name="ContextMenuSetHighlightColor" xml:space="preserve">
+    <value>Définir la couleur de surbrillance</value>
+  </data>
+  <data name="ContextMenuRemoveHighlight" xml:space="preserve">
+    <value>Supprimer la surbrillance</value>
+  </data>
+  <data name="MoveToPositionPrompt" xml:space="preserve">
+    <value>Saisissez la position cible (base 1) :</value>
+  </data>
+  <data name="MoveToPositionTitle" xml:space="preserve">
+    <value>Déplacer à la position</value>
+  </data>
+  <data name="MoveToPositionInvalidNumber" xml:space="preserve">
+    <value>Veuillez saisir un nombre valide.</value>
+  </data>
+  <data name="HighlightPresetPrompt" xml:space="preserve">
+    <value>Choisissez un preset : blue, green, purple, amber, red</value>
+  </data>
+  <data name="HighlightPresetTitle" xml:space="preserve">
+    <value>Définir la surbrillance</value>
+  </data>
+  <data name="HighlightPresetInvalid" xml:space="preserve">
+    <value>Preset inconnu. Utilisez blue, green, purple, amber ou red.</value>
+  </data>
+  <data name="RenameModIdPrompt" xml:space="preserve">
+    <value>Voulez-vous aussi renommer le modid et le dossier ? Cela peut casser la compatibilité.</value>
+  </data>
+  <data name="EnableRenamingRequiredForModIdChange" xml:space="preserve">
+    <value>Activez d’abord le renommage des fichiers/dossiers pour modifier le modid et le dossier.</value>
+  </data>
+  <data name="RenameModIdConfirmPrompt" xml:space="preserve">
+    <value>Cette opération peut casser les sauvegardes et les dépendances de mods. Continuer ?</value>
+  </data>
+  <data name="ConflictScanCanceled" xml:space="preserve">
+    <value>Analyse des conflits annulée.</value>
   </data>
   <data name="ClickCardToSelect" xml:space="preserve">
     <value>Cliquez sur une carte pour sélectionner le jeu</value>

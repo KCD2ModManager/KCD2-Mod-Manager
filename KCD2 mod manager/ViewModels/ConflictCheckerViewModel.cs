@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using KCD2_mod_manager.Models;
 using KCD2_mod_manager.Resources;
 using KCD2_mod_manager.Services;
@@ -14,6 +15,8 @@ namespace KCD2_mod_manager.ViewModels
         private string _workshopBadgeText = Strings.ResourceManager.GetString("WorkshopBadgeText") ?? "Workshop";
         private string _workshopBadgeTooltip = Strings.ResourceManager.GetString("WorkshopBadgeTooltip") ?? "Installed from Steam Workshop";
         private string _workshopConflictNote = Strings.ResourceManager.GetString("WorkshopConflictNote") ?? "Workshop files may be managed by Steam.";
+        private string _ignoreConflictsMenuText = Strings.ResourceManager.GetString("ContextMenuIgnoreConflicts") ?? "Ignore conflicts for this mod";
+        public Func<string, Task>? ToggleIgnoreConflictsForModAsync { get; set; }
 
         public ConflictCheckerViewModel(ILocalizationService localizationService)
         {
@@ -66,9 +69,23 @@ namespace KCD2_mod_manager.ViewModels
             set => SetProperty(ref _workshopConflictNote, value);
         }
 
+        public string IgnoreConflictsMenuText
+        {
+            get => _ignoreConflictsMenuText;
+            set => SetProperty(ref _ignoreConflictsMenuText, value);
+        }
+
         public void SetConflicts(IEnumerable<ModConflictGroup> conflicts)
         {
             ConflictGroups = new ObservableCollection<ModConflictGroup>(conflicts);
+        }
+
+        public async Task ToggleIgnoreAsync(string modId)
+        {
+            if (ToggleIgnoreConflictsForModAsync != null && !string.IsNullOrWhiteSpace(modId))
+            {
+                await ToggleIgnoreConflictsForModAsync(modId);
+            }
         }
 
         private void UpdateLocalizedStrings()
@@ -78,6 +95,7 @@ namespace KCD2_mod_manager.ViewModels
             WorkshopBadgeText = Strings.ResourceManager.GetString("WorkshopBadgeText") ?? "Workshop";
             WorkshopBadgeTooltip = Strings.ResourceManager.GetString("WorkshopBadgeTooltip") ?? "Installed from Steam Workshop";
             WorkshopConflictNote = Strings.ResourceManager.GetString("WorkshopConflictNote") ?? "Workshop files may be managed by Steam.";
+            IgnoreConflictsMenuText = Strings.ResourceManager.GetString("ContextMenuIgnoreConflicts") ?? "Ignore conflicts for this mod";
         }
     }
 }

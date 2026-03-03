@@ -93,6 +93,12 @@ namespace KCD2_mod_manager.ViewModels
         private string _contextMenuToggleUpdateCheckText = Resources.Strings.ContextMenuToggleUpdateCheck;
         private string _contextMenuOverrideVersionText = Resources.Strings.ResourceManager.GetString("ContextMenuOverrideVersion") ?? "Override Version";
         private string _contextMenuCheckForUpdateText = Resources.Strings.ResourceManager.GetString("ContextMenuCheckForUpdate") ?? "Check for Update";
+        private string _contextMenuMoveToTopText = Resources.Strings.ResourceManager.GetString("ContextMenuMoveToTop") ?? "Move to top";
+        private string _contextMenuMoveToBottomText = Resources.Strings.ResourceManager.GetString("ContextMenuMoveToBottom") ?? "Move to bottom";
+        private string _contextMenuMoveToPositionText = Resources.Strings.ResourceManager.GetString("ContextMenuMoveToPosition") ?? "Move to position...";
+        private string _contextMenuIgnoreConflictsText = Resources.Strings.ResourceManager.GetString("ContextMenuIgnoreConflicts") ?? "Ignore conflicts for this mod";
+        private string _contextMenuSetHighlightColorText = Resources.Strings.ResourceManager.GetString("ContextMenuSetHighlightColor") ?? "Set highlight color";
+        private string _contextMenuRemoveHighlightText = Resources.Strings.ResourceManager.GetString("ContextMenuRemoveHighlight") ?? "Remove highlight";
         private string _profilesText = Resources.Strings.ResourceManager.GetString("ProfilesText") ?? "Profile:";
         private string _createProfileText = Resources.Strings.ResourceManager.GetString("CreateProfileText") ?? "Create";
         private string _duplicateProfileText = Resources.Strings.ResourceManager.GetString("DuplicateProfileText") ?? "Duplicate";
@@ -116,6 +122,9 @@ namespace KCD2_mod_manager.ViewModels
         private string _filterCategoryText = Resources.Strings.ResourceManager.GetString("FilterCategoryText") ?? "Category:";
         private string _filterAllText = Resources.Strings.ResourceManager.GetString("FilterCategoryAll") ?? "All";
         private string _filterUncategorizedText = Resources.Strings.ResourceManager.GetString("FilterCategoryUncategorized") ?? "Uncategorized";
+        private bool _isConflictScanRunning;
+        private int _conflictScanProgress;
+        private CancellationTokenSource? _conflictScanCts;
 
         private string _gamePath = string.Empty;
         private string _modFolder = string.Empty;
@@ -173,6 +182,10 @@ namespace KCD2_mod_manager.ViewModels
                 {
                     AllowWorkshopModActions = _settings.AllowWorkshopModActions;
                 }
+                else if (args.PropertyName == nameof(KCD2_mod_manager.Settings.Default.ConflictDetector_OnlyEnabledMods))
+                {
+                    _ = RefreshConflictsAsync();
+                }
             };
 
             _categoryService.CategoriesChanged += (s, e) => SyncCategoriesFromService();
@@ -207,6 +220,12 @@ namespace KCD2_mod_manager.ViewModels
             ChangeModNumberCommand = new RelayCommand<Mod>(mod => ChangeModNumberAsync(mod), mod => mod != null);
             ToggleUpdateCheckCommand = new RelayCommand<Mod>(mod => ToggleUpdateCheckAsync(mod), mod => mod != null);
             CheckForUpdateCommand = new RelayCommand<Mod>(mod => CheckForModUpdateAsync(mod), mod => mod != null && mod.ModNumber > 0);
+            MoveToTopCommand = new RelayCommand<Mod>(mod => MoveToTopAsync(mod), mod => mod != null && SortByLoadOrder);
+            MoveToBottomCommand = new RelayCommand<Mod>(mod => MoveToBottomAsync(mod), mod => mod != null && SortByLoadOrder);
+            MoveToPositionCommand = new RelayCommand<Mod>(mod => MoveToPositionAsync(mod), mod => mod != null && SortByLoadOrder);
+            ToggleIgnoreConflictsCommand = new RelayCommand<Mod>(mod => ToggleIgnoreConflictsAsync(mod), mod => mod != null);
+            SetHighlightColorCommand = new RelayCommand<Mod>(mod => SetHighlightColorAsync(mod), mod => mod != null);
+            RemoveHighlightColorCommand = new RelayCommand<Mod>(mod => RemoveHighlightColorAsync(mod), mod => mod?.HighlightColor != null);
             ModCheckBoxCommand = new RelayCommand<Mod>(mod => ModCheckBoxChanged(mod), mod => mod != null);
             SetModVersionCommand = new RelayCommand<Mod>(mod => SetModVersionAsync(mod), mod => mod != null);
             EnableAllModsCommand = new RelayCommand(async _ => await EnableAllModsAsync());
@@ -219,7 +238,8 @@ namespace KCD2_mod_manager.ViewModels
             UpdateManifestCommand = new RelayCommand<Mod>(mod => UpdateManifestAsync(mod), mod => mod != null);
             UpdateAllManifestsCommand = new RelayCommand(_ => UpdateAllManifestsAsync());
             DuplicateProfileCommand = new RelayCommand<string>(profileName => DuplicateProfileAsync(profileName));
-            OpenConflictCheckerCommand = new RelayCommand(_ => OpenConflictChecker(), _ => HasConflicts);
+            OpenConflictCheckerCommand = new RelayCommand(_ => OpenConflictChecker(), _ => !_isConflictScanRunning);
+            CancelConflictScanCommand = new RelayCommand(_ => CancelConflictScan(), _ => IsConflictScanRunning);
             OpenCategoryManagerCommand = new RelayCommand(_ => OpenCategoryManager());
         }
 
@@ -729,6 +749,18 @@ namespace KCD2_mod_manager.ViewModels
             set => SetProperty(ref _filterUncategorizedText, value);
         }
 
+        public bool IsConflictScanRunning
+        {
+            get => _isConflictScanRunning;
+            set => SetProperty(ref _isConflictScanRunning, value);
+        }
+
+        public int ConflictScanProgress
+        {
+            get => _conflictScanProgress;
+            set => SetProperty(ref _conflictScanProgress, value);
+        }
+
         public string ContextMenuOverrideVersionText
         {
             get => _contextMenuOverrideVersionText;
@@ -739,6 +771,42 @@ namespace KCD2_mod_manager.ViewModels
         {
             get => _contextMenuCheckForUpdateText;
             set => SetProperty(ref _contextMenuCheckForUpdateText, value);
+        }
+
+        public string ContextMenuMoveToTopText
+        {
+            get => _contextMenuMoveToTopText;
+            set => SetProperty(ref _contextMenuMoveToTopText, value);
+        }
+
+        public string ContextMenuMoveToBottomText
+        {
+            get => _contextMenuMoveToBottomText;
+            set => SetProperty(ref _contextMenuMoveToBottomText, value);
+        }
+
+        public string ContextMenuMoveToPositionText
+        {
+            get => _contextMenuMoveToPositionText;
+            set => SetProperty(ref _contextMenuMoveToPositionText, value);
+        }
+
+        public string ContextMenuIgnoreConflictsText
+        {
+            get => _contextMenuIgnoreConflictsText;
+            set => SetProperty(ref _contextMenuIgnoreConflictsText, value);
+        }
+
+        public string ContextMenuSetHighlightColorText
+        {
+            get => _contextMenuSetHighlightColorText;
+            set => SetProperty(ref _contextMenuSetHighlightColorText, value);
+        }
+
+        public string ContextMenuRemoveHighlightText
+        {
+            get => _contextMenuRemoveHighlightText;
+            set => SetProperty(ref _contextMenuRemoveHighlightText, value);
         }
 
         public IAppSettings Settings => _settings;
@@ -767,6 +835,12 @@ namespace KCD2_mod_manager.ViewModels
         public ICommand ChangeModNumberCommand { get; private set; } = null!;
         public ICommand ToggleUpdateCheckCommand { get; private set; } = null!;
         public ICommand CheckForUpdateCommand { get; private set; } = null!;
+        public ICommand MoveToTopCommand { get; private set; } = null!;
+        public ICommand MoveToBottomCommand { get; private set; } = null!;
+        public ICommand MoveToPositionCommand { get; private set; } = null!;
+        public ICommand ToggleIgnoreConflictsCommand { get; private set; } = null!;
+        public ICommand SetHighlightColorCommand { get; private set; } = null!;
+        public ICommand RemoveHighlightColorCommand { get; private set; } = null!;
         public ICommand ModCheckBoxCommand { get; private set; } = null!;
         public ICommand SetModVersionCommand { get; private set; } = null!;
         public ICommand EnableAllModsCommand { get; private set; } = null!;
@@ -780,6 +854,7 @@ namespace KCD2_mod_manager.ViewModels
         public ICommand UpdateAllManifestsCommand { get; private set; } = null!;
         public ICommand DuplicateProfileCommand { get; private set; } = null!;
         public ICommand OpenConflictCheckerCommand { get; private set; } = null!;
+        public ICommand CancelConflictScanCommand { get; private set; } = null!;
         public ICommand OpenCategoryManagerCommand { get; private set; } = null!;
 
         public void SetModsView(ICollectionView view)
@@ -896,11 +971,14 @@ namespace KCD2_mod_manager.ViewModels
                             mod.Note = userData.CustomNote;
                         }
 
-                        // Benutzerdefinierte Anzeigenamen nur verwenden, wenn kein File-Renaming aktiv ist
-                        if (!_settings.EnableFileRenaming && !string.IsNullOrEmpty(userData.CustomName))
+                        // Benutzerdefinierte Anzeigenamen sind rein UI-basiert und dürfen modId nicht ändern
+                        if (!string.IsNullOrEmpty(userData.CustomName))
                         {
                             mod.Name = userData.CustomName;
                         }
+
+                        mod.IgnoredInConflictDetector = userData.IgnoredInConflictDetector;
+                        mod.HighlightColor = userData.HighlightColor;
                     }
                     else
                     {
@@ -1369,6 +1447,12 @@ namespace KCD2_mod_manager.ViewModels
             ContextMenuToggleUpdateCheckText = Resources.Strings.ContextMenuToggleUpdateCheck;
             ContextMenuCheckForUpdateText = Resources.Strings.ResourceManager.GetString("ContextMenuCheckForUpdate") ?? "Check for Update";
             ContextMenuOverrideVersionText = Resources.Strings.ResourceManager.GetString("ContextMenuOverrideVersion") ?? "Override Version";
+            ContextMenuMoveToTopText = Resources.Strings.ResourceManager.GetString("ContextMenuMoveToTop") ?? "Move to top";
+            ContextMenuMoveToBottomText = Resources.Strings.ResourceManager.GetString("ContextMenuMoveToBottom") ?? "Move to bottom";
+            ContextMenuMoveToPositionText = Resources.Strings.ResourceManager.GetString("ContextMenuMoveToPosition") ?? "Move to position...";
+            ContextMenuIgnoreConflictsText = Resources.Strings.ResourceManager.GetString("ContextMenuIgnoreConflicts") ?? "Ignore conflicts for this mod";
+            ContextMenuSetHighlightColorText = Resources.Strings.ResourceManager.GetString("ContextMenuSetHighlightColor") ?? "Set highlight color";
+            ContextMenuRemoveHighlightText = Resources.Strings.ResourceManager.GetString("ContextMenuRemoveHighlight") ?? "Remove highlight";
             
             // WICHTIG: Game-Switch-Buttons aktualisieren (ohne App-Neustart)
             SwitchGameText = Resources.Strings.ResourceManager.GetString("SwitchGameText") ?? "Switch Game";
@@ -1425,7 +1509,14 @@ namespace KCD2_mod_manager.ViewModels
         {
             try
             {
-                var conflicts = await _conflictCheckerService.AnalyzeConflictsAsync(Mods.ToList());
+                var ignoredIds = new HashSet<string>(
+                    Mods.Where(m => m.IgnoredInConflictDetector).Select(m => m.Id),
+                    StringComparer.OrdinalIgnoreCase);
+
+                var conflicts = await _conflictCheckerService.AnalyzeConflictsAsync(
+                    Mods.ToList(),
+                    _settings.ConflictDetectorOnlyEnabledMods,
+                    ignoredIds);
                 ConflictGroups = new ObservableCollection<ModConflictGroup>(conflicts);
                 ConflictFileCount = conflicts.Count;
                 HasConflicts = conflicts.Count > 0;
@@ -1439,19 +1530,88 @@ namespace KCD2_mod_manager.ViewModels
 
         private void OpenConflictChecker()
         {
-            if (!HasConflicts)
+            if (IsConflictScanRunning)
             {
                 return;
             }
 
-            var window = _serviceProvider.GetRequiredService<Views.ConflictCheckerWindow>();
-            if (window.DataContext is ConflictCheckerViewModel viewModel)
-            {
-                viewModel.SetConflicts(ConflictGroups);
-            }
+            _ = RunConflictScanAsync(openWindowAfterScan: true);
+        }
 
-            window.Owner = Application.Current.MainWindow;
-            window.ShowDialog();
+        private async Task RunConflictScanAsync(bool openWindowAfterScan)
+        {
+            try
+            {
+                IsConflictScanRunning = true;
+                ConflictScanProgress = 0;
+                CancelConflictScanCommand = new RelayCommand(_ => CancelConflictScan(), _ => IsConflictScanRunning);
+                _conflictScanCts?.Dispose();
+                _conflictScanCts = new CancellationTokenSource();
+
+                var ignoredIds = new HashSet<string>(
+                    Mods.Where(m => m.IgnoredInConflictDetector).Select(m => m.Id),
+                    StringComparer.OrdinalIgnoreCase);
+
+                var progress = new Progress<int>(value => ConflictScanProgress = value);
+                var conflicts = await _conflictCheckerService.AnalyzeConflictsAsync(
+                    Mods.ToList(),
+                    _settings.ConflictDetectorOnlyEnabledMods,
+                    ignoredIds,
+                    progress,
+                    _conflictScanCts.Token);
+
+                ConflictGroups = new ObservableCollection<ModConflictGroup>(conflicts);
+                ConflictFileCount = conflicts.Count;
+                HasConflicts = conflicts.Count > 0;
+                UpdateConflictCount();
+
+                if (openWindowAfterScan)
+                {
+                    var window = _serviceProvider.GetRequiredService<Views.ConflictCheckerWindow>();
+                    if (window.DataContext is ConflictCheckerViewModel viewModel)
+                    {
+                        viewModel.SetConflicts(ConflictGroups);
+                        viewModel.ToggleIgnoreConflictsForModAsync = async modId =>
+                        {
+                            var target = Mods.FirstOrDefault(m => string.Equals(m.Id, modId, StringComparison.OrdinalIgnoreCase));
+                            if (target == null)
+                            {
+                                return;
+                            }
+
+                            target.IgnoredInConflictDetector = !target.IgnoredInConflictDetector;
+                            await _userModDataService.SaveModDataAsync(
+                                target.Id,
+                                ignoredInConflictDetector: target.IgnoredInConflictDetector);
+
+                            await RefreshConflictsAsync();
+                            viewModel.SetConflicts(ConflictGroups);
+                        };
+                    }
+
+                    window.Owner = Application.Current.MainWindow;
+                    window.ShowDialog();
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                StatusText = Resources.Strings.ResourceManager.GetString("ConflictScanCanceled") ?? "Conflict scan canceled.";
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Fehler beim Konflikt-Check: {ex.Message}", ex);
+            }
+            finally
+            {
+                IsConflictScanRunning = false;
+                ConflictScanProgress = 0;
+                CancelConflictScanCommand = new RelayCommand(_ => CancelConflictScan(), _ => IsConflictScanRunning);
+            }
+        }
+
+        private void CancelConflictScan()
+        {
+            _conflictScanCts?.Cancel();
         }
 
         private void OpenCategoryManager()
@@ -1758,6 +1918,153 @@ namespace KCD2_mod_manager.ViewModels
             }
         }
 
+        private IReadOnlyList<Mod> GetVisibleModsInCurrentScope()
+        {
+            if (_modsView == null)
+            {
+                return Mods.ToList();
+            }
+
+            return _modsView.Cast<object>()
+                .OfType<Mod>()
+                .ToList();
+        }
+
+        private async void MoveToTopAsync(Mod? mod)
+        {
+            if (mod == null || !SortByLoadOrder) return;
+            var visible = GetVisibleModsInCurrentScope();
+            if (!visible.Any()) return;
+
+            var topMod = visible.First();
+            int sourceIndex = Mods.IndexOf(mod);
+            int targetIndex = Mods.IndexOf(topMod);
+            if (sourceIndex >= 0 && targetIndex >= 0 && sourceIndex != targetIndex)
+            {
+                Mods.Move(sourceIndex, targetIndex);
+                await SaveModOrderAsync();
+            }
+        }
+
+        private async void MoveToBottomAsync(Mod? mod)
+        {
+            if (mod == null || !SortByLoadOrder) return;
+            var visible = GetVisibleModsInCurrentScope();
+            if (!visible.Any()) return;
+
+            var bottomMod = visible.Last();
+            int sourceIndex = Mods.IndexOf(mod);
+            int targetIndex = Mods.IndexOf(bottomMod);
+            if (sourceIndex >= 0 && targetIndex >= 0 && sourceIndex != targetIndex)
+            {
+                Mods.Move(sourceIndex, targetIndex);
+                await SaveModOrderAsync();
+            }
+        }
+
+        private async void MoveToPositionAsync(Mod? mod)
+        {
+            if (mod == null || !SortByLoadOrder) return;
+
+            string? input = _dialogService.ShowInputDialog(
+                Resources.Strings.ResourceManager.GetString("MoveToPositionPrompt") ?? "Enter target position (1-based):",
+                Resources.Strings.ResourceManager.GetString("MoveToPositionTitle") ?? "Move to Position",
+                string.Empty);
+
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                return;
+            }
+
+            if (!int.TryParse(input, out int targetPosition))
+            {
+                _dialogService.ShowMessageBox(
+                    Resources.Strings.ResourceManager.GetString("MoveToPositionInvalidNumber") ?? "Please enter a valid number.",
+                    Resources.Messages.DialogTitleError,
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            var visible = GetVisibleModsInCurrentScope();
+            if (!visible.Any()) return;
+
+            targetPosition = Math.Max(1, targetPosition);
+            targetPosition = Math.Min(visible.Count, targetPosition);
+            var targetMod = visible[targetPosition - 1];
+
+            int sourceIndex = Mods.IndexOf(mod);
+            int targetIndex = Mods.IndexOf(targetMod);
+            if (sourceIndex >= 0 && targetIndex >= 0)
+            {
+                Mods.Move(sourceIndex, targetIndex);
+                await SaveModOrderAsync();
+            }
+        }
+
+        private async void ToggleIgnoreConflictsAsync(Mod? mod)
+        {
+            if (mod == null) return;
+
+            mod.IgnoredInConflictDetector = !mod.IgnoredInConflictDetector;
+            await _userModDataService.SaveModDataAsync(
+                mod.Id,
+                ignoredInConflictDetector: mod.IgnoredInConflictDetector);
+
+            await RefreshConflictsAsync();
+        }
+
+        private async void SetHighlightColorAsync(Mod? mod)
+        {
+            if (mod == null) return;
+
+            string? colorKey = _dialogService.ShowInputDialog(
+                Resources.Strings.ResourceManager.GetString("HighlightPresetPrompt") ?? "Select preset: blue, green, purple, amber, red",
+                Resources.Strings.ResourceManager.GetString("HighlightPresetTitle") ?? "Set Highlight Color",
+                "blue");
+
+            if (string.IsNullOrWhiteSpace(colorKey))
+            {
+                return;
+            }
+
+            HighlightColorData? data = colorKey.Trim().ToLowerInvariant() switch
+            {
+                "blue" => new HighlightColorData { Light = "#E8F2FF", Dark = "#1F2E45" },
+                "green" => new HighlightColorData { Light = "#E9F6EE", Dark = "#1E3A2E" },
+                "purple" => new HighlightColorData { Light = "#F0ECFF", Dark = "#33284F" },
+                "amber" => new HighlightColorData { Light = "#FFF5E6", Dark = "#4A3A1E" },
+                "red" => new HighlightColorData { Light = "#FDEDEE", Dark = "#4A2327" },
+                _ => null
+            };
+
+            if (data == null)
+            {
+                _dialogService.ShowMessageBox(
+                    Resources.Strings.ResourceManager.GetString("HighlightPresetInvalid") ?? "Unknown preset. Use blue, green, purple, amber or red.",
+                    Resources.Messages.DialogTitleError,
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            mod.HighlightColor = data;
+            await _userModDataService.SaveModDataAsync(
+                mod.Id,
+                highlightColor: data,
+                updateHighlightColor: true);
+        }
+
+        private async void RemoveHighlightColorAsync(Mod? mod)
+        {
+            if (mod == null) return;
+            mod.HighlightColor = null;
+            await _userModDataService.SaveModDataAsync(
+                mod.Id,
+                highlightColor: null,
+                updateHighlightColor: true);
+        }
+
         private async Task DeleteModAsync(Mod? mod)
         {
             if (mod == null) return;
@@ -1854,18 +2161,54 @@ namespace KCD2_mod_manager.ViewModels
                 return;
             }
 
+            // Standardverhalten: nur Anzeigename ändern, modId unangetastet lassen.
+            string manifestPath = _fileService.Combine(mod.Path, "mod.manifest");
+            bool updatedDisplay = await _manifestService.UpdateManifestNameAndIdAsync(manifestPath, newName, mod.Id);
+            if (!updatedDisplay)
+            {
+                _dialogService.ShowMessageBox(Resources.Messages.ErrorFailedToUpdateManifest, Resources.Messages.DialogTitleError, MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            mod.Name = newName;
+            await _userModDataService.SaveModDataAsync(mod.Id, customName: newName);
+
+            bool? renameIdToo = _dialogService.ShowMessageBox(
+                Resources.Strings.ResourceManager.GetString("RenameModIdPrompt") ?? "Do you also want to rename mod id and folder? This can break compatibility.",
+                Resources.Strings.ResourceManager.GetString("DialogTitleWarning") ?? "Warning",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (renameIdToo != true)
+            {
+                StatusText = string.Format(Resources.Strings.ResourceManager.GetString("ModNameUpdated") ?? "Mod name updated: {0}", newName);
+                return;
+            }
+
             if (!_settings.EnableFileRenaming)
             {
-                mod.Name = newName;
-                await _userModDataService.SaveModDataAsync(mod.Id, customName: newName);
+                _dialogService.ShowMessageBox(
+                    Resources.Strings.ResourceManager.GetString("EnableRenamingRequiredForModIdChange") ?? "Enable file renaming first if you want to change mod id and folder.",
+                    Resources.Strings.ResourceManager.GetString("DialogTitleInformation") ?? "Information",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                StatusText = string.Format(Resources.Strings.ResourceManager.GetString("ModNameUpdated") ?? "Mod name updated: {0}", newName);
+                return;
+            }
+
+            bool? confirmDangerous = _dialogService.ShowMessageBox(
+                Resources.Strings.ResourceManager.GetString("RenameModIdConfirmPrompt") ?? "This operation can break saves and mod dependencies. Continue?",
+                Resources.Strings.ResourceManager.GetString("DialogTitleWarning") ?? "Warning",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            if (confirmDangerous != true)
+            {
                 StatusText = string.Format(Resources.Strings.ResourceManager.GetString("ModNameUpdated") ?? "Mod name updated: {0}", newName);
                 return;
             }
 
             string oldModId = mod.Id;
             string newModId = _manifestService.GenerateModId(newName);
-            string manifestPath = _fileService.Combine(mod.Path, "mod.manifest");
-
             bool updated = await _manifestService.UpdateManifestNameAndIdAsync(manifestPath, newName, newModId);
             if (!updated)
             {
@@ -2205,6 +2548,10 @@ namespace KCD2_mod_manager.ViewModels
             }
             
             UpdateModsEnabledCount();
+            if (_settings.ConflictDetectorOnlyEnabledMods)
+            {
+                await RefreshConflictsAsync();
+            }
         }
 
         private async Task CheckForUpdateAsync()

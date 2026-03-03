@@ -30,6 +30,9 @@ namespace KCD2_mod_manager.Services
             string? customNote = null,
             string? customName = null,
             string? categoryId = null,
+            bool? ignoredInConflictDetector = null,
+            HighlightColorData? highlightColor = null,
+            bool updateHighlightColor = false,
             CancellationToken cancellationToken = default);
 
         /// <summary>

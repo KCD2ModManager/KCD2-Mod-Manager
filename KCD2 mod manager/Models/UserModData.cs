@@ -2,6 +2,12 @@ using System;
 
 namespace KCD2_mod_manager.Models
 {
+    public class HighlightColorData
+    {
+        public string Light { get; set; } = string.Empty;
+        public string Dark { get; set; } = string.Empty;
+    }
+
     /// <summary>
     /// Benutzerdefinierte Metadaten für einen Mod, die über Manager-Updates hinweg erhalten bleiben
     /// </summary>
@@ -41,6 +47,16 @@ namespace KCD2_mod_manager.Models
         /// Global zugewiesene Kategorie-ID
         /// </summary>
         public string? CategoryId { get; set; }
+
+        /// <summary>
+        /// Wenn true, wird der Mod im Conflict-Detector ignoriert.
+        /// </summary>
+        public bool IgnoredInConflictDetector { get; set; }
+
+        /// <summary>
+        /// Optionales UI-Highlight pro Mod (Theme-spezifisch).
+        /// </summary>
+        public HighlightColorData? HighlightColor { get; set; }
     }
 }
 

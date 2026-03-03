@@ -503,10 +503,73 @@
     <value>Pfad gespeichert: {0}</value>
   </data>
   <data name="SelectFolderButton" xml:space="preserve">
-    <value>Ordner auswählen</value>
+    <value>EXE auswählen</value>
   </data>
   <data name="SelectFolderTooltip" xml:space="preserve">
-    <value>Spiel-Installationsordner manuell auswählen oder ändern</value>
+    <value>Wählen Sie die ausführbare Datei des Spiels (z. B. KingdomCome.exe)</value>
+  </data>
+  <data name="SelectGameFolderFallbackPrompt" xml:space="preserve">
+    <value>Optionaler Fallback: Wählen Sie den Spielordner, wenn die EXE nicht direkt gewählt werden kann.</value>
+  </data>
+  <data name="ConflictDetectorOnlyEnabledModsText" xml:space="preserve">
+    <value>Konflikte nur für aktivierte Mods analysieren</value>
+  </data>
+  <data name="ConflictDetectorOnlyEnabledModsTooltip" xml:space="preserve">
+    <value>Wenn aktiviert, ignoriert der Konflikt-Detektor deaktivierte Mods.</value>
+  </data>
+  <data name="IgnoredConflictsListTitleText" xml:space="preserve">
+    <value>Ignorierte Konflikt-Mods</value>
+  </data>
+  <data name="RemoveIgnoredConflictText" xml:space="preserve">
+    <value>Entfernen</value>
+  </data>
+  <data name="ContextMenuMoveToTop" xml:space="preserve">
+    <value>Nach oben verschieben</value>
+  </data>
+  <data name="ContextMenuMoveToBottom" xml:space="preserve">
+    <value>Nach unten verschieben</value>
+  </data>
+  <data name="ContextMenuMoveToPosition" xml:space="preserve">
+    <value>Zu Position verschieben...</value>
+  </data>
+  <data name="ContextMenuIgnoreConflicts" xml:space="preserve">
+    <value>Konflikte für diesen Mod ignorieren</value>
+  </data>
+  <data name="ContextMenuSetHighlightColor" xml:space="preserve">
+    <value>Highlight-Farbe setzen</value>
+  </data>
+  <data name="ContextMenuRemoveHighlight" xml:space="preserve">
+    <value>Highlight entfernen</value>
+  </data>
+  <data name="MoveToPositionPrompt" xml:space="preserve">
+    <value>Zielposition eingeben (1-basiert):</value>
+  </data>
+  <data name="MoveToPositionTitle" xml:space="preserve">
+    <value>Zu Position verschieben</value>
+  </data>
+  <data name="MoveToPositionInvalidNumber" xml:space="preserve">
+    <value>Bitte geben Sie eine gültige Zahl ein.</value>
+  </data>
+  <data name="HighlightPresetPrompt" xml:space="preserve">
+    <value>Preset wählen: blue, green, purple, amber, red</value>
+  </data>
+  <data name="HighlightPresetTitle" xml:space="preserve">
+    <value>Highlight-Farbe setzen</value>
+  </data>
+  <data name="HighlightPresetInvalid" xml:space="preserve">
+    <value>Unbekanntes Preset. Verwenden Sie blue, green, purple, amber oder red.</value>
+  </data>
+  <data name="RenameModIdPrompt" xml:space="preserve">
+    <value>Möchten Sie zusätzlich modId und Ordner umbenennen? Das kann Kompatibilität brechen.</value>
+  </data>
+  <data name="EnableRenamingRequiredForModIdChange" xml:space="preserve">
+    <value>Aktivieren Sie zuerst Datei-/Ordner-Umbenennung, wenn modId und Ordner geändert werden sollen.</value>
+  </data>
+  <data name="RenameModIdConfirmPrompt" xml:space="preserve">
+    <value>Dieser Vorgang kann Spielstände und Mod-Abhängigkeiten beschädigen. Fortfahren?</value>
+  </data>
+  <data name="ConflictScanCanceled" xml:space="preserve">
+    <value>Konflikt-Analyse abgebrochen.</value>
   </data>
   <data name="ClickCardToSelect" xml:space="preserve">
     <value>Klicken Sie auf eine Karte, um das Spiel auszuwählen</value>

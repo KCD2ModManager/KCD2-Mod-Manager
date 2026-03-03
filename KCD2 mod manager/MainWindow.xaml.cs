@@ -1,8 +1,9 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Data;
+using System.Windows.Controls.Primitives;
 using Microsoft.Extensions.DependencyInjection;
 using KCD2_mod_manager.ViewModels;
 using KCD2_mod_manager.Services;
@@ -17,6 +18,7 @@ namespace KCD2_mod_manager
     {
         private MainWindowViewModel? _viewModel;
         private Point _dragStartPoint;
+        private const double DragScrollThreshold = 30.0;
 
         public MainWindow(MainWindowViewModel viewModel)
         {
@@ -190,8 +192,67 @@ namespace KCD2_mod_manager
                     await _viewModel.SaveModOrderAsync();
                 }
                 listBox.SelectedItem = null;
+                DragScrollUpHint.Visibility = Visibility.Collapsed;
+                DragScrollDownHint.Visibility = Visibility.Collapsed;
                 e.Handled = true;
             }
+        }
+
+        private void ModList_DragOver(object sender, DragEventArgs e)
+        {
+            if (sender is not ListBox listBox)
+            {
+                return;
+            }
+
+            var scrollViewer = FindVisualChild<ScrollViewer>(listBox);
+            if (scrollViewer == null)
+            {
+                return;
+            }
+
+            Point position = e.GetPosition(listBox);
+            double height = listBox.ActualHeight;
+
+            DragScrollUpHint.Visibility = Visibility.Collapsed;
+            DragScrollDownHint.Visibility = Visibility.Collapsed;
+
+            if (position.Y < DragScrollThreshold)
+            {
+                double factor = 1.0 - (position.Y / DragScrollThreshold);
+                double delta = Math.Max(1.0, factor * 12.0);
+                scrollViewer.ScrollToVerticalOffset(Math.Max(0, scrollViewer.VerticalOffset - delta));
+                DragScrollUpHint.Visibility = Visibility.Visible;
+            }
+            else if (position.Y > height - DragScrollThreshold)
+            {
+                double distance = height - position.Y;
+                double factor = 1.0 - (distance / DragScrollThreshold);
+                double delta = Math.Max(1.0, factor * 12.0);
+                scrollViewer.ScrollToVerticalOffset(Math.Min(scrollViewer.ScrollableHeight, scrollViewer.VerticalOffset + delta));
+                DragScrollDownHint.Visibility = Visibility.Visible;
+            }
+        }
+
+        private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            int count = VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < count; i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T target)
+                {
+                    return target;
+                }
+
+                var nested = FindVisualChild<T>(child);
+                if (nested != null)
+                {
+                    return nested;
+                }
+            }
+
+            return null;
         }
 
         private void ModCheckBox_Click(object sender, RoutedEventArgs e)
@@ -334,6 +395,78 @@ namespace KCD2_mod_manager
                 if (mod != null && _viewModel != null)
                 {
                     _viewModel.ToggleSeparatorCommand.Execute(mod);
+                }
+            }
+        }
+
+        private void MoveToTop_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem mi)
+            {
+                var mod = GetModFromContextMenu(mi);
+                if (mod != null && _viewModel != null)
+                {
+                    _viewModel.MoveToTopCommand.Execute(mod);
+                }
+            }
+        }
+
+        private void MoveToBottom_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem mi)
+            {
+                var mod = GetModFromContextMenu(mi);
+                if (mod != null && _viewModel != null)
+                {
+                    _viewModel.MoveToBottomCommand.Execute(mod);
+                }
+            }
+        }
+
+        private void MoveToPosition_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem mi)
+            {
+                var mod = GetModFromContextMenu(mi);
+                if (mod != null && _viewModel != null)
+                {
+                    _viewModel.MoveToPositionCommand.Execute(mod);
+                }
+            }
+        }
+
+        private void ToggleIgnoreConflicts_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem mi)
+            {
+                var mod = GetModFromContextMenu(mi);
+                if (mod != null && _viewModel != null)
+                {
+                    _viewModel.ToggleIgnoreConflictsCommand.Execute(mod);
+                }
+            }
+        }
+
+        private void SetHighlightColor_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem mi)
+            {
+                var mod = GetModFromContextMenu(mi);
+                if (mod != null && _viewModel != null)
+                {
+                    _viewModel.SetHighlightColorCommand.Execute(mod);
+                }
+            }
+        }
+
+        private void RemoveHighlightColor_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem mi)
+            {
+                var mod = GetModFromContextMenu(mi);
+                if (mod != null && _viewModel != null)
+                {
+                    _viewModel.RemoveHighlightColorCommand.Execute(mod);
                 }
             }
         }

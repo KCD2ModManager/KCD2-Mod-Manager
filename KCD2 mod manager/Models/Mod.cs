@@ -22,6 +22,8 @@ namespace KCD2_mod_manager.Models
         private string _categoryId = string.Empty;
         private string _categoryName = string.Empty;
         private bool _hasSeparatorAfter;
+        private bool _ignoredInConflictDetector;
+        private HighlightColorData? _highlightColor;
 
         public string Id
         {
@@ -126,6 +128,18 @@ namespace KCD2_mod_manager.Models
         }
 
         public bool HasCategory => !string.IsNullOrWhiteSpace(CategoryId);
+
+        public bool IgnoredInConflictDetector
+        {
+            get => _ignoredInConflictDetector;
+            set => SetProperty(ref _ignoredInConflictDetector, value);
+        }
+
+        public HighlightColorData? HighlightColor
+        {
+            get => _highlightColor;
+            set => SetProperty(ref _highlightColor, value);
+        }
 
         /// <summary>
         /// Separator nach diesem Mod in der UI (profilbasiert)

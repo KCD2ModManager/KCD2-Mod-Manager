@@ -15,6 +15,7 @@ namespace KCD2_mod_manager.Services
         bool EnableFileRenaming { get; set; }
         bool AllowWorkshopModActions { get; set; }
         bool AllowWorkshopActionsWarningShown { get; set; }
+        bool ConflictDetectorOnlyEnabledMods { get; set; }
         bool CreateBackup { get; set; }
         bool BackupOnStartup { get; set; }
         int BackupMaxCount { get; set; }

@@ -100,6 +100,9 @@ namespace KCD2_mod_manager.Services
             string? customNote = null,
             string? customName = null,
             string? categoryId = null,
+            bool? ignoredInConflictDetector = null,
+            HighlightColorData? highlightColor = null,
+            bool updateHighlightColor = false,
             CancellationToken cancellationToken = default)
         {
             var allData = await LoadUserModDataAsync(cancellationToken);
@@ -133,6 +136,16 @@ namespace KCD2_mod_manager.Services
             if (categoryId != null)
             {
                 modData.CategoryId = string.IsNullOrWhiteSpace(categoryId) ? null : categoryId;
+            }
+
+            if (ignoredInConflictDetector.HasValue)
+            {
+                modData.IgnoredInConflictDetector = ignoredInConflictDetector.Value;
+            }
+
+            if (updateHighlightColor)
+            {
+                modData.HighlightColor = highlightColor;
             }
 
             modData.LastUpdated = DateTime.UtcNow.ToString("O");

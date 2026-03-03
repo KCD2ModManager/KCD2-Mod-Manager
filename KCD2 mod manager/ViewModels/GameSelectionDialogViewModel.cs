@@ -23,13 +23,13 @@ namespace KCD2_mod_manager.ViewModels
         private GameType _selectedGame;
         
         private string _title = Strings.ResourceManager.GetString("SelectGameTitle") ?? "Select Game";
-        private string _selectGameMessage = Strings.ResourceManager.GetString("SelectGameMessage") ?? "Select installed game:";
+        private string _selectGameMessage = Strings.ResourceManager.GetString("SelectGameMessage") ?? "Select installed game and set the executable (KingdomCome.exe):";
         private string _kcd1DisplayName = Strings.ResourceManager.GetString("KCD1DisplayName") ?? "Kingdom Come: Deliverance";
         private string _kcd2DisplayName = Strings.ResourceManager.GetString("KCD2DisplayName") ?? "Kingdom Come: Deliverance II";
         private string _okButtonText = Strings.ResourceManager.GetString("OkButton") ?? "OK";
         private string _cancelButtonText = Strings.ResourceManager.GetString("CancelButton") ?? "Cancel";
-        private string _selectFolderButtonText = Strings.ResourceManager.GetString("SelectFolderButton") ?? "Select Folder";
-        private string _selectFolderTooltipText = Strings.ResourceManager.GetString("SelectFolderTooltip") ?? "Manually select or change the game installation folder";
+        private string _selectFolderButtonText = Strings.ResourceManager.GetString("SelectFolderButton") ?? "Select Executable";
+        private string _selectFolderTooltipText = Strings.ResourceManager.GetString("SelectFolderTooltip") ?? "Select the game's executable file (e.g., KingdomCome.exe)";
         private string _clickCardToSelectText = Strings.ResourceManager.GetString("ClickCardToSelect") ?? "Click on a card to select the game";
         
         // Folder-Status Properties
@@ -93,13 +93,13 @@ namespace KCD2_mod_manager.ViewModels
         private void UpdateLocalizedStrings()
         {
             Title = Strings.ResourceManager.GetString("SelectGameTitle") ?? "Select Game";
-            SelectGameMessage = Strings.ResourceManager.GetString("SelectGameMessage") ?? "Select installed game:";
+            SelectGameMessage = Strings.ResourceManager.GetString("SelectGameMessage") ?? "Select installed game and set the executable (KingdomCome.exe):";
             KCD1DisplayName = Strings.ResourceManager.GetString("KCD1DisplayName") ?? "Kingdom Come: Deliverance";
             KCD2DisplayName = Strings.ResourceManager.GetString("KCD2DisplayName") ?? "Kingdom Come: Deliverance II";
             OkButtonText = Strings.ResourceManager.GetString("OkButton") ?? "OK";
             CancelButtonText = Strings.ResourceManager.GetString("CancelButton") ?? "Cancel";
-            SelectFolderButtonText = Strings.ResourceManager.GetString("SelectFolderButton") ?? "Select Folder";
-            SelectFolderTooltipText = Strings.ResourceManager.GetString("SelectFolderTooltip") ?? "Manually select or change the game installation folder";
+            SelectFolderButtonText = Strings.ResourceManager.GetString("SelectFolderButton") ?? "Select Executable";
+            SelectFolderTooltipText = Strings.ResourceManager.GetString("SelectFolderTooltip") ?? "Select the game's executable file (e.g., KingdomCome.exe)";
             ClickCardToSelectText = Strings.ResourceManager.GetString("ClickCardToSelect") ?? "Click on a card to select the game";
             
             // Folder-Status aktualisieren
@@ -142,13 +142,25 @@ namespace KCD2_mod_manager.ViewModels
                 string exeName = "KingdomCome.exe";
                 
                 // Zeige Dialog zur EXE-Auswahl
-                string filter = $"Game Executable ({exeName})|{exeName}|All Files (*.*)|*.*";
+                string filter = $"Game Executable ({exeName})|{exeName}|Executable Files (*.exe)|*.exe|All Files (*.*)|*.*";
                 string title = string.Format(
                     Strings.ResourceManager.GetString("SelectGameExecutablePrompt") ?? 
                     "Select {0} Executable ({1})",
                     gameName, exeName);
                 
                 string? selectedExePath = _dialogService.ShowOpenFileDialog(filter, title);
+                if (string.IsNullOrEmpty(selectedExePath))
+                {
+                    string? selectedFolder = _dialogService.ShowFolderPicker(
+                        Strings.ResourceManager.GetString("SelectGameFolderFallbackPrompt") ??
+                        "Optional fallback: select the game folder if you cannot choose the executable directly.");
+
+                    if (!string.IsNullOrWhiteSpace(selectedFolder))
+                    {
+                        selectedExePath = FindExecutableRecursive(selectedFolder, exeName);
+                    }
+                }
+
                 if (!string.IsNullOrEmpty(selectedExePath) && System.IO.File.Exists(selectedExePath))
                 {
                     // Prüfe zuerst, ob es die richtige EXE ist

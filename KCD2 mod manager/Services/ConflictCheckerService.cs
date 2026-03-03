@@ -19,13 +19,31 @@ namespace KCD2_mod_manager.Services
             _logger = logger;
         }
 
-        public async Task<IReadOnlyList<ModConflictGroup>> AnalyzeConflictsAsync(IEnumerable<Mod> mods, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<ModConflictGroup>> AnalyzeConflictsAsync(
+            IEnumerable<Mod> mods,
+            bool onlyEnabledMods = true,
+            ISet<string>? ignoredModIds = null,
+            IProgress<int>? progress = null,
+            CancellationToken cancellationToken = default)
         {
             return await Task.Run(() =>
             {
+                var inputMods = onlyEnabledMods
+                    ? mods.Where(m => m.IsEnabled).ToList()
+                    : mods.ToList();
+
+                if (ignoredModIds != null && ignoredModIds.Count > 0)
+                {
+                    inputMods = inputMods
+                        .Where(m => !ignoredModIds.Contains(m.Id))
+                        .ToList();
+                }
+
+                int totalMods = inputMods.Count;
+                int processedMods = 0;
                 var conflictMap = new Dictionary<string, List<ModConflictEntry>>(StringComparer.OrdinalIgnoreCase);
 
-                foreach (var mod in mods)
+                foreach (var mod in inputMods)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
@@ -80,6 +98,12 @@ namespace KCD2_mod_manager.Services
                         {
                             _logger.Warning($"Konflikt-Scan: Fehler beim Lesen von {pakPath}: {ex.Message}");
                         }
+                    }
+
+                    processedMods++;
+                    if (totalMods > 0)
+                    {
+                        progress?.Report((processedMods * 100) / totalMods);
                     }
                 }
 

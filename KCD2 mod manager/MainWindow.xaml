@@ -15,6 +15,7 @@
         <!-- ScrollBar Corner Visibility Converter -->
         <local:ScrollBarCornerVisibilityConverter x:Key="ScrollBarCornerVisibilityConverter"/>
         <local:WorkshopActionVisibilityConverter x:Key="WorkshopActionVisibilityConverter"/>
+        <local:HighlightColorToBrushConverter x:Key="HighlightColorToBrushConverter"/>
 
         <!-- Modern Mod List Item Style mit verbessertem Kontrast -->
         <Style x:Key="ModListStyle" TargetType="ListBoxItem">
@@ -345,6 +346,21 @@
                             </Border>
                         </Grid>
                     </Button>
+                    <StackPanel Orientation="Horizontal"
+                                Margin="8,0,0,0"
+                                VerticalAlignment="Center"
+                                Visibility="{Binding IsConflictScanRunning, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <ProgressBar Width="120"
+                                     Height="6"
+                                     Minimum="0"
+                                     Maximum="100"
+                                     Value="{Binding ConflictScanProgress}"
+                                     VerticalAlignment="Center"/>
+                        <Button Content="Cancel"
+                                Command="{Binding CancelConflictScanCommand}"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Margin="8,0,0,0"/>
+                    </StackPanel>
                 </StackPanel>
             </Grid>
             
@@ -406,6 +422,7 @@
                                 IsEnabled="{Binding IsLoadingMods, Converter={StaticResource InverseBooleanToVisibilityConverter}}"
                                 PreviewMouseLeftButtonDown="ModList_PreviewMouseLeftButtonDown"
                                 PreviewMouseMove="ModList_PreviewMouseMove" 
+                                DragOver="ModList_DragOver"
                                 Drop="ModList_Drop">
                             <!-- WICHTIG: Lokaler Fix für ScrollBar-Corner -->
                             <!-- Überschreibt den internen ScrollViewer mit Corner-Fix -->
@@ -443,9 +460,13 @@
                                             <!-- Name + Category -->
                                             <StackPanel Grid.Column="1" Margin="25,0,5,0" VerticalAlignment="Center">
                                                 <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="{Binding Name}" 
-                                                               Background="Transparent" 
-                                                               ContextMenuOpening="ModContextMenu_Opening" />
+                                                    <Border Padding="4,1"
+                                                            CornerRadius="4"
+                                                            Background="{Binding HighlightColor, Converter={StaticResource HighlightColorToBrushConverter}}">
+                                                        <TextBlock Text="{Binding Name}"
+                                                                   Background="Transparent"
+                                                                   ContextMenuOpening="ModContextMenu_Opening" />
+                                                    </Border>
                                                     <Border Background="{DynamicResource PanelBackgroundBrush}"
                                                             BorderBrush="{DynamicResource SeparatorBrush}"
                                                             BorderThickness="1"
@@ -571,6 +592,15 @@
                                                         <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuToggleSeparatorText}"
                                                                   Click="ToggleSeparator_Click"
                                                                   Style="{StaticResource ContextMenuItemStyle}"/>
+                                                        <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuMoveToTopText}"
+                                                                  Click="MoveToTop_Click"
+                                                                  Style="{StaticResource ContextMenuItemStyle}"/>
+                                                        <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuMoveToBottomText}"
+                                                                  Click="MoveToBottom_Click"
+                                                                  Style="{StaticResource ContextMenuItemStyle}"/>
+                                                        <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuMoveToPositionText}"
+                                                                  Click="MoveToPosition_Click"
+                                                                  Style="{StaticResource ContextMenuItemStyle}"/>
                                                         <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuEndorseModText}"
                                                                   Click="EndorseMod_Click"
                                                                   Style="{StaticResource ContextMenuItemStyle}">
@@ -627,6 +657,18 @@
                                                                 </MultiBinding>
                                                             </MenuItem.Visibility>
                                                         </MenuItem>
+                                                        <Separator />
+                                                        <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuIgnoreConflictsText}"
+                                                                  IsCheckable="True"
+                                                                  IsChecked="{Binding IgnoredInConflictDetector, Mode=TwoWay}"
+                                                                  Click="ToggleIgnoreConflicts_Click"
+                                                                  Style="{StaticResource ToggleMenuItemStyle}"/>
+                                                        <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuSetHighlightColorText}"
+                                                                  Click="SetHighlightColor_Click"
+                                                                  Style="{StaticResource ContextMenuItemStyle}"/>
+                                                        <MenuItem Header="{Binding Source={x:Static Application.Current}, Path=MainWindow.DataContext.ContextMenuRemoveHighlightText}"
+                                                                  Click="RemoveHighlightColor_Click"
+                                                                  Style="{StaticResource ContextMenuItemStyle}"/>
                                                     </ContextMenu>
                                                 </Button.ContextMenu>
                                             </Button>
@@ -661,6 +703,32 @@
                                           HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Grid>
+                        <Border x:Name="DragScrollUpHint"
+                                Background="#40000000"
+                                Height="24"
+                                VerticalAlignment="Top"
+                                CornerRadius="4"
+                                Margin="8"
+                                Visibility="Collapsed"
+                                IsHitTestVisible="False">
+                            <TextBlock Text="▲"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextForegroundBrush}"/>
+                        </Border>
+                        <Border x:Name="DragScrollDownHint"
+                                Background="#40000000"
+                                Height="24"
+                                VerticalAlignment="Bottom"
+                                CornerRadius="4"
+                                Margin="8"
+                                Visibility="Collapsed"
+                                IsHitTestVisible="False">
+                            <TextBlock Text="▼"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextForegroundBrush}"/>
+                        </Border>
                     </Grid>
                 </Border>
             </Grid>

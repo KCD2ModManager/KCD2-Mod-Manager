@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Media;
 using KCD2_mod_manager.ViewModels;
 using KCD2_mod_manager.Services;
@@ -207,6 +207,22 @@ namespace KCD2_mod_manager
             if (sender is System.Windows.Controls.Primitives.ToggleButton toggle && _viewModel != null)
             {
                 _viewModel.ToggleWorkshopActionsCommand.Execute(false);
+            }
+        }
+
+        private void ToggleConflictDetectorOnlyEnabledMods_Checked(object sender, RoutedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.Primitives.ToggleButton && _viewModel != null)
+            {
+                _viewModel.ToggleConflictDetectorOnlyEnabledModsCommand.Execute(true);
+            }
+        }
+
+        private void ToggleConflictDetectorOnlyEnabledMods_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.Primitives.ToggleButton && _viewModel != null)
+            {
+                _viewModel.ToggleConflictDetectorOnlyEnabledModsCommand.Execute(false);
             }
         }
 

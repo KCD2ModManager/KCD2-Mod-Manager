@@ -121,6 +121,12 @@
                         <HierarchicalDataTemplate.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
+                                    <StackPanel.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="{Binding DataContext.IgnoreConflictsMenuText, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                      Click="IgnoreConflictsForMod_Click"/>
+                                        </ContextMenu>
+                                    </StackPanel.ContextMenu>
                                     <TextBlock Text="{Binding ModName}"
                                                Foreground="{DynamicResource TextForegroundBrush}"/>
                                     <Border Background="{DynamicResource PanelBackgroundBrush}"

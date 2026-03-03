@@ -65,6 +65,12 @@ namespace KCD2_mod_manager.Services
             set => Settings.Default.AllowWorkshopActionsWarningShown = value;
         }
 
+        public bool ConflictDetectorOnlyEnabledMods
+        {
+            get => Settings.Default.ConflictDetector_OnlyEnabledMods;
+            set => Settings.Default.ConflictDetector_OnlyEnabledMods = value;
+        }
+
         public bool CreateBackup
         {
             get => Settings.Default.CreateBackup;

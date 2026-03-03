@@ -1,6 +1,9 @@
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
 using KCD2_mod_manager.Models;
 using KCD2_mod_manager.Services;
 using KCD2_mod_manager.Resources;
@@ -19,6 +22,7 @@ namespace KCD2_mod_manager.ViewModels
         private readonly IModOrderFileManager? _modOrderFileManager;
         private readonly IGameInstallService? _gameInstallService;
         private readonly IFileService? _fileService;
+        private readonly IUserModDataService? _userModDataService;
 
         private const string DefaultGamePath = @"C:\Program Files (x86)\Steam\steamapps\common\KingdomComeDeliverance2\Bin\Win64MasterMasterSteamPGO\KingdomCome.exe";
 
@@ -29,6 +33,7 @@ namespace KCD2_mod_manager.ViewModels
         private bool _modOrderEnabled;
         private bool _enableFileRenaming;
         private bool _allowWorkshopModActions;
+        private bool _conflictDetectorOnlyEnabledMods;
         private bool _createBackup;
         private bool _backupOnStartup;
         private int _backupMaxCount;
@@ -54,6 +59,13 @@ namespace KCD2_mod_manager.ViewModels
         private string _enableFileRenamingTooltip = string.Empty;
         private string _allowWorkshopModActionsText = string.Empty;
         private string _allowWorkshopModActionsTooltip = string.Empty;
+        private string _conflictDetectorOnlyEnabledModsText = string.Empty;
+        private string _conflictDetectorOnlyEnabledModsTooltip = string.Empty;
+        private string _ignoredConflictsListTitleText = string.Empty;
+        private string _removeIgnoredConflictText = string.Empty;
+        private string? _selectedIgnoredConflictModId;
+
+        public ObservableCollection<string> IgnoredConflictModIds { get; } = new();
 
         public SettingsWindowViewModel(
             IAppSettings settings, 
@@ -62,7 +74,8 @@ namespace KCD2_mod_manager.ViewModels
             ILocalizationService localizationService,
             IModOrderFileManager? modOrderFileManager = null,
             IGameInstallService? gameInstallService = null,
-            IFileService? fileService = null)
+            IFileService? fileService = null,
+            IUserModDataService? userModDataService = null)
         {
             _settings = settings;
             _dialogService = dialogService;
@@ -71,6 +84,7 @@ namespace KCD2_mod_manager.ViewModels
             _modOrderFileManager = modOrderFileManager;
             _gameInstallService = gameInstallService;
             _fileService = fileService;
+            _userModDataService = userModDataService;
 
             LoadSettings();
             InitializeCommands();
@@ -78,6 +92,7 @@ namespace KCD2_mod_manager.ViewModels
             // Auf Sprachänderungen reagieren
             _localizationService.LanguageChanged += (s, e) => UpdateLocalizedStrings();
             UpdateLocalizedStrings();
+            _ = LoadIgnoredConflictModsAsync();
         }
 
         private void InitializeCommands()
@@ -90,6 +105,8 @@ namespace KCD2_mod_manager.ViewModels
             ToggleModOrderCreationCommand = new RelayCommand<bool?>(isChecked => ToggleModOrderCreation(isChecked ?? false));
             ToggleFileRenamingCommand = new RelayCommand<bool?>(isChecked => ToggleFileRenaming(isChecked ?? false));
             ToggleWorkshopActionsCommand = new RelayCommand<bool?>(isChecked => ToggleWorkshopActions(isChecked ?? false));
+            ToggleConflictDetectorOnlyEnabledModsCommand = new RelayCommand<bool?>(isChecked => ToggleConflictDetectorOnlyEnabledMods(isChecked ?? true));
+            RemoveIgnoredConflictCommand = new RelayCommand<string>(modId => RemoveIgnoredConflictAsync(modId));
             ToggleBackupCreationCommand = new RelayCommand<bool?>(isChecked => ToggleBackupCreation(isChecked ?? false));
             ToggleBackupOnStartupCommand = new RelayCommand<bool?>(isChecked => ToggleBackupOnStartup(isChecked ?? false));
             ChangeLanguageCommand = new RelayCommand<string>(language => ChangeLanguage(language));
@@ -104,6 +121,7 @@ namespace KCD2_mod_manager.ViewModels
             ModOrderEnabled = _settings.ModOrderEnabled;
             EnableFileRenaming = _settings.EnableFileRenaming;
             AllowWorkshopModActions = _settings.AllowWorkshopModActions;
+            ConflictDetectorOnlyEnabledMods = _settings.ConflictDetectorOnlyEnabledMods;
             CreateBackup = _settings.CreateBackup;
             BackupOnStartup = _settings.BackupOnStartup;
             BackupMaxCount = _settings.BackupMaxCount;
@@ -150,6 +168,12 @@ namespace KCD2_mod_manager.ViewModels
         {
             get => _allowWorkshopModActions;
             set => SetProperty(ref _allowWorkshopModActions, value);
+        }
+
+        public bool ConflictDetectorOnlyEnabledMods
+        {
+            get => _conflictDetectorOnlyEnabledMods;
+            set => SetProperty(ref _conflictDetectorOnlyEnabledMods, value);
         }
 
         public bool CreateBackup
@@ -286,6 +310,36 @@ namespace KCD2_mod_manager.ViewModels
             set => SetProperty(ref _allowWorkshopModActionsTooltip, value);
         }
 
+        public string ConflictDetectorOnlyEnabledModsText
+        {
+            get => _conflictDetectorOnlyEnabledModsText;
+            set => SetProperty(ref _conflictDetectorOnlyEnabledModsText, value);
+        }
+
+        public string ConflictDetectorOnlyEnabledModsTooltip
+        {
+            get => _conflictDetectorOnlyEnabledModsTooltip;
+            set => SetProperty(ref _conflictDetectorOnlyEnabledModsTooltip, value);
+        }
+
+        public string IgnoredConflictsListTitleText
+        {
+            get => _ignoredConflictsListTitleText;
+            set => SetProperty(ref _ignoredConflictsListTitleText, value);
+        }
+
+        public string RemoveIgnoredConflictText
+        {
+            get => _removeIgnoredConflictText;
+            set => SetProperty(ref _removeIgnoredConflictText, value);
+        }
+
+        public string? SelectedIgnoredConflictModId
+        {
+            get => _selectedIgnoredConflictModId;
+            set => SetProperty(ref _selectedIgnoredConflictModId, value);
+        }
+
         public string SelectLanguageText
         {
             get => _selectLanguageText;
@@ -303,6 +357,8 @@ namespace KCD2_mod_manager.ViewModels
         public ICommand ToggleModOrderCreationCommand { get; private set; } = null!;
         public ICommand ToggleFileRenamingCommand { get; private set; } = null!;
         public ICommand ToggleWorkshopActionsCommand { get; private set; } = null!;
+        public ICommand ToggleConflictDetectorOnlyEnabledModsCommand { get; private set; } = null!;
+        public ICommand RemoveIgnoredConflictCommand { get; private set; } = null!;
         public ICommand ToggleBackupCreationCommand { get; private set; } = null!;
         public ICommand ToggleBackupOnStartupCommand { get; private set; } = null!;
         public ICommand ChangeLanguageCommand { get; private set; } = null!;
@@ -438,6 +494,49 @@ namespace KCD2_mod_manager.ViewModels
             _logger.Info($"AllowWorkshopModActions toggled: {isChecked}");
         }
 
+        private void ToggleConflictDetectorOnlyEnabledMods(bool isChecked)
+        {
+            ConflictDetectorOnlyEnabledMods = isChecked;
+            _settings.ConflictDetectorOnlyEnabledMods = isChecked;
+            _settings.Save();
+        }
+
+        private async void RemoveIgnoredConflictAsync(string? modId)
+        {
+            if (_userModDataService == null || string.IsNullOrWhiteSpace(modId))
+            {
+                return;
+            }
+
+            await _userModDataService.SaveModDataAsync(
+                modId,
+                ignoredInConflictDetector: false);
+
+            IgnoredConflictModIds.Remove(modId);
+        }
+
+        private async Task LoadIgnoredConflictModsAsync()
+        {
+            if (_userModDataService == null)
+            {
+                return;
+            }
+
+            var data = await _userModDataService.LoadUserModDataAsync();
+            var ids = data.Values
+                .Where(d => d.IgnoredInConflictDetector && !string.IsNullOrWhiteSpace(d.ModId))
+                .Select(d => d.ModId)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(id => id)
+                .ToList();
+
+            IgnoredConflictModIds.Clear();
+            foreach (var id in ids)
+            {
+                IgnoredConflictModIds.Add(id);
+            }
+        }
+
         private void ToggleBackupCreation(bool isChecked)
         {
             CreateBackup = isChecked;
@@ -507,6 +606,10 @@ namespace KCD2_mod_manager.ViewModels
             EnableFileRenamingTooltip = Resources.Strings.ResourceManager.GetString("EnableFileRenamingTooltip", culture) ?? Resources.Strings.EnableFileRenamingTooltip;
             AllowWorkshopModActionsText = Resources.Strings.ResourceManager.GetString("AllowWorkshopActionsText", culture) ?? "Enable extra actions for Workshop mods";
             AllowWorkshopModActionsTooltip = Resources.Strings.ResourceManager.GetString("AllowWorkshopActionsTooltip", culture) ?? "Enabling this will allow actions such as visiting the mod webpage or forcing update checks on mods installed from the Steam Workshop. Not recommended as Workshop files are typically managed by Steam.";
+            ConflictDetectorOnlyEnabledModsText = Resources.Strings.ResourceManager.GetString("ConflictDetectorOnlyEnabledModsText", culture) ?? "Analyze conflicts only for enabled mods";
+            ConflictDetectorOnlyEnabledModsTooltip = Resources.Strings.ResourceManager.GetString("ConflictDetectorOnlyEnabledModsTooltip", culture) ?? "When enabled, disabled mods are ignored by the conflict detector.";
+            IgnoredConflictsListTitleText = Resources.Strings.ResourceManager.GetString("IgnoredConflictsListTitleText", culture) ?? "Ignored conflict mods";
+            RemoveIgnoredConflictText = Resources.Strings.ResourceManager.GetString("RemoveIgnoredConflictText", culture) ?? "Remove";
             LanguageSettingsText = Resources.Strings.ResourceManager.GetString("LanguageSettings", culture) ?? Resources.Strings.LanguageSettings;
             SelectLanguageText = Resources.Strings.ResourceManager.GetString("SelectLanguage", culture) ?? Resources.Strings.SelectLanguage;
             LanguageText = Resources.Strings.ResourceManager.GetString("Language", culture) ?? Resources.Strings.Language;
